@@ -48,3 +48,15 @@ Before public launch, prepare at least:
 - 5-8 white noise tracks
 
 Each item should have a stable title, duration, captions or guidance text, and a complete source record.
+
+## First Licensed Batch
+
+The app currently includes the following licensed production candidates:
+
+- `Soporific` by Kevin MacLeod, CC BY 3.0, Wikimedia Commons / Free Music Archive.
+- `Ambient` by Brenticus, CC BY 3.0, Wikimedia Commons / SoundCloud.
+- `Rain (1)` by ezwa, Public domain, Wikimedia Commons / PDSounds.
+- `Campfire sound ambience` by Glaneur de sons, CC BY 3.0, Wikimedia Commons / Freesound.
+- `Cape May Shorebirds (distant)` by U.S. Fish and Wildlife Service, Public domain, Wikimedia Commons / USFWS.
+
+Stories remain project-owned Mandarin TTS placeholders until a final story content strategy is chosen.

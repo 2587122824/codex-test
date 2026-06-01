@@ -8,6 +8,46 @@ const generatedSource = {
   attributionRequired: false,
 };
 
+const soporificSource = {
+  name: 'Wikimedia Commons / Free Music Archive',
+  author: 'Kevin MacLeod',
+  license: 'CC BY 3.0',
+  url: 'https://commons.wikimedia.org/wiki/File:Kevin_MacLeod_-_Soporific.ogg',
+  attributionRequired: true,
+};
+
+const ambientSource = {
+  name: 'Wikimedia Commons / SoundCloud',
+  author: 'Brenticus',
+  license: 'CC BY 3.0',
+  url: 'https://commons.wikimedia.org/wiki/File:Brenticus_-_Ambient.ogg',
+  attributionRequired: true,
+};
+
+const rainSource = {
+  name: 'Wikimedia Commons / PDSounds',
+  author: 'ezwa',
+  license: 'Public domain',
+  url: 'https://commons.wikimedia.org/wiki/File:Rain_(1).ogg',
+  attributionRequired: false,
+};
+
+const campfireSource = {
+  name: 'Wikimedia Commons / Freesound',
+  author: 'Glaneur de sons',
+  license: 'CC BY 3.0',
+  url: 'https://commons.wikimedia.org/wiki/File:Campfire_sound_ambience.ogg',
+  attributionRequired: true,
+};
+
+const shorebirdsSource = {
+  name: 'Wikimedia Commons / USFWS',
+  author: 'U.S. Fish and Wildlife Service',
+  license: 'Public domain',
+  url: 'https://commons.wikimedia.org/wiki/File:Cape_May_Shorebirds_(distant).ogg',
+  attributionRequired: false,
+};
+
 const breathingCaptions = [
   { start: 0, end: 8, text: '慢慢吸气，让肩膀松下来。' },
   { start: 8, end: 16, text: '缓缓呼气，把注意力交给声音。' },
@@ -72,26 +112,26 @@ export const audioCatalog: AudioItem[] = [
   {
     id: 'music-breathing-pad',
     type: 'music',
-    title: '慢呼吸和弦',
-    description: '长音和弦随呼吸缓慢起伏，适合刚躺下时放松身体。',
-    duration: 24,
+    title: 'Soporific',
+    description: 'Kevin MacLeod 的舒缓环境音乐，适合长时间睡前放松。',
+    duration: 290,
     category: '冥想音乐',
-    asset: require('../../../assets/audio/music/breathing-pad.wav'),
+    asset: require('../../../assets/audio/music/soporific-kevin-macleod.ogg'),
     cover: '#6D8BFF',
     captions: breathingCaptions,
-    source: generatedSource,
+    source: soporificSource,
   },
   {
     id: 'music-moon-piano',
     type: 'music',
-    title: '月光钢琴',
-    description: '稀疏的柔和音符，减少旋律刺激，适合作为睡前背景。',
-    duration: 24,
+    title: 'Ambient',
+    description: 'Brenticus 的氛围音乐，音色柔和，适合作为睡前背景。',
+    duration: 265,
     category: '轻音乐',
-    asset: require('../../../assets/audio/music/moon-piano.wav'),
+    asset: require('../../../assets/audio/music/brenticus-ambient.ogg'),
     cover: '#8E6BFF',
     captions: softMusicCaptions,
-    source: generatedSource,
+    source: ambientSource,
   },
   {
     id: 'music-deep-meditation',
@@ -160,37 +200,37 @@ export const audioCatalog: AudioItem[] = [
     id: 'noise-rain-window',
     type: 'noise',
     title: '窗边细雨',
-    description: '细雨和随机雨滴组合，默认循环播放，适合屏蔽夜间干扰。',
-    duration: 28,
+    description: '来自 PDSounds 的真实雨声录音，默认循环播放，适合屏蔽夜间干扰。',
+    duration: 45,
     category: '雨声',
-    asset: require('../../../assets/audio/noise/rain-window.wav'),
+    asset: require('../../../assets/audio/noise/rain-pdsounds-ezwa.ogg'),
     cover: '#1F9D86',
     captions: rainCaptions,
-    source: generatedSource,
+    source: rainSource,
   },
   {
     id: 'noise-ocean-waves',
     type: 'noise',
-    title: '远处海浪',
-    description: '周期性海浪起伏和低频底音，适合持续陪伴入睡。',
-    duration: 30,
-    category: '海浪',
-    asset: require('../../../assets/audio/noise/ocean-waves.wav'),
+    title: '海岸远声',
+    description: '美国鱼类及野生动物管理局录音，远处鸟鸣和浪声混合。',
+    duration: 14,
+    category: '海岸',
+    asset: require('../../../assets/audio/noise/shorebirds-waves-usfws.ogg'),
     cover: '#247BA0',
     captions: oceanCaptions,
-    source: generatedSource,
+    source: shorebirdsSource,
   },
   {
     id: 'noise-night-wind',
     type: 'noise',
-    title: '夜晚微风',
-    description: '轻风环境声，变化慢，不会突然打断睡意。',
-    duration: 30,
-    category: '风声',
-    asset: require('../../../assets/audio/noise/night-wind.wav'),
+    title: '篝火环境声',
+    description: 'Freesound 上的真实篝火环境声，适合安静陪伴入睡。',
+    duration: 60,
+    category: '篝火',
+    asset: require('../../../assets/audio/noise/campfire-glaneur.ogg'),
     cover: '#5C8374',
     captions: windCaptions,
-    source: generatedSource,
+    source: campfireSource,
   },
 ];
 

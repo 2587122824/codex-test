@@ -432,6 +432,7 @@ export default function SleepApp() {
                   <Text style={styles.settingMeta}>作者：{item.source.author}</Text>
                   <Text style={styles.settingMeta}>授权：{item.source.license}</Text>
                   <Text style={styles.settingMeta}>来源：{item.source.name}</Text>
+                  <Text style={styles.settingMeta}>链接：{item.source.url}</Text>
                   <Text style={styles.settingMeta}>
                     {item.source.attributionRequired ? '需要在 App 内署名' : '无需额外署名'}
                   </Text>
@@ -705,7 +706,12 @@ const CaptionDisplay = ({
   const activeIndex = captions.findIndex(
     (caption) => currentSecond >= caption.start && currentSecond < caption.end,
   );
-  const targetIndex = activeIndex === -1 ? 0 : activeIndex;
+  const targetIndex =
+    activeIndex !== -1
+      ? activeIndex
+      : currentSecond >= (captions[captions.length - 1]?.end ?? 0)
+        ? Math.max(captions.length - 1, 0)
+        : 0;
   const fadeOpacity = useRef(new Animated.Value(1)).current;
   const [displayIndex, setDisplayIndex] = useState(targetIndex);
   const previous = captions[displayIndex - 1];
