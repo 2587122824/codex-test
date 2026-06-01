@@ -165,6 +165,9 @@ export default function SleepApp() {
               <PlayerPanel
                 currentTrack={player.currentTrack}
                 playbackState={player.playbackState}
+                positionMillis={player.positionMillis}
+                durationMillis={player.durationMillis}
+                progress={player.progress}
                 activeTimerMinutes={player.activeTimerMinutes}
                 remainingSeconds={player.remainingSeconds}
                 timerOptions={player.timerOptions}
@@ -172,6 +175,7 @@ export default function SleepApp() {
                 setCustomTimer={setCustomTimer}
                 isFavorite={player.currentTrack ? player.isFavorite(player.currentTrack.id) : false}
                 onTogglePlayback={player.togglePlayback}
+                onSeek={player.seekToMillis}
                 onStop={player.stop}
                 onFavorite={() => {
                   if (player.currentTrack) {
@@ -308,6 +312,9 @@ const QuickSections = ({
 type PlayerPanelProps = {
   currentTrack: AudioItem | null;
   playbackState: string;
+  positionMillis: number;
+  durationMillis: number;
+  progress: number;
   activeTimerMinutes: number | null;
   remainingSeconds: number;
   timerOptions: number[];
@@ -315,6 +322,7 @@ type PlayerPanelProps = {
   setCustomTimer: (value: string) => void;
   isFavorite: boolean;
   onTogglePlayback: () => void;
+  onSeek: (millis: number) => void;
   onStop: () => void;
   onFavorite: () => void;
   onTimer: (minutes: number | null) => void;
@@ -324,6 +332,9 @@ type PlayerPanelProps = {
 const PlayerPanel = ({
   currentTrack,
   playbackState,
+  positionMillis,
+  durationMillis,
+  progress,
   activeTimerMinutes,
   remainingSeconds,
   timerOptions,
@@ -331,6 +342,7 @@ const PlayerPanel = ({
   setCustomTimer,
   isFavorite,
   onTogglePlayback,
+  onSeek,
   onStop,
   onFavorite,
   onTimer,
@@ -351,6 +363,14 @@ const PlayerPanel = ({
       <Text style={styles.playerSource}>
         来源：{currentTrack.source.name} · {currentTrack.source.license}
       </Text>
+
+      <ProgressBar
+        positionMillis={positionMillis}
+        durationMillis={durationMillis}
+        progress={progress}
+        onSeek={onSeek}
+      />
+      <CaptionDisplay currentTrack={currentTrack} positionMillis={positionMillis} />
 
       <View style={styles.playerControls}>
         <Pressable style={styles.primaryButton} onPress={onTogglePlayback}>
@@ -397,6 +417,84 @@ const PlayerPanel = ({
           </Pressable>
         </View>
       </View>
+    </View>
+  );
+};
+
+const formatPlaybackTime = (millis: number) => {
+  const totalSeconds = Math.max(0, Math.floor(millis / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
+type ProgressBarProps = {
+  positionMillis: number;
+  durationMillis: number;
+  progress: number;
+  onSeek: (millis: number) => void;
+};
+
+const ProgressBar = ({ positionMillis, durationMillis, progress, onSeek }: ProgressBarProps) => {
+  const [barWidth, setBarWidth] = useState(1);
+  const safeProgress = Math.max(0, Math.min(progress, 1));
+
+  return (
+    <View style={styles.progressBlock}>
+      <Pressable
+        accessibilityRole="adjustable"
+        accessibilityLabel="播放进度"
+        onLayout={(event) => setBarWidth(Math.max(1, event.nativeEvent.layout.width))}
+        onPress={(event) => {
+          const nextProgress = event.nativeEvent.locationX / barWidth;
+          onSeek(Math.max(0, Math.min(nextProgress, 1)) * durationMillis);
+        }}
+        style={styles.progressTrack}
+      >
+        <View style={styles.progressRail}>
+          <View style={[styles.progressFill, { width: `${safeProgress * 100}%` }]} />
+        </View>
+        <View style={[styles.progressThumb, { left: `${safeProgress * 100}%` }]} />
+      </Pressable>
+      <View style={styles.progressTimes}>
+        <Text style={styles.progressTime}>{formatPlaybackTime(positionMillis)}</Text>
+        <Text style={styles.progressTime}>{formatPlaybackTime(durationMillis)}</Text>
+      </View>
+    </View>
+  );
+};
+
+const CaptionDisplay = ({
+  currentTrack,
+  positionMillis,
+}: {
+  currentTrack: AudioItem;
+  positionMillis: number;
+}) => {
+  const captions = currentTrack.captions ?? [];
+  const currentSecond = positionMillis / 1000;
+  const activeIndex = captions.findIndex(
+    (caption) => currentSecond >= caption.start && currentSecond < caption.end,
+  );
+  const fallbackIndex = activeIndex === -1 ? 0 : activeIndex;
+  const previous = captions[fallbackIndex - 1];
+  const current = captions[fallbackIndex];
+  const next = captions[fallbackIndex + 1];
+
+  if (!current) {
+    return (
+      <View style={styles.captionBox}>
+        <Text style={styles.captionCurrent}>慢慢呼吸，让声音陪你安静下来。</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.captionBox}>
+      <Text style={styles.captionSide}>{previous?.text ?? ' '}</Text>
+      <Text style={styles.captionCurrent}>{current.text}</Text>
+      <Text style={styles.captionSide}>{next?.text ?? ' '}</Text>
     </View>
   );
 };
@@ -555,6 +653,68 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     lineHeight: 18,
+    textAlign: 'center',
+  },
+  progressBlock: {
+    alignSelf: 'stretch',
+    gap: spacing.sm,
+  },
+  progressTrack: {
+    height: 28,
+    justifyContent: 'center',
+  },
+  progressRail: {
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.line,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.coral,
+  },
+  progressThumb: {
+    position: 'absolute',
+    width: 18,
+    height: 18,
+    marginLeft: -9,
+    borderRadius: 9,
+    backgroundColor: colors.night,
+    borderWidth: 3,
+    borderColor: colors.surface,
+  },
+  progressTimes: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressTime: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  captionBox: {
+    alignSelf: 'stretch',
+    minHeight: 112,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.md,
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  captionSide: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+  },
+  captionCurrent: {
+    color: colors.ink,
+    fontSize: 18,
+    lineHeight: 26,
+    fontWeight: '800',
     textAlign: 'center',
   },
   playerControls: {

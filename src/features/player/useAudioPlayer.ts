@@ -18,9 +18,12 @@ export const useAudioPlayer = () => {
   const [historyIds, setHistoryIds] = useState<string[]>([]);
   const [timerEndsAt, setTimerEndsAt] = useState<number | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [positionMillis, setPositionMillis] = useState(0);
+  const [durationMillis, setDurationMillis] = useState(0);
 
   const unloadCurrentSound = useCallback(async () => {
     if (soundRef.current) {
+      soundRef.current.setOnPlaybackStatusUpdate(null);
       await soundRef.current.unloadAsync();
       soundRef.current = null;
     }
@@ -33,6 +36,7 @@ export const useAudioPlayer = () => {
     }
     setTimerEndsAt(null);
     setRemainingSeconds(0);
+    setPositionMillis(0);
     await unloadCurrentSound();
     setPlaybackState('idle');
   }, [unloadCurrentSound]);
@@ -49,6 +53,8 @@ export const useAudioPlayer = () => {
     async (track: AudioItem) => {
       setPlaybackState('loading');
       setCurrentTrack(track);
+      setPositionMillis(0);
+      setDurationMillis(track.duration * 1000);
       await addToHistory(track.id);
       await unloadCurrentSound();
 
@@ -63,6 +69,18 @@ export const useAudioPlayer = () => {
         );
 
         soundRef.current = sound;
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (!status.isLoaded) {
+            return;
+          }
+
+          setPositionMillis(status.positionMillis);
+          setDurationMillis(status.durationMillis ?? track.duration * 1000);
+
+          if (status.didJustFinish && !status.isLooping) {
+            setPlaybackState('paused');
+          }
+        });
         await sound.playAsync();
         setPlaybackState('playing');
       } catch {
@@ -70,6 +88,20 @@ export const useAudioPlayer = () => {
       }
     },
     [addToHistory, unloadCurrentSound],
+  );
+
+  const seekToMillis = useCallback(
+    async (millis: number) => {
+      const clampedMillis = Math.max(0, Math.min(millis, durationMillis || millis));
+      setPositionMillis(clampedMillis);
+
+      if (!soundRef.current) {
+        return;
+      }
+
+      await soundRef.current.setPositionAsync(clampedMillis);
+    },
+    [durationMillis],
   );
 
   const togglePlayback = useCallback(async () => {
@@ -157,9 +189,14 @@ export const useAudioPlayer = () => {
     return Math.ceil((timerEndsAt - Date.now()) / 60000);
   }, [timerEndsAt, remainingSeconds]);
 
+  const progress = durationMillis > 0 ? positionMillis / durationMillis : 0;
+
   return {
     currentTrack,
     playbackState,
+    positionMillis,
+    durationMillis,
+    progress,
     favoriteIds,
     historyIds,
     timerOptions,
@@ -169,6 +206,7 @@ export const useAudioPlayer = () => {
     isFavorite: (trackId: string) => favoriteIds.includes(trackId),
     playTrack,
     togglePlayback,
+    seekToMillis,
     toggleFavorite,
     setSleepTimer,
     stop,

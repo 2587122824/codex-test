@@ -8,6 +8,42 @@ const generatedSource = {
   attributionRequired: false,
 };
 
+const breathingCaptions = [
+  { start: 0, end: 8, text: '慢慢吸气，让肩膀松下来。' },
+  { start: 8, end: 16, text: '缓缓呼气，把注意力交给声音。' },
+  { start: 16, end: 24, text: '不用追赶旋律，只要安静地躺着。' },
+];
+
+const softMusicCaptions = [
+  { start: 0, end: 8, text: '让第一声落下，今晚不用再用力。' },
+  { start: 8, end: 16, text: '如果想到别的事，就轻轻回到音乐里。' },
+  { start: 16, end: 24, text: '眼睛可以慢慢闭上，身体会自己休息。' },
+];
+
+const meditationCaptions = [
+  { start: 0, end: 9, text: '感受低频声音像一条稳定的线。' },
+  { start: 9, end: 18, text: '念头来了也没关系，让它慢慢经过。' },
+  { start: 18, end: 28, text: '把今天放在一边，留给明天再处理。' },
+];
+
+const rainCaptions = [
+  { start: 0, end: 9, text: '雨声落在窗边，房间变得更安静。' },
+  { start: 9, end: 18, text: '听见雨滴，也听见自己的呼吸。' },
+  { start: 18, end: 28, text: '让细雨陪你慢慢沉入睡意。' },
+];
+
+const oceanCaptions = [
+  { start: 0, end: 10, text: '海浪远远靠近，又轻轻退回去。' },
+  { start: 10, end: 20, text: '跟着起伏放松胸口和腹部。' },
+  { start: 20, end: 30, text: '每一次浪声，都把紧张带走一点。' },
+];
+
+const windCaptions = [
+  { start: 0, end: 10, text: '夜风很轻，只经过，不打扰。' },
+  { start: 10, end: 20, text: '让身体停在柔软的位置上。' },
+  { start: 20, end: 30, text: '你可以什么都不做，只是休息。' },
+];
+
 export const modules: ModuleDefinition[] = [
   {
     type: 'music',
@@ -42,6 +78,7 @@ export const audioCatalog: AudioItem[] = [
     category: '冥想音乐',
     asset: require('../../../assets/audio/music/breathing-pad.wav'),
     cover: '#6D8BFF',
+    captions: breathingCaptions,
     source: generatedSource,
   },
   {
@@ -53,6 +90,7 @@ export const audioCatalog: AudioItem[] = [
     category: '轻音乐',
     asset: require('../../../assets/audio/music/moon-piano.wav'),
     cover: '#8E6BFF',
+    captions: softMusicCaptions,
     source: generatedSource,
   },
   {
@@ -64,6 +102,7 @@ export const audioCatalog: AudioItem[] = [
     category: '舒缓音乐',
     asset: require('../../../assets/audio/music/deep-meditation.wav'),
     cover: '#4E7AC7',
+    captions: meditationCaptions,
     source: generatedSource,
   },
   {
@@ -75,6 +114,12 @@ export const audioCatalog: AudioItem[] = [
     category: '温柔故事',
     asset: require('../../../assets/audio/stories/stars-falling.wav'),
     cover: '#B7791F',
+    captions: [
+      { start: 0, end: 5, text: '夜空很安静。' },
+      { start: 5, end: 11, text: '星星一颗一颗慢慢落下，像柔软的灯。' },
+      { start: 11, end: 16, text: '它们照在你的窗前。' },
+      { start: 16, end: 20, text: '你只需要跟着呼吸，慢慢闭上眼睛。' },
+    ],
     source: generatedSource,
   },
   {
@@ -86,6 +131,12 @@ export const audioCatalog: AudioItem[] = [
     category: '自然故事',
     asset: require('../../../assets/audio/stories/forest-letter.wav'),
     cover: '#9C6A2E',
+    captions: [
+      { start: 0, end: 5, text: '森林里的小木屋亮着一盏灯。' },
+      { start: 5, end: 10, text: '晚风把一封晚安信送到枕边。' },
+      { start: 10, end: 16, text: '信上写着，今天已经很好了。' },
+      { start: 16, end: 20, text: '现在可以休息了。' },
+    ],
     source: generatedSource,
   },
   {
@@ -97,6 +148,12 @@ export const audioCatalog: AudioItem[] = [
     category: '梦境故事',
     asset: require('../../../assets/audio/stories/cloud-boat.wav'),
     cover: '#C28C3A',
+    captions: [
+      { start: 0, end: 5, text: '一只云朵做的小船，停在安静的湖面。' },
+      { start: 5, end: 10, text: '你躺在船里，听见水波轻轻摇晃。' },
+      { start: 10, end: 15, text: '它带着你往前，越来越轻。' },
+      { start: 15, end: 18, text: '然后进入柔软的梦里。' },
+    ],
     source: generatedSource,
   },
   {
@@ -108,6 +165,7 @@ export const audioCatalog: AudioItem[] = [
     category: '雨声',
     asset: require('../../../assets/audio/noise/rain-window.wav'),
     cover: '#1F9D86',
+    captions: rainCaptions,
     source: generatedSource,
   },
   {
@@ -119,6 +177,7 @@ export const audioCatalog: AudioItem[] = [
     category: '海浪',
     asset: require('../../../assets/audio/noise/ocean-waves.wav'),
     cover: '#247BA0',
+    captions: oceanCaptions,
     source: generatedSource,
   },
   {
@@ -130,6 +189,7 @@ export const audioCatalog: AudioItem[] = [
     category: '风声',
     asset: require('../../../assets/audio/noise/night-wind.wav'),
     cover: '#5C8374',
+    captions: windCaptions,
     source: generatedSource,
   },
 ];
