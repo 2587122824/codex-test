@@ -1,7 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -477,42 +478,64 @@ const CaptionDisplay = ({
   const activeIndex = captions.findIndex(
     (caption) => currentSecond >= caption.start && currentSecond < caption.end,
   );
-  const fallbackIndex = activeIndex === -1 ? 0 : activeIndex;
-  const previous = captions[fallbackIndex - 1];
-  const current = captions[fallbackIndex];
-  const next = captions[fallbackIndex + 1];
-  const cueProgress = current
-    ? Math.max(0, Math.min((currentSecond - current.start) / (current.end - current.start), 1))
-    : 0;
+  const targetIndex = activeIndex === -1 ? 0 : activeIndex;
+  const fadeOpacity = useRef(new Animated.Value(1)).current;
+  const [displayIndex, setDisplayIndex] = useState(targetIndex);
+  const previous = captions[displayIndex - 1];
+  const current = captions[displayIndex];
+  const next = captions[displayIndex + 1];
+
+  useEffect(() => {
+    setDisplayIndex(targetIndex);
+    fadeOpacity.setValue(1);
+  }, [currentTrack.id, fadeOpacity]);
+
+  useEffect(() => {
+    if (targetIndex === displayIndex) {
+      return;
+    }
+
+    Animated.sequence([
+      Animated.timing(fadeOpacity, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeOpacity, {
+        toValue: 1,
+        duration: 240,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const timeout = setTimeout(() => {
+      setDisplayIndex(targetIndex);
+    }, 160);
+
+    return () => clearTimeout(timeout);
+  }, [displayIndex, fadeOpacity, targetIndex]);
 
   if (!current) {
     return (
       <View style={styles.captionBox}>
-        <View style={styles.captionCurrentCard}>
+        <Animated.View style={[styles.captionFadeGroup, { opacity: fadeOpacity }]}>
           <Text style={styles.captionCurrent}>慢慢呼吸，让声音陪你安静下来。</Text>
-        </View>
+        </Animated.View>
       </View>
     );
   }
 
   return (
     <View style={styles.captionBox}>
-      <View style={styles.captionLineSlot}>
+      <Animated.View style={[styles.captionFadeGroup, { opacity: fadeOpacity }]}>
         <Text style={[styles.captionSide, !previous && styles.captionHidden]}>
           {previous?.text ?? current.text}
         </Text>
-      </View>
-      <View style={styles.captionCurrentCard}>
         <Text style={styles.captionCurrent}>{current.text}</Text>
-        <View style={styles.captionCueRail}>
-          <View style={[styles.captionCueFill, { width: `${cueProgress * 100}%` }]} />
-        </View>
-      </View>
-      <View style={styles.captionLineSlot}>
         <Text style={[styles.captionSide, !next && styles.captionHidden]}>
           {next?.text ?? current.text}
         </Text>
-      </View>
+      </Animated.View>
     </View>
   );
 };
@@ -713,41 +736,28 @@ const styles = StyleSheet.create({
   },
   captionBox: {
     alignSelf: 'stretch',
-    minHeight: 148,
+    minHeight: 112,
     borderRadius: 8,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.line,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    padding: spacing.md,
     justifyContent: 'center',
-    gap: spacing.xs,
-    overflow: 'hidden',
   },
-  captionLineSlot: {
-    minHeight: 24,
+  captionFadeGroup: {
+    minHeight: 82,
     justifyContent: 'center',
+    gap: spacing.sm,
   },
   captionSide: {
     color: colors.muted,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 19,
     textAlign: 'center',
-    opacity: 0.62,
+    opacity: 0.66,
   },
   captionHidden: {
     opacity: 0,
-  },
-  captionCurrentCard: {
-    minHeight: 70,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    justifyContent: 'center',
-    gap: spacing.sm,
   },
   captionCurrent: {
     color: colors.ink,
@@ -755,17 +765,6 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     fontWeight: '800',
     textAlign: 'center',
-  },
-  captionCueRail: {
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.line,
-    overflow: 'hidden',
-  },
-  captionCueFill: {
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.coral,
   },
   playerControls: {
     flexDirection: 'row',
