@@ -38,3 +38,13 @@ assets/covers/
 4. Normalize loudness so tracks do not jump in volume.
 5. Update `src/shared/content/audioCatalog.ts`.
 6. Keep the source URL and attribution fields with the track.
+
+## Production Minimum
+
+Before public launch, prepare at least:
+
+- 5-8 music tracks
+- 5-8 story tracks
+- 5-8 white noise tracks
+
+Each item should have a stable title, duration, captions or guidance text, and a complete source record.

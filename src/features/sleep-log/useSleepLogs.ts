@@ -34,6 +34,20 @@ export const useSleepLogs = () => {
     persist([createDefaultLog(), ...logs]);
   }, [logs, persist]);
 
+  const addLog = useCallback(
+    (entry: SleepLogEntry) => {
+      persist([entry, ...logs]);
+    },
+    [logs, persist],
+  );
+
+  const updateLog = useCallback(
+    (entry: SleepLogEntry) => {
+      persist(logs.map((log) => (log.id === entry.id ? entry : log)));
+    },
+    [logs, persist],
+  );
+
   const removeLog = useCallback(
     (id: string) => {
       persist(logs.filter((log) => log.id !== id));
@@ -55,6 +69,8 @@ export const useSleepLogs = () => {
     logs,
     averageMinutes,
     addQuickLog,
+    addLog,
+    updateLog,
     removeLog,
   };
 };

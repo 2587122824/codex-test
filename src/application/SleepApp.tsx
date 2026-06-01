@@ -19,13 +19,13 @@ import { audioCatalog, getItemsByType, getModule, modules } from '../shared/cont
 import { storageKeys } from '../shared/storage/keys';
 import { storage } from '../shared/storage/storage';
 import type { AudioItem, AudioType } from '../shared/types/audio';
-import type { UserSettings } from '../shared/types/sleep';
+import type { SleepLogEntry, UserSettings } from '../shared/types/sleep';
 import { ModuleCard } from '../shared/ui/ModuleCard';
 import { PillButton } from '../shared/ui/PillButton';
 import { TrackRow } from '../shared/ui/TrackRow';
 import { colors, spacing } from '../shared/ui/theme';
 
-type Screen = 'home' | 'module' | 'player' | 'sleep-log' | 'settings';
+type Screen = 'home' | 'module' | 'player' | 'favorites' | 'sleep-log' | 'credits' | 'privacy' | 'settings';
 
 const defaultSettings: UserSettings = {
   defaultSleepTimerMinutes: 30,
@@ -50,6 +50,33 @@ const formatDateTime = (isoDate: string) =>
     minute: '2-digit',
   }).format(new Date(isoDate));
 
+const toDateTimeInput = (isoDate: string) => {
+  const date = new Date(isoDate);
+  const pad = (value: number) => value.toString().padStart(2, '0');
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const parseDateTimeInput = (value: string) => {
+  const normalized = value.trim().replace(' ', 'T');
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const createSleepLogDraft = () => {
+  const wakeAt = new Date();
+  const sleepAt = new Date(wakeAt.getTime() - 7.5 * 60 * 60 * 1000);
+
+  return {
+    id: `${Date.now()}`,
+    sleepAt: sleepAt.toISOString(),
+    wakeAt: wakeAt.toISOString(),
+    durationMinutes: 450,
+    rating: 4 as const,
+    note: '睡前完成一次助眠播放',
+  };
+};
+
 export default function SleepApp() {
   const player = useAudioPlayer();
   const sleepLogs = useSleepLogs();
@@ -57,6 +84,11 @@ export default function SleepApp() {
   const [activeModule, setActiveModule] = useState<AudioType>('music');
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [customTimer, setCustomTimer] = useState('25');
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [sleepAtInput, setSleepAtInput] = useState('');
+  const [wakeAtInput, setWakeAtInput] = useState('');
+  const [ratingInput, setRatingInput] = useState('4');
+  const [noteInput, setNoteInput] = useState('');
 
   useEffect(() => {
     storage.getJson(storageKeys.settings, defaultSettings).then(setSettings);
@@ -86,6 +118,52 @@ export default function SleepApp() {
       return;
     }
     player.setSleepTimer(minutes);
+  };
+
+  const beginSleepLogEdit = (log?: SleepLogEntry) => {
+    const draft = log ?? createSleepLogDraft();
+    setEditingLogId(log?.id ?? null);
+    setSleepAtInput(toDateTimeInput(draft.sleepAt));
+    setWakeAtInput(toDateTimeInput(draft.wakeAt));
+    setRatingInput(`${draft.rating}`);
+    setNoteInput(draft.note ?? '');
+  };
+
+  const saveSleepLog = () => {
+    const sleepAt = parseDateTimeInput(sleepAtInput);
+    const wakeAt = parseDateTimeInput(wakeAtInput);
+    const rating = Number(ratingInput);
+
+    if (!sleepAt || !wakeAt || wakeAt <= sleepAt) {
+      Alert.alert('请检查睡眠时间', '醒来时间需要晚于入睡时间，格式示例：2026-06-01 23:30');
+      return;
+    }
+
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      Alert.alert('请填写 1 到 5 之间的睡眠评分');
+      return;
+    }
+
+    const entry: SleepLogEntry = {
+      id: editingLogId ?? `${Date.now()}`,
+      sleepAt: sleepAt.toISOString(),
+      wakeAt: wakeAt.toISOString(),
+      durationMinutes: Math.round((wakeAt.getTime() - sleepAt.getTime()) / 60000),
+      rating: rating as SleepLogEntry['rating'],
+      note: noteInput.trim(),
+    };
+
+    if (editingLogId) {
+      sleepLogs.updateLog(entry);
+    } else {
+      sleepLogs.addLog(entry);
+    }
+
+    setEditingLogId(null);
+    setSleepAtInput('');
+    setWakeAtInput('');
+    setRatingInput('4');
+    setNoteInput('');
   };
 
   return (
@@ -139,6 +217,7 @@ export default function SleepApp() {
                 onOpenTrack={openTrack}
                 onFavorite={player.toggleFavorite}
                 isFavorite={player.isFavorite}
+                onOpenFavorites={() => setScreen('favorites')}
               />
             </View>
           ) : null}
@@ -166,6 +245,7 @@ export default function SleepApp() {
               <PlayerPanel
                 currentTrack={player.currentTrack}
                 playbackState={player.playbackState}
+                playbackError={player.playbackError}
                 positionMillis={player.positionMillis}
                 durationMillis={player.durationMillis}
                 progress={player.progress}
@@ -189,6 +269,30 @@ export default function SleepApp() {
             </View>
           ) : null}
 
+          {screen === 'favorites' ? (
+            <View style={styles.stack}>
+              <View style={styles.sectionHeader}>
+                <View>
+                  <Text style={styles.sectionTitle}>我的收藏</Text>
+                  <Text style={styles.sectionMeta}>集中管理你常听的助眠内容。</Text>
+                </View>
+              </View>
+              {favoriteTracks.length === 0 ? (
+                <EmptyState text="还没有收藏内容，回到列表点击星标即可收藏。" />
+              ) : (
+                favoriteTracks.map((item) => (
+                  <TrackRow
+                    key={item.id}
+                    item={item}
+                    isFavorite={player.isFavorite(item.id)}
+                    onPress={() => openTrack(item)}
+                    onFavorite={() => player.toggleFavorite(item.id)}
+                  />
+                ))
+              )}
+            </View>
+          ) : null}
+
           {screen === 'sleep-log' ? (
             <View style={styles.stack}>
               <View style={styles.sectionHeader}>
@@ -198,10 +302,57 @@ export default function SleepApp() {
                     平均睡眠 {sleepLogs.averageMinutes ? formatMinutes(sleepLogs.averageMinutes) : '暂无'}
                   </Text>
                 </View>
-                <Pressable style={styles.primaryButton} onPress={sleepLogs.addQuickLog}>
+                <Pressable style={styles.primaryButton} onPress={() => beginSleepLogEdit()}>
                   <Text style={styles.primaryButtonText}>新增</Text>
                 </Pressable>
               </View>
+              {sleepAtInput || wakeAtInput ? (
+                <View style={styles.formPanel}>
+                  <Text style={styles.settingTitle}>{editingLogId ? '编辑睡眠记录' : '新增睡眠记录'}</Text>
+                  <TextInput
+                    value={sleepAtInput}
+                    onChangeText={setSleepAtInput}
+                    placeholder="入睡时间，例如 2026-06-01 23:30"
+                    style={styles.textInput}
+                  />
+                  <TextInput
+                    value={wakeAtInput}
+                    onChangeText={setWakeAtInput}
+                    placeholder="醒来时间，例如 2026-06-02 07:00"
+                    style={styles.textInput}
+                  />
+                  <TextInput
+                    value={ratingInput}
+                    onChangeText={setRatingInput}
+                    keyboardType="number-pad"
+                    placeholder="睡眠评分 1-5"
+                    style={styles.textInput}
+                  />
+                  <TextInput
+                    value={noteInput}
+                    onChangeText={setNoteInput}
+                    placeholder="备注，例如 半夜醒来一次"
+                    style={[styles.textInput, styles.noteInput]}
+                    multiline
+                  />
+                  <View style={styles.playerControls}>
+                    <Pressable style={styles.primaryButton} onPress={saveSleepLog}>
+                      <Text style={styles.primaryButtonText}>保存</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.subtleButton}
+                      onPress={() => {
+                        setEditingLogId(null);
+                        setSleepAtInput('');
+                        setWakeAtInput('');
+                        setNoteInput('');
+                      }}
+                    >
+                      <Text style={styles.subtleButtonText}>取消</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
               {sleepLogs.logs.length === 0 ? (
                 <EmptyState text="还没有睡眠记录，先新增一条快速记录。" />
               ) : (
@@ -213,10 +364,16 @@ export default function SleepApp() {
                         {formatDateTime(log.sleepAt)} - {formatDateTime(log.wakeAt)}
                       </Text>
                       <Text style={styles.logMeta}>睡眠评分：{log.rating}/5</Text>
+                      {log.note ? <Text style={styles.logMeta}>备注：{log.note}</Text> : null}
                     </View>
-                    <Pressable onPress={() => sleepLogs.removeLog(log.id)} style={styles.subtleButton}>
-                      <Text style={styles.subtleButtonText}>删除</Text>
-                    </Pressable>
+                    <View style={styles.logActions}>
+                      <Pressable onPress={() => beginSleepLogEdit(log)} style={styles.subtleButton}>
+                        <Text style={styles.subtleButtonText}>编辑</Text>
+                      </Pressable>
+                      <Pressable onPress={() => sleepLogs.removeLog(log.id)} style={styles.subtleButton}>
+                        <Text style={styles.subtleButtonText}>删除</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 ))
               )}
@@ -248,6 +405,62 @@ export default function SleepApp() {
                   {appConfig.audioSource === 'local' ? '本地内置音频' : appConfig.audioSource}
                 </Text>
               </View>
+              <View style={styles.settingRow}>
+                <Text style={styles.settingTitle}>上线合规</Text>
+                <Text style={styles.settingMeta}>查看音频版权和隐私说明，确保上架资料与 App 行为一致。</Text>
+                <View style={styles.playerControls}>
+                  <Pressable style={styles.subtleButton} onPress={() => setScreen('credits')}>
+                    <Text style={styles.subtleButtonText}>音频版权</Text>
+                  </Pressable>
+                  <Pressable style={styles.subtleButton} onPress={() => setScreen('privacy')}>
+                    <Text style={styles.subtleButtonText}>隐私说明</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          {screen === 'credits' ? (
+            <View style={styles.stack}>
+              <Text style={styles.sectionTitle}>音频来源与版权</Text>
+              <Text style={styles.sectionMeta}>
+                当前 MVP 使用项目本地生成样例音频。替换正式素材时，需要保留作者、授权和来源链接。
+              </Text>
+              {audioCatalog.map((item) => (
+                <View key={item.id} style={styles.legalRow}>
+                  <Text style={styles.settingTitle}>{item.title}</Text>
+                  <Text style={styles.settingMeta}>作者：{item.source.author}</Text>
+                  <Text style={styles.settingMeta}>授权：{item.source.license}</Text>
+                  <Text style={styles.settingMeta}>来源：{item.source.name}</Text>
+                  <Text style={styles.settingMeta}>
+                    {item.source.attributionRequired ? '需要在 App 内署名' : '无需额外署名'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {screen === 'privacy' ? (
+            <View style={styles.stack}>
+              <Text style={styles.sectionTitle}>隐私说明</Text>
+              <View style={styles.legalRow}>
+                <Text style={styles.settingTitle}>本地数据</Text>
+                <Text style={styles.settingMeta}>
+                  Codex Sleep 当前版本不登录、不上传数据、不接入广告或分析 SDK。收藏、最近播放、设置和睡眠记录只保存在本机。
+                </Text>
+              </View>
+              <View style={styles.legalRow}>
+                <Text style={styles.settingTitle}>健康声明</Text>
+                <Text style={styles.settingMeta}>
+                  本 App 只提供放松和睡前陪伴，不用于诊断、治疗或替代专业医疗建议。
+                </Text>
+              </View>
+              <View style={styles.legalRow}>
+                <Text style={styles.settingTitle}>正式上线前</Text>
+                <Text style={styles.settingMeta}>
+                  Google Play 数据安全表单应声明不收集云端个人数据；隐私政策页面需与这里的说明保持一致。
+                </Text>
+              </View>
             </View>
           ) : null}
         </ScrollView>
@@ -256,7 +469,11 @@ export default function SleepApp() {
           <TabButton label="助眠" active={screen === 'home' || screen === 'module'} onPress={() => setScreen('home')} />
           <TabButton label="播放" active={screen === 'player'} onPress={() => setScreen('player')} />
           <TabButton label="记录" active={screen === 'sleep-log'} onPress={() => setScreen('sleep-log')} />
-          <TabButton label="设置" active={screen === 'settings'} onPress={() => setScreen('settings')} />
+          <TabButton
+            label="设置"
+            active={screen === 'settings' || screen === 'credits' || screen === 'privacy'}
+            onPress={() => setScreen('settings')}
+          />
         </View>
       </View>
     </SafeAreaView>
@@ -269,6 +486,7 @@ type QuickSectionsProps = {
   onOpenTrack: (track: AudioItem) => void;
   onFavorite: (trackId: string) => void;
   isFavorite: (trackId: string) => boolean;
+  onOpenFavorites: () => void;
 };
 
 const QuickSections = ({
@@ -277,6 +495,7 @@ const QuickSections = ({
   onOpenTrack,
   onFavorite,
   isFavorite,
+  onOpenFavorites,
 }: QuickSectionsProps) => (
   <View style={styles.stack}>
     <Text style={styles.sectionTitle}>最近播放</Text>
@@ -293,7 +512,12 @@ const QuickSections = ({
         />
       ))
     )}
-    <Text style={styles.sectionTitle}>我的收藏</Text>
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>我的收藏</Text>
+      <Pressable style={styles.subtleButton} onPress={onOpenFavorites}>
+        <Text style={styles.subtleButtonText}>查看全部</Text>
+      </Pressable>
+    </View>
     {favoriteTracks.length === 0 ? (
       <EmptyState text="点击列表里的星标即可收藏。" />
     ) : (
@@ -313,6 +537,7 @@ const QuickSections = ({
 type PlayerPanelProps = {
   currentTrack: AudioItem | null;
   playbackState: string;
+  playbackError: string | null;
   positionMillis: number;
   durationMillis: number;
   progress: number;
@@ -333,6 +558,7 @@ type PlayerPanelProps = {
 const PlayerPanel = ({
   currentTrack,
   playbackState,
+  playbackError,
   positionMillis,
   durationMillis,
   progress,
@@ -364,6 +590,7 @@ const PlayerPanel = ({
       <Text style={styles.playerSource}>
         来源：{currentTrack.source.name} · {currentTrack.source.license}
       </Text>
+      {playbackError ? <Text style={styles.errorText}>{playbackError}</Text> : null}
 
       <ProgressBar
         positionMillis={positionMillis}
@@ -696,6 +923,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
   },
+  errorText: {
+    color: colors.coral,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
   progressBlock: {
     alignSelf: 'stretch',
     gap: spacing.sm,
@@ -845,8 +1079,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     padding: spacing.md,
+    gap: spacing.md,
+  },
+  logActions: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'flex-end',
+  },
+  formPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.md,
     gap: spacing.md,
   },
   logBody: {
@@ -869,6 +1115,28 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     padding: spacing.md,
     gap: spacing.md,
+  },
+  legalRow: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  textInput: {
+    minHeight: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingHorizontal: spacing.md,
+    backgroundColor: '#FFFFFF',
+    color: colors.ink,
+  },
+  noteInput: {
+    minHeight: 76,
+    paddingTop: spacing.sm,
+    textAlignVertical: 'top',
   },
   settingCopy: {
     gap: spacing.xs,

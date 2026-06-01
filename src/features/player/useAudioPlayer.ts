@@ -20,6 +20,7 @@ export const useAudioPlayer = () => {
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [positionMillis, setPositionMillis] = useState(0);
   const [durationMillis, setDurationMillis] = useState(0);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
 
   const unloadCurrentSound = useCallback(async () => {
     if (soundRef.current) {
@@ -37,6 +38,7 @@ export const useAudioPlayer = () => {
     setTimerEndsAt(null);
     setRemainingSeconds(0);
     setPositionMillis(0);
+    setPlaybackError(null);
     await unloadCurrentSound();
     setPlaybackState('idle');
   }, [unloadCurrentSound]);
@@ -55,6 +57,7 @@ export const useAudioPlayer = () => {
       setCurrentTrack(track);
       setPositionMillis(0);
       setDurationMillis(track.duration * 1000);
+      setPlaybackError(null);
       await addToHistory(track.id);
       await unloadCurrentSound();
 
@@ -84,6 +87,7 @@ export const useAudioPlayer = () => {
         await sound.playAsync();
         setPlaybackState('playing');
       } catch {
+        setPlaybackError('音频暂时无法播放，请稍后重试或切换其他内容。');
         setPlaybackState('paused');
       }
     },
@@ -106,6 +110,7 @@ export const useAudioPlayer = () => {
 
   const togglePlayback = useCallback(async () => {
     if (!soundRef.current) {
+      setPlaybackError('还没有可控制的音频，请先从列表选择内容。');
       return;
     }
 
@@ -155,7 +160,7 @@ export const useAudioPlayer = () => {
       allowsRecordingIOS: false,
       playsInSilentModeIOS: true,
       shouldDuckAndroid: true,
-      staysActiveInBackground: false,
+      staysActiveInBackground: true,
     });
 
     storage.getJson(storageKeys.favorites, [] as string[]).then(setFavoriteIds);
@@ -194,6 +199,7 @@ export const useAudioPlayer = () => {
   return {
     currentTrack,
     playbackState,
+    playbackError,
     positionMillis,
     durationMillis,
     progress,
