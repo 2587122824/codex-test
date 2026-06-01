@@ -3,16 +3,38 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { storageKeys } from '../../shared/storage/keys';
 import { storage } from '../../shared/storage/storage';
-import type { AudioItem } from '../../shared/types/audio';
+import type { AudioItem, PlaybackMode } from '../../shared/types/audio';
 
 type PlaybackState = 'idle' | 'loading' | 'playing' | 'paused';
 
 const timerOptions = [15, 30, 45, 60];
+const defaultPlaybackMode: PlaybackMode = 'repeat-all';
+
+const getRandomNextIndex = (queueLength: number, currentIndex: number) => {
+  if (queueLength <= 1) {
+    return 0;
+  }
+
+  let nextIndex = currentIndex;
+  while (nextIndex === currentIndex) {
+    nextIndex = Math.floor(Math.random() * queueLength);
+  }
+
+  return nextIndex;
+};
 
 export const useAudioPlayer = () => {
   const soundRef = useRef<Audio.Sound | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queueRef = useRef<AudioItem[]>([]);
+  const currentIndexRef = useRef(0);
+  const playbackModeRef = useRef<PlaybackMode>(defaultPlaybackMode);
+  const finishTransitionRef = useRef(false);
+  const handleTrackFinishedRef = useRef<(() => Promise<void>) | null>(null);
   const [currentTrack, setCurrentTrack] = useState<AudioItem | null>(null);
+  const [queue, setQueue] = useState<AudioItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [playbackMode, setPlaybackModeState] = useState<PlaybackMode>(defaultPlaybackMode);
   const [playbackState, setPlaybackState] = useState<PlaybackState>('idle');
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [historyIds, setHistoryIds] = useState<string[]>([]);
@@ -21,6 +43,13 @@ export const useAudioPlayer = () => {
   const [positionMillis, setPositionMillis] = useState(0);
   const [durationMillis, setDurationMillis] = useState(0);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+
+  const syncQueueState = useCallback((nextQueue: AudioItem[], nextIndex: number) => {
+    queueRef.current = nextQueue;
+    currentIndexRef.current = nextIndex;
+    setQueue(nextQueue);
+    setCurrentIndex(nextIndex);
+  }, []);
 
   const unloadCurrentSound = useCallback(async () => {
     if (soundRef.current) {
@@ -51,21 +80,34 @@ export const useAudioPlayer = () => {
     });
   }, []);
 
-  const playTrack = useCallback(
-    async (track: AudioItem) => {
+  const playTrackAtIndex = useCallback(
+    async (nextQueue: AudioItem[], nextIndex: number, addHistory = true) => {
+      const safeQueue = nextQueue.length > 0 ? nextQueue : queueRef.current;
+      const track = safeQueue[nextIndex];
+
+      if (!track) {
+        setPlaybackState('paused');
+        return;
+      }
+
       setPlaybackState('loading');
       setCurrentTrack(track);
+      syncQueueState(safeQueue, nextIndex);
       setPositionMillis(0);
       setDurationMillis(track.duration * 1000);
       setPlaybackError(null);
-      await addToHistory(track.id);
+
+      if (addHistory) {
+        await addToHistory(track.id);
+      }
+
       await unloadCurrentSound();
 
       try {
         const { sound } = await Audio.Sound.createAsync(
           typeof track.asset === 'string' ? { uri: track.asset } : track.asset,
           {
-            isLooping: track.type === 'noise',
+            isLooping: false,
             shouldPlay: false,
             volume: 0.85,
           },
@@ -80,8 +122,11 @@ export const useAudioPlayer = () => {
           setPositionMillis(status.positionMillis);
           setDurationMillis(status.durationMillis ?? track.duration * 1000);
 
-          if (status.didJustFinish && !status.isLooping) {
-            setPlaybackState('paused');
+          if (status.didJustFinish && !finishTransitionRef.current) {
+            finishTransitionRef.current = true;
+            void (handleTrackFinishedRef.current?.() ?? Promise.resolve()).finally(() => {
+              finishTransitionRef.current = false;
+            });
           }
         });
         await sound.playAsync();
@@ -91,8 +136,97 @@ export const useAudioPlayer = () => {
         setPlaybackState('paused');
       }
     },
-    [addToHistory, unloadCurrentSound],
+    [addToHistory, syncQueueState, unloadCurrentSound],
   );
+
+  const playTrack = useCallback(
+    async (track: AudioItem, sourceQueue?: AudioItem[]) => {
+      const nextQueue = sourceQueue && sourceQueue.length > 0 ? sourceQueue : [track];
+      const nextIndex = Math.max(
+        0,
+        nextQueue.findIndex((item) => item.id === track.id),
+      );
+
+      await playTrackAtIndex(nextQueue, nextIndex);
+    },
+    [playTrackAtIndex],
+  );
+
+  const handleTrackFinished = useCallback(async () => {
+    const activeQueue = queueRef.current;
+    const activeIndex = currentIndexRef.current;
+    const mode = playbackModeRef.current;
+
+    if (activeQueue.length === 0) {
+      setPlaybackState('paused');
+      return;
+    }
+
+    if (mode === 'repeat-one') {
+      setPositionMillis(0);
+      await soundRef.current?.setPositionAsync(0);
+      await soundRef.current?.playAsync();
+      setPlaybackState('playing');
+      return;
+    }
+
+    if (mode === 'sequential' && activeIndex >= activeQueue.length - 1) {
+      setPlaybackState('paused');
+      return;
+    }
+
+    const nextIndex =
+      mode === 'shuffle'
+        ? getRandomNextIndex(activeQueue.length, activeIndex)
+        : (activeIndex + 1) % activeQueue.length;
+
+    await playTrackAtIndex(activeQueue, nextIndex);
+  }, [playTrackAtIndex]);
+
+  useEffect(() => {
+    handleTrackFinishedRef.current = handleTrackFinished;
+  }, [handleTrackFinished]);
+
+  const playNext = useCallback(async () => {
+    const activeQueue = queueRef.current;
+    const activeIndex = currentIndexRef.current;
+
+    if (activeQueue.length === 0) {
+      return;
+    }
+
+    if (playbackModeRef.current === 'sequential' && activeIndex >= activeQueue.length - 1) {
+      return;
+    }
+
+    const nextIndex =
+      playbackModeRef.current === 'shuffle'
+        ? getRandomNextIndex(activeQueue.length, activeIndex)
+        : (activeIndex + 1) % activeQueue.length;
+
+    await playTrackAtIndex(activeQueue, nextIndex);
+  }, [playTrackAtIndex]);
+
+  const playPrevious = useCallback(async () => {
+    const activeQueue = queueRef.current;
+    const activeIndex = currentIndexRef.current;
+
+    if (activeQueue.length === 0) {
+      return;
+    }
+
+    if (playbackModeRef.current === 'sequential' && activeIndex <= 0) {
+      await seekToStart();
+      return;
+    }
+
+    const previousIndex =
+      playbackModeRef.current === 'shuffle'
+        ? getRandomNextIndex(activeQueue.length, activeIndex)
+        : (activeIndex - 1 + activeQueue.length) % activeQueue.length;
+
+    await playTrackAtIndex(activeQueue, previousIndex);
+  }, [playTrackAtIndex]);
 
   const seekToMillis = useCallback(
     async (millis: number) => {
@@ -107,6 +241,11 @@ export const useAudioPlayer = () => {
     },
     [durationMillis],
   );
+
+  async function seekToStart() {
+    setPositionMillis(0);
+    await soundRef.current?.setPositionAsync(0);
+  }
 
   const togglePlayback = useCallback(async () => {
     if (!soundRef.current) {
@@ -131,6 +270,11 @@ export const useAudioPlayer = () => {
       storage.setJson(storageKeys.favorites, next);
       return next;
     });
+  }, []);
+
+  const setPlaybackMode = useCallback((mode: PlaybackMode) => {
+    playbackModeRef.current = mode;
+    setPlaybackModeState(mode);
   }, []);
 
   const setSleepTimer = useCallback(
@@ -198,6 +342,9 @@ export const useAudioPlayer = () => {
 
   return {
     currentTrack,
+    queue,
+    currentIndex,
+    playbackMode,
     playbackState,
     playbackError,
     positionMillis,
@@ -211,9 +358,12 @@ export const useAudioPlayer = () => {
     remainingSeconds,
     isFavorite: (trackId: string) => favoriteIds.includes(trackId),
     playTrack,
+    playNext,
+    playPrevious,
     togglePlayback,
     seekToMillis,
     toggleFavorite,
+    setPlaybackMode,
     setSleepTimer,
     stop,
   };

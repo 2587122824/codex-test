@@ -18,7 +18,7 @@ import { appConfig } from '../shared/config/env';
 import { audioCatalog, getItemsByType, getModule, modules } from '../shared/content/audioCatalog';
 import { storageKeys } from '../shared/storage/keys';
 import { storage } from '../shared/storage/storage';
-import type { AudioItem, AudioType } from '../shared/types/audio';
+import type { AudioItem, AudioType, PlaybackMode } from '../shared/types/audio';
 import type { SleepLogEntry, UserSettings } from '../shared/types/sleep';
 import { ModuleCard } from '../shared/ui/ModuleCard';
 import { PillButton } from '../shared/ui/PillButton';
@@ -106,8 +106,8 @@ export default function SleepApp() {
     .filter(Boolean) as AudioItem[];
   const favoriteTracks = audioCatalog.filter((item) => player.favoriteIds.includes(item.id));
 
-  const openTrack = async (track: AudioItem) => {
-    await player.playTrack(track);
+  const openTrack = async (track: AudioItem, sourceQueue?: AudioItem[]) => {
+    await player.playTrack(track, sourceQueue);
     setScreen('player');
   };
 
@@ -233,7 +233,7 @@ export default function SleepApp() {
                   key={item.id}
                   item={item}
                   isFavorite={player.isFavorite(item.id)}
-                  onPress={() => openTrack(item)}
+                  onPress={() => openTrack(item, moduleItems)}
                   onFavorite={() => player.toggleFavorite(item.id)}
                 />
               ))}
@@ -265,6 +265,12 @@ export default function SleepApp() {
                 }}
                 onTimer={player.setSleepTimer}
                 onCustomTimer={setCustomSleepTimer}
+                playbackMode={player.playbackMode}
+                queuePosition={player.currentIndex + 1}
+                queueLength={player.queue.length}
+                onPlaybackMode={player.setPlaybackMode}
+                onNext={player.playNext}
+                onPrevious={player.playPrevious}
               />
             </View>
           ) : null}
@@ -285,7 +291,7 @@ export default function SleepApp() {
                     key={item.id}
                     item={item}
                     isFavorite={player.isFavorite(item.id)}
-                    onPress={() => openTrack(item)}
+                    onPress={() => openTrack(item, favoriteTracks)}
                     onFavorite={() => player.toggleFavorite(item.id)}
                   />
                 ))
@@ -484,7 +490,7 @@ export default function SleepApp() {
 type QuickSectionsProps = {
   recentTracks: AudioItem[];
   favoriteTracks: AudioItem[];
-  onOpenTrack: (track: AudioItem) => void;
+  onOpenTrack: (track: AudioItem, sourceQueue?: AudioItem[]) => void;
   onFavorite: (trackId: string) => void;
   isFavorite: (trackId: string) => boolean;
   onOpenFavorites: () => void;
@@ -508,7 +514,7 @@ const QuickSections = ({
           key={item.id}
           item={item}
           isFavorite={isFavorite(item.id)}
-          onPress={() => onOpenTrack(item)}
+          onPress={() => onOpenTrack(item, recentTracks)}
           onFavorite={() => onFavorite(item.id)}
         />
       ))
@@ -527,7 +533,7 @@ const QuickSections = ({
           key={item.id}
           item={item}
           isFavorite={isFavorite(item.id)}
-          onPress={() => onOpenTrack(item)}
+          onPress={() => onOpenTrack(item, favoriteTracks)}
           onFavorite={() => onFavorite(item.id)}
         />
       ))
@@ -537,11 +543,14 @@ const QuickSections = ({
 
 type PlayerPanelProps = {
   currentTrack: AudioItem | null;
+  playbackMode: PlaybackMode;
   playbackState: string;
   playbackError: string | null;
   positionMillis: number;
   durationMillis: number;
   progress: number;
+  queuePosition: number;
+  queueLength: number;
   activeTimerMinutes: number | null;
   remainingSeconds: number;
   timerOptions: number[];
@@ -552,17 +561,30 @@ type PlayerPanelProps = {
   onSeek: (millis: number) => void;
   onStop: () => void;
   onFavorite: () => void;
+  onPlaybackMode: (mode: PlaybackMode) => void;
+  onNext: () => void;
+  onPrevious: () => void;
   onTimer: (minutes: number | null) => void;
   onCustomTimer: () => void;
 };
 
+const playbackModeOptions: { mode: PlaybackMode; label: string }[] = [
+  { mode: 'repeat-one', label: '单曲循环' },
+  { mode: 'sequential', label: '顺序播放' },
+  { mode: 'repeat-all', label: '列表循环' },
+  { mode: 'shuffle', label: '随机播放' },
+];
+
 const PlayerPanel = ({
   currentTrack,
+  playbackMode,
   playbackState,
   playbackError,
   positionMillis,
   durationMillis,
   progress,
+  queuePosition,
+  queueLength,
   activeTimerMinutes,
   remainingSeconds,
   timerOptions,
@@ -573,6 +595,9 @@ const PlayerPanel = ({
   onSeek,
   onStop,
   onFavorite,
+  onPlaybackMode,
+  onNext,
+  onPrevious,
   onTimer,
   onCustomTimer,
 }: PlayerPanelProps) => {
@@ -586,7 +611,9 @@ const PlayerPanel = ({
         <Text style={styles.playerCoverText}>{currentTrack.type === 'noise' ? '∞' : '♪'}</Text>
       </View>
       <Text style={styles.playerTitle}>{currentTrack.title}</Text>
-      <Text style={styles.playerMeta}>{currentTrack.category}</Text>
+      <Text style={styles.playerMeta}>
+        {currentTrack.category} · {queueLength > 0 ? `${queuePosition} / ${queueLength}` : '1 / 1'}
+      </Text>
       <Text style={styles.playerDescription}>{currentTrack.description}</Text>
       <Text style={styles.playerSource}>
         来源：{currentTrack.source.name} · {currentTrack.source.license}
@@ -601,11 +628,31 @@ const PlayerPanel = ({
       />
       <CaptionDisplay currentTrack={currentTrack} positionMillis={positionMillis} />
 
+      <View style={styles.playbackModeBlock}>
+        <Text style={styles.sectionTitle}>播放模式</Text>
+        <View style={styles.pillWrap}>
+          {playbackModeOptions.map((option) => (
+            <PillButton
+              key={option.mode}
+              label={option.label}
+              active={playbackMode === option.mode}
+              onPress={() => onPlaybackMode(option.mode)}
+            />
+          ))}
+        </View>
+      </View>
+
       <View style={styles.playerControls}>
+        <Pressable style={styles.subtleButton} onPress={onPrevious}>
+          <Text style={styles.subtleButtonText}>上一首</Text>
+        </Pressable>
         <Pressable style={styles.primaryButton} onPress={onTogglePlayback}>
           <Text style={styles.primaryButtonText}>
             {playbackState === 'playing' ? '暂停' : playbackState === 'loading' ? '加载中' : '播放'}
           </Text>
+        </Pressable>
+        <Pressable style={styles.subtleButton} onPress={onNext}>
+          <Text style={styles.subtleButtonText}>下一首</Text>
         </Pressable>
         <Pressable style={styles.subtleButton} onPress={onStop}>
           <Text style={styles.subtleButtonText}>停止</Text>
@@ -1010,6 +1057,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  playbackModeBlock: {
+    alignSelf: 'stretch',
     gap: spacing.sm,
   },
   primaryButton: {

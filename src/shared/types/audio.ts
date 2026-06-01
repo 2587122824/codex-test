@@ -1,5 +1,7 @@
 export type AudioType = 'music' | 'story' | 'noise';
 
+export type PlaybackMode = 'repeat-one' | 'sequential' | 'repeat-all' | 'shuffle';
+
 export type CaptionCue = {
   start: number;
   end: number;
