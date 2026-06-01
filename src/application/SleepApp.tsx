@@ -575,6 +575,9 @@ const playbackModeOptions: { mode: PlaybackMode; label: string }[] = [
   { mode: 'shuffle', label: '随机播放' },
 ];
 
+const getPlaybackModeLabel = (mode: PlaybackMode) =>
+  playbackModeOptions.find((option) => option.mode === mode)?.label ?? '列表循环';
+
 const PlayerPanel = ({
   currentTrack,
   playbackMode,
@@ -607,18 +610,18 @@ const PlayerPanel = ({
 
   return (
     <View style={styles.playerPanel}>
-      <View style={[styles.playerCover, { backgroundColor: currentTrack.cover }]}>
-        <Text style={styles.playerCoverText}>{currentTrack.type === 'noise' ? '∞' : '♪'}</Text>
+      <View style={styles.playerHeader}>
+        <View style={[styles.playerCover, { backgroundColor: currentTrack.cover }]}>
+          <Text style={styles.playerCoverText}>{currentTrack.type === 'noise' ? '∞' : '♪'}</Text>
+        </View>
+        <View style={styles.playerHeading}>
+          <Text style={styles.playerTitle}>{currentTrack.title}</Text>
+          <Text style={styles.playerMeta}>
+            {currentTrack.category} · {queueLength > 0 ? `${queuePosition} / ${queueLength}` : '1 / 1'} ·{' '}
+            {getPlaybackModeLabel(playbackMode)}
+          </Text>
+        </View>
       </View>
-      <Text style={styles.playerTitle}>{currentTrack.title}</Text>
-      <Text style={styles.playerMeta}>
-        {currentTrack.category} · {queueLength > 0 ? `${queuePosition} / ${queueLength}` : '1 / 1'}
-      </Text>
-      <Text style={styles.playerDescription}>{currentTrack.description}</Text>
-      <Text style={styles.playerSource}>
-        来源：{currentTrack.source.name} · {currentTrack.source.license}
-      </Text>
-      {playbackError ? <Text style={styles.errorText}>{playbackError}</Text> : null}
 
       <ProgressBar
         positionMillis={positionMillis}
@@ -627,20 +630,7 @@ const PlayerPanel = ({
         onSeek={onSeek}
       />
       <CaptionDisplay currentTrack={currentTrack} positionMillis={positionMillis} />
-
-      <View style={styles.playbackModeBlock}>
-        <Text style={styles.sectionTitle}>播放模式</Text>
-        <View style={styles.pillWrap}>
-          {playbackModeOptions.map((option) => (
-            <PillButton
-              key={option.mode}
-              label={option.label}
-              active={playbackMode === option.mode}
-              onPress={() => onPlaybackMode(option.mode)}
-            />
-          ))}
-        </View>
-      </View>
+      {playbackError ? <Text style={styles.errorText}>{playbackError}</Text> : null}
 
       <View style={styles.playerControls}>
         <Pressable style={styles.subtleButton} onPress={onPrevious}>
@@ -654,6 +644,9 @@ const PlayerPanel = ({
         <Pressable style={styles.subtleButton} onPress={onNext}>
           <Text style={styles.subtleButtonText}>下一首</Text>
         </Pressable>
+      </View>
+
+      <View style={styles.secondaryActions}>
         <Pressable style={styles.subtleButton} onPress={onStop}>
           <Text style={styles.subtleButtonText}>停止</Text>
         </Pressable>
@@ -663,12 +656,14 @@ const PlayerPanel = ({
       </View>
 
       <View style={styles.timerBlock}>
-        <Text style={styles.sectionTitle}>定时关闭</Text>
-        <Text style={styles.sectionMeta}>
-          {activeTimerMinutes
-            ? `约 ${activeTimerMinutes} 分钟后关闭，剩余 ${Math.ceil(remainingSeconds / 60)} 分钟`
-            : '未开启'}
-        </Text>
+        <View style={styles.playerSectionHeader}>
+          <Text style={styles.sectionTitle}>定时关闭</Text>
+          <Text style={styles.modeSummary}>
+            {activeTimerMinutes
+              ? `约 ${activeTimerMinutes} 分钟后关闭`
+              : '未开启'}
+          </Text>
+        </View>
         <View style={styles.pillWrap}>
           {timerOptions.map((minutes) => (
             <PillButton
@@ -679,6 +674,33 @@ const PlayerPanel = ({
             />
           ))}
           <PillButton label="关闭" active={!activeTimerMinutes} onPress={() => onTimer(null)} />
+        </View>
+        {activeTimerMinutes ? (
+          <Text style={styles.sectionMeta}>剩余 {Math.ceil(remainingSeconds / 60)} 分钟</Text>
+        ) : null}
+      </View>
+
+      <View style={styles.playbackModeBlock}>
+        <View style={styles.playerSectionHeader}>
+          <Text style={styles.sectionTitle}>播放模式</Text>
+          <Text style={styles.modeSummary}>{getPlaybackModeLabel(playbackMode)}</Text>
+        </View>
+        <View style={styles.pillWrap}>
+          {playbackModeOptions.map((option) => (
+            <PillButton
+              key={option.mode}
+              label={option.label}
+              active={playbackMode === option.mode}
+              onPress={() => onPlaybackMode(option.mode)}
+            />
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.customTimerBlock}>
+        <View style={styles.playerSectionHeader}>
+          <Text style={styles.sectionTitle}>自定义定时</Text>
+          <Text style={styles.modeSummary}>1-480 分钟</Text>
         </View>
         <View style={styles.customTimerRow}>
           <TextInput
@@ -693,11 +715,22 @@ const PlayerPanel = ({
           </Pressable>
         </View>
       </View>
+
+      <View style={styles.detailsBlock}>
+        <Text style={styles.playerDescription}>{currentTrack.description}</Text>
+        <Text style={styles.playerSource}>
+          来源：{currentTrack.source.name} · {currentTrack.source.license}
+        </Text>
+      </View>
     </View>
   );
 };
 
 const formatPlaybackTime = (millis: number) => {
+  if (!Number.isFinite(millis)) {
+    return '0:00';
+  }
+
   const totalSeconds = Math.max(0, Math.floor(millis / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -714,7 +747,8 @@ type ProgressBarProps = {
 
 const ProgressBar = ({ positionMillis, durationMillis, progress, onSeek }: ProgressBarProps) => {
   const [barWidth, setBarWidth] = useState(1);
-  const safeProgress = Math.max(0, Math.min(progress, 1));
+  const canSeek = Number.isFinite(durationMillis) && durationMillis > 0;
+  const safeProgress = Number.isFinite(progress) ? Math.max(0, Math.min(progress, 1)) : 0;
 
   return (
     <View style={styles.progressBlock}>
@@ -723,6 +757,10 @@ const ProgressBar = ({ positionMillis, durationMillis, progress, onSeek }: Progr
         accessibilityLabel="播放进度"
         onLayout={(event) => setBarWidth(Math.max(1, event.nativeEvent.layout.width))}
         onPress={(event) => {
+          if (!canSeek) {
+            return;
+          }
+
           const nextProgress = event.nativeEvent.locationX / barWidth;
           onSeek(Math.max(0, Math.min(nextProgress, 1)) * durationMillis);
         }}
@@ -761,9 +799,7 @@ const CaptionDisplay = ({
         : 0;
   const fadeOpacity = useRef(new Animated.Value(1)).current;
   const [displayIndex, setDisplayIndex] = useState(targetIndex);
-  const previous = captions[displayIndex - 1];
   const current = captions[displayIndex];
-  const next = captions[displayIndex + 1];
 
   useEffect(() => {
     setDisplayIndex(targetIndex);
@@ -808,13 +844,7 @@ const CaptionDisplay = ({
   return (
     <View style={styles.captionBox}>
       <Animated.View style={[styles.captionFadeGroup, { opacity: fadeOpacity }]}>
-        <Text style={[styles.captionSide, !previous && styles.captionHidden]}>
-          {previous?.text ?? current.text}
-        </Text>
         <Text style={styles.captionCurrent}>{current.text}</Text>
-        <Text style={[styles.captionSide, !next && styles.captionHidden]}>
-          {next?.text ?? current.text}
-        </Text>
       </Animated.View>
     </View>
   );
@@ -937,44 +967,50 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: colors.line,
     borderWidth: 1,
-    padding: spacing.lg,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  playerHeader: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
   playerCover: {
-    width: 120,
-    height: 120,
+    width: 62,
+    height: 62,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   playerCoverText: {
     color: '#FFFFFF',
-    fontSize: 48,
+    fontSize: 28,
     fontWeight: '900',
+  },
+  playerHeading: {
+    flex: 1,
+    gap: spacing.xs,
   },
   playerTitle: {
     color: colors.ink,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
-    textAlign: 'center',
   },
   playerMeta: {
     color: colors.muted,
-    fontSize: 14,
-    textAlign: 'center',
+    fontSize: 13,
+    lineHeight: 18,
   },
   playerDescription: {
     color: colors.ink,
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: 'center',
+    fontSize: 13,
+    lineHeight: 20,
   },
   playerSource: {
     color: colors.muted,
     fontSize: 12,
     lineHeight: 18,
-    textAlign: 'center',
   },
   errorText: {
     color: colors.coral,
@@ -985,10 +1021,10 @@ const styles = StyleSheet.create({
   },
   progressBlock: {
     alignSelf: 'stretch',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   progressTrack: {
-    height: 28,
+    height: 24,
     justifyContent: 'center',
   },
   progressRail: {
@@ -1023,18 +1059,19 @@ const styles = StyleSheet.create({
   },
   captionBox: {
     alignSelf: 'stretch',
-    minHeight: 112,
+    minHeight: 78,
     borderRadius: 8,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.line,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     justifyContent: 'center',
   },
   captionFadeGroup: {
-    minHeight: 82,
+    minHeight: 54,
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   captionSide: {
     color: colors.muted,
@@ -1048,8 +1085,8 @@ const styles = StyleSheet.create({
   },
   captionCurrent: {
     color: colors.ink,
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 17,
+    lineHeight: 24,
     fontWeight: '800',
     textAlign: 'center',
   },
@@ -1062,12 +1099,45 @@ const styles = StyleSheet.create({
   playbackModeBlock: {
     alignSelf: 'stretch',
     gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    paddingTop: spacing.md,
+  },
+  customTimerBlock: {
+    alignSelf: 'stretch',
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    paddingTop: spacing.md,
+  },
+  secondaryActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  playerSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  modeSummary: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  detailsBlock: {
+    alignSelf: 'stretch',
+    gap: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    paddingTop: spacing.md,
   },
   primaryButton: {
-    minHeight: 40,
-    borderRadius: 20,
+    minHeight: 44,
+    borderRadius: 22,
     backgroundColor: colors.night,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1076,8 +1146,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   subtleButton: {
-    minHeight: 40,
-    borderRadius: 20,
+    minHeight: 38,
+    borderRadius: 19,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.surface,
