@@ -1,9 +1,9 @@
 import type { AudioItem, AudioType, ModuleDefinition } from '../types/audio';
 
 const generatedSource = {
-  name: 'MVP local generated asset',
+  name: 'Internal beta placeholder',
   author: 'Codex Sleep project',
-  license: 'Project-owned placeholder',
+  license: 'Project-owned beta placeholder',
   url: 'docs/AUDIO_ASSET_SOURCES.md',
   attributionRequired: false,
 };
@@ -146,6 +146,30 @@ export const audioCatalog: AudioItem[] = [
     source: generatedSource,
   },
   {
+    id: 'music-moon-demo',
+    type: 'music',
+    title: '月光钢琴片段',
+    description: '内测占位钢琴片段，用于验证音乐列表、定时和播放模式体验，正式发布前需要替换为授权素材。',
+    duration: 24,
+    category: '轻音乐',
+    asset: require('../../../assets/audio/music/moon-piano.wav'),
+    cover: '#7A8FCA',
+    captions: softMusicCaptions,
+    source: generatedSource,
+  },
+  {
+    id: 'music-breathing-demo',
+    type: 'music',
+    title: '呼吸铺底片段',
+    description: '内测占位呼吸引导底音，用于小范围体验测试，正式发布前需要替换为授权素材。',
+    duration: 24,
+    category: '呼吸引导',
+    asset: require('../../../assets/audio/music/breathing-pad.wav'),
+    cover: '#5F9EA0',
+    captions: breathingCaptions,
+    source: generatedSource,
+  },
+  {
     id: 'story-stars-falling',
     type: 'story',
     title: '星星慢慢落下',
@@ -231,6 +255,30 @@ export const audioCatalog: AudioItem[] = [
     cover: '#5C8374',
     captions: windCaptions,
     source: campfireSource,
+  },
+  {
+    id: 'noise-rain-demo',
+    type: 'noise',
+    title: '雨声占位片段',
+    description: '内测占位雨声，用于验证白噪音持续播放和定时关闭体验，正式发布前需要替换为授权素材。',
+    duration: 28,
+    category: '雨声',
+    asset: require('../../../assets/audio/noise/rain-window.wav'),
+    cover: '#2F9E8F',
+    captions: rainCaptions,
+    source: generatedSource,
+  },
+  {
+    id: 'noise-ocean-demo',
+    type: 'noise',
+    title: '海浪占位片段',
+    description: '内测占位海浪声，用于验证列表循环和随机播放体验，正式发布前需要替换为授权素材。',
+    duration: 30,
+    category: '海浪',
+    asset: require('../../../assets/audio/noise/ocean-waves.wav'),
+    cover: '#3B82A0',
+    captions: oceanCaptions,
+    source: generatedSource,
   },
 ];
 

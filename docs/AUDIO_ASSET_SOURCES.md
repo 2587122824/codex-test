@@ -49,6 +49,16 @@ Before public launch, prepare at least:
 
 Each item should have a stable title, duration, captions or guidance text, and a complete source record.
 
+## Current Beta Catalog
+
+The current internal beta catalog contains:
+
+- 5 music items
+- 3 story items
+- 5 white-noise items
+
+Licensed production candidates are mixed with internal beta placeholders. Any item using `Internal beta placeholder` as its source is safe for small project testing only and should be replaced before public launch.
+
 ## First Licensed Batch
 
 The app currently includes the following licensed production candidates:

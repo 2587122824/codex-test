@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  Linking,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -30,6 +31,8 @@ type Screen = 'home' | 'module' | 'player' | 'favorites' | 'sleep-log' | 'credit
 const defaultSettings: UserSettings = {
   defaultSleepTimerMinutes: 30,
 };
+
+const betaFeedbackEmail = 'codex-sleep-feedback@example.com';
 
 const formatMinutes = (minutes: number) => {
   const hours = Math.floor(minutes / 60);
@@ -108,7 +111,16 @@ export default function SleepApp() {
 
   const openTrack = async (track: AudioItem, sourceQueue?: AudioItem[]) => {
     await player.playTrack(track, sourceQueue);
+    if (!player.timerEndsAt && settings.defaultSleepTimerMinutes > 0) {
+      player.setSleepTimer(settings.defaultSleepTimerMinutes);
+    }
     setScreen('player');
+  };
+
+  const openFeedback = () => {
+    Linking.openURL(
+      `mailto:${betaFeedbackEmail}?subject=${encodeURIComponent('Codex Sleep 内测反馈')}`,
+    );
   };
 
   const setCustomSleepTimer = () => {
@@ -412,6 +424,18 @@ export default function SleepApp() {
                 </Text>
               </View>
               <View style={styles.settingRow}>
+                <Text style={styles.settingTitle}>内测反馈</Text>
+                <Text style={styles.settingMeta}>
+                  遇到播放失败、定时不准或文案问题，可以把复现步骤发给我们。
+                </Text>
+                <View style={styles.playerControls}>
+                  <Pressable style={styles.subtleButton} onPress={openFeedback}>
+                    <Text style={styles.subtleButtonText}>发送反馈</Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.settingMeta}>{betaFeedbackEmail}</Text>
+              </View>
+              <View style={styles.settingRow}>
                 <Text style={styles.settingTitle}>上线合规</Text>
                 <Text style={styles.settingMeta}>查看音频版权和隐私说明，确保上架资料与 App 行为一致。</Text>
                 <View style={styles.playerControls}>
@@ -630,7 +654,14 @@ const PlayerPanel = ({
         onSeek={onSeek}
       />
       <CaptionDisplay currentTrack={currentTrack} positionMillis={positionMillis} />
-      {playbackError ? <Text style={styles.errorText}>{playbackError}</Text> : null}
+      {playbackError ? (
+        <View style={styles.errorBlock}>
+          <Text style={styles.errorText}>{playbackError}</Text>
+          <Pressable style={styles.subtleButton} onPress={onNext}>
+            <Text style={styles.subtleButtonText}>换一首</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <View style={styles.playerControls}>
         <Pressable style={styles.subtleButton} onPress={onPrevious}>
@@ -1018,6 +1049,11 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     textAlign: 'center',
     fontWeight: '700',
+  },
+  errorBlock: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   progressBlock: {
     alignSelf: 'stretch',

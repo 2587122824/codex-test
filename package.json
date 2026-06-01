@@ -22,7 +22,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "validate:audio": "node scripts/validate-audio-catalog.js",
+    "check": "npm run typecheck && npm run validate:audio"
   },
   "private": true
 }

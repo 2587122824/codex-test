@@ -132,7 +132,7 @@ export const useAudioPlayer = () => {
         await sound.playAsync();
         setPlaybackState('playing');
       } catch {
-        setPlaybackError('音频暂时无法播放，请稍后重试或切换其他内容。');
+        setPlaybackError('这段音频暂时没加载成功，可以换一首继续。');
         setPlaybackState('paused');
       }
     },

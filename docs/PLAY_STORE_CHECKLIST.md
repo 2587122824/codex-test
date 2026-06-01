@@ -31,6 +31,8 @@ Screenshots to prepare:
 
 ## Content And Privacy
 
+- Run `npm run check` before every beta or release candidate build.
+- Complete `docs/INTERNAL_BETA_CHECKLIST.md` before inviting external testers.
 - Replace generated MVP audio with licensed production audio before public launch.
 - Verify each audio item has author, license, source URL, and attribution flag.
 - Publish `docs/PRIVACY_POLICY_DRAFT.md` as a real web page and replace the contact section.

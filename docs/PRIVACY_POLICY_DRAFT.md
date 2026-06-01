@@ -25,4 +25,6 @@ Codex Sleep provides relaxation audio and sleep journaling. It is not a medical 
 
 ## Contact
 
-Replace this section with the developer support email before publishing.
+For internal beta feedback, contact `codex-sleep-feedback@example.com`.
+
+Replace this address with the final developer support email before public launch.
