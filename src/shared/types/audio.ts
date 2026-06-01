@@ -9,6 +9,13 @@ export type AudioItem = {
   category: string;
   asset: number | string;
   cover: string;
+  source: {
+    name: string;
+    author: string;
+    license: string;
+    url: string;
+    attributionRequired: boolean;
+  };
 };
 
 export type ModuleDefinition = {

@@ -348,6 +348,9 @@ const PlayerPanel = ({
       <Text style={styles.playerTitle}>{currentTrack.title}</Text>
       <Text style={styles.playerMeta}>{currentTrack.category}</Text>
       <Text style={styles.playerDescription}>{currentTrack.description}</Text>
+      <Text style={styles.playerSource}>
+        来源：{currentTrack.source.name} · {currentTrack.source.license}
+      </Text>
 
       <View style={styles.playerControls}>
         <Pressable style={styles.primaryButton} onPress={onTogglePlayback}>
@@ -546,6 +549,12 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 14,
     lineHeight: 21,
+    textAlign: 'center',
+  },
+  playerSource: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 18,
     textAlign: 'center',
   },
   playerControls: {

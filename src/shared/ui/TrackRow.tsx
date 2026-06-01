@@ -32,6 +32,7 @@ export const TrackRow = ({ item, isFavorite, onPress, onFavorite }: Props) => (
         <Text style={styles.meta}>
           {item.category} · {formatDuration(item.duration)}
         </Text>
+        <Text style={styles.source}>{item.source.license}</Text>
         <Text style={styles.description}>{item.description}</Text>
       </View>
     </Pressable>
@@ -92,6 +93,11 @@ const styles = StyleSheet.create({
   meta: {
     color: colors.muted,
     fontSize: 12,
+  },
+  source: {
+    color: colors.coral,
+    fontSize: 11,
+    fontWeight: '700',
   },
   description: {
     color: colors.ink,
