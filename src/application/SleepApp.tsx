@@ -481,20 +481,38 @@ const CaptionDisplay = ({
   const previous = captions[fallbackIndex - 1];
   const current = captions[fallbackIndex];
   const next = captions[fallbackIndex + 1];
+  const cueProgress = current
+    ? Math.max(0, Math.min((currentSecond - current.start) / (current.end - current.start), 1))
+    : 0;
 
   if (!current) {
     return (
       <View style={styles.captionBox}>
-        <Text style={styles.captionCurrent}>慢慢呼吸，让声音陪你安静下来。</Text>
+        <View style={styles.captionCurrentCard}>
+          <Text style={styles.captionCurrent}>慢慢呼吸，让声音陪你安静下来。</Text>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.captionBox}>
-      <Text style={styles.captionSide}>{previous?.text ?? ' '}</Text>
-      <Text style={styles.captionCurrent}>{current.text}</Text>
-      <Text style={styles.captionSide}>{next?.text ?? ' '}</Text>
+      <View style={styles.captionLineSlot}>
+        <Text style={[styles.captionSide, !previous && styles.captionHidden]}>
+          {previous?.text ?? current.text}
+        </Text>
+      </View>
+      <View style={styles.captionCurrentCard}>
+        <Text style={styles.captionCurrent}>{current.text}</Text>
+        <View style={styles.captionCueRail}>
+          <View style={[styles.captionCueFill, { width: `${cueProgress * 100}%` }]} />
+        </View>
+      </View>
+      <View style={styles.captionLineSlot}>
+        <Text style={[styles.captionSide, !next && styles.captionHidden]}>
+          {next?.text ?? current.text}
+        </Text>
+      </View>
     </View>
   );
 };
@@ -695,20 +713,41 @@ const styles = StyleSheet.create({
   },
   captionBox: {
     alignSelf: 'stretch',
-    minHeight: 112,
+    minHeight: 148,
     borderRadius: 8,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.line,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
+    overflow: 'hidden',
+  },
+  captionLineSlot: {
+    minHeight: 24,
+    justifyContent: 'center',
   },
   captionSide: {
     color: colors.muted,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 18,
     textAlign: 'center',
+    opacity: 0.62,
+  },
+  captionHidden: {
+    opacity: 0,
+  },
+  captionCurrentCard: {
+    minHeight: 70,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
   captionCurrent: {
     color: colors.ink,
@@ -716,6 +755,17 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     fontWeight: '800',
     textAlign: 'center',
+  },
+  captionCueRail: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.line,
+    overflow: 'hidden',
+  },
+  captionCueFill: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.coral,
   },
   playerControls: {
     flexDirection: 'row',
