@@ -1,3 +1,4 @@
+import { Heart, Play } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AudioItem } from '../types/audio';
@@ -25,15 +26,16 @@ export const TrackRow = ({ item, isFavorite, onPress, onFavorite }: Props) => (
       style={({ pressed }) => [styles.trackButton, { opacity: pressed ? 0.82 : 1 }]}
     >
       <View style={[styles.cover, { backgroundColor: item.cover }]}>
-        <Text style={styles.coverText}>{item.type === 'noise' ? '∞' : '♪'}</Text>
+        <Play color={colors.white} fill={colors.white} size={20} />
       </View>
       <View style={styles.body}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.meta}>
           {item.category} · {formatDuration(item.duration)}
         </Text>
-        <Text style={styles.source}>{item.source.license}</Text>
-        <Text style={styles.description}>{item.description}</Text>
+        <Text style={styles.source} numberOfLines={1}>
+          {item.source.license}
+        </Text>
       </View>
     </Pressable>
     <Pressable
@@ -43,78 +45,64 @@ export const TrackRow = ({ item, isFavorite, onPress, onFavorite }: Props) => (
       hitSlop={12}
       style={styles.favoriteButton}
     >
-      <Text style={[styles.favorite, isFavorite && styles.favoriteActive]}>
-        {isFavorite ? '★' : '☆'}
-      </Text>
+      <Heart
+        color={isFavorite ? colors.coral : colors.muted}
+        fill={isFavorite ? colors.coral : 'transparent'}
+        size={20}
+      />
     </Pressable>
   </View>
 );
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 118,
+    minHeight: 86,
     backgroundColor: colors.surface,
     borderRadius: 8,
     borderColor: colors.line,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.sm,
     gap: spacing.md,
   },
   trackButton: {
     flex: 1,
-    minHeight: 84,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
   cover: {
-    width: 56,
-    height: 56,
+    width: 58,
+    height: 58,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  coverText: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '800',
-  },
   body: {
     flex: 1,
+    minWidth: 0,
     gap: spacing.xs,
   },
   title: {
     color: colors.ink,
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
   },
   meta: {
     color: colors.muted,
     fontSize: 12,
   },
   source: {
-    color: colors.coral,
+    color: colors.subtle,
     fontSize: 11,
     fontWeight: '700',
-  },
-  description: {
-    color: colors.ink,
-    fontSize: 13,
-    lineHeight: 18,
   },
   favoriteButton: {
     minWidth: 36,
     minHeight: 36,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  favorite: {
-    color: colors.muted,
-    fontSize: 24,
-  },
-  favoriteActive: {
-    color: colors.coral,
   },
 });

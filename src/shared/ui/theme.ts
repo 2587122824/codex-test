@@ -1,14 +1,18 @@
 export const colors = {
-  background: '#F7F5EF',
-  surface: '#FFFFFF',
-  ink: '#1E293B',
-  muted: '#64748B',
-  line: '#E5E1D8',
-  night: '#1F2A44',
-  coral: '#D56A55',
-  green: '#1F9D86',
-  blue: '#6D8BFF',
-  amber: '#B7791F',
+  background: '#11151D',
+  surface: '#1A202C',
+  surfaceElevated: '#222938',
+  surfaceSoft: '#151A24',
+  ink: '#F5F7FB',
+  muted: '#9AA7BC',
+  subtle: '#657188',
+  line: '#303746',
+  night: '#0B0F17',
+  coral: '#F27962',
+  green: '#34C6A2',
+  blue: '#7BA0FF',
+  amber: '#E6A84E',
+  white: '#FFFFFF',
 };
 
 export const spacing = {

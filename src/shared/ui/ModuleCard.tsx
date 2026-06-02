@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ModuleDefinition } from '../types/audio';
@@ -21,19 +22,19 @@ export const ModuleCard = ({ module, onPress }: Props) => (
     <View style={[styles.mark, { backgroundColor: module.accent }]} />
     <View style={styles.content}>
       <Text style={styles.title}>{module.title}</Text>
-      <Text style={styles.subtitle}>{module.subtitle}</Text>
-      <Text style={styles.description}>{module.description}</Text>
+      <Text style={styles.subtitle} numberOfLines={1}>
+        {module.subtitle}
+      </Text>
     </View>
-    <Text style={styles.arrow}>›</Text>
+    <ChevronRight color={colors.muted} size={20} />
   </Pressable>
 );
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 126,
+    minHeight: 92,
     backgroundColor: colors.surface,
     borderRadius: 8,
-    borderLeftWidth: 5,
     borderColor: colors.line,
     borderWidth: 1,
     flexDirection: 'row',
@@ -42,30 +43,22 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   mark: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 8,
   },
   content: {
     flex: 1,
+    minWidth: 0,
     gap: spacing.xs,
   },
   title: {
     color: colors.ink,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
   },
   subtitle: {
     color: colors.muted,
     fontSize: 13,
-  },
-  description: {
-    color: colors.ink,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  arrow: {
-    color: colors.muted,
-    fontSize: 34,
   },
 });

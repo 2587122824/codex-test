@@ -34,8 +34,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   active: {
-    backgroundColor: colors.night,
-    borderColor: colors.night,
+    backgroundColor: colors.coral,
+    borderColor: colors.coral,
   },
   label: {
     color: colors.ink,

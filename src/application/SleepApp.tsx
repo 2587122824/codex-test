@@ -1,4 +1,22 @@
 import { StatusBar } from 'expo-status-bar';
+import {
+  ChevronLeft,
+  Clock3,
+  Heart,
+  Home,
+  ListMusic,
+  Moon,
+  Pause,
+  Play,
+  RotateCcw,
+  Settings,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Square,
+  Timer,
+} from 'lucide-react-native';
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -180,7 +198,7 @@ export default function SleepApp() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <View style={styles.app}>
         <View style={styles.header}>
           <View>
@@ -189,12 +207,18 @@ export default function SleepApp() {
           </View>
           {screen !== 'home' ? (
             <Pressable style={styles.headerButton} onPress={() => setScreen('home')}>
-              <Text style={styles.headerButtonText}>首页</Text>
+              <Home color={colors.ink} size={18} />
             </Pressable>
           ) : null}
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            screen === 'player' && styles.playerScrollContent,
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
           {screen === 'home' ? (
             <View style={styles.stack}>
               <View style={styles.hero}>
@@ -496,16 +520,44 @@ export default function SleepApp() {
           ) : null}
         </ScrollView>
 
-        <View style={styles.tabBar}>
-          <TabButton label="助眠" active={screen === 'home' || screen === 'module'} onPress={() => setScreen('home')} />
-          <TabButton label="播放" active={screen === 'player'} onPress={() => setScreen('player')} />
-          <TabButton label="记录" active={screen === 'sleep-log'} onPress={() => setScreen('sleep-log')} />
-          <TabButton
-            label="设置"
-            active={screen === 'settings' || screen === 'credits' || screen === 'privacy'}
-            onPress={() => setScreen('settings')}
+        {player.currentTrack && screen !== 'player' ? (
+          <MiniPlayerBar
+            currentTrack={player.currentTrack}
+            playbackState={player.playbackState}
+            progress={player.progress}
+            onOpen={() => setScreen('player')}
+            onTogglePlayback={player.togglePlayback}
           />
-        </View>
+        ) : null}
+
+        {screen !== 'player' ? (
+          <View style={[styles.tabBar, player.currentTrack && styles.tabBarWithMini]}>
+            <TabButton
+              label="助眠"
+              icon={(color) => <Moon color={color} size={18} />}
+              active={screen === 'home' || screen === 'module'}
+              onPress={() => setScreen('home')}
+            />
+            <TabButton
+              label="播放"
+              icon={(color) => <Play color={color} fill={color} size={18} />}
+              active={false}
+              onPress={() => setScreen('player')}
+            />
+            <TabButton
+              label="记录"
+              icon={(color) => <Clock3 color={color} size={18} />}
+              active={screen === 'sleep-log'}
+              onPress={() => setScreen('sleep-log')}
+            />
+            <TabButton
+              label="设置"
+              icon={(color) => <Settings color={color} size={18} />}
+              active={screen === 'settings' || screen === 'credits' || screen === 'privacy'}
+              onPress={() => setScreen('settings')}
+            />
+          </View>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -602,6 +654,18 @@ const playbackModeOptions: { mode: PlaybackMode; label: string }[] = [
 const getPlaybackModeLabel = (mode: PlaybackMode) =>
   playbackModeOptions.find((option) => option.mode === mode)?.label ?? '列表循环';
 
+const getPlaybackModeIcon = (mode: PlaybackMode, color = colors.muted) => {
+  if (mode === 'shuffle') {
+    return <Shuffle color={color} size={16} />;
+  }
+
+  if (mode === 'sequential') {
+    return <ListMusic color={color} size={16} />;
+  }
+
+  return <RotateCcw color={color} size={16} />;
+};
+
 const PlayerPanel = ({
   currentTrack,
   playbackMode,
@@ -632,58 +696,79 @@ const PlayerPanel = ({
     return <EmptyState text="还没有正在播放的内容，请先从首页选择一首音乐、故事或白噪音。" />;
   }
 
+  const timerSummary = activeTimerMinutes
+    ? `剩余 ${Math.ceil(remainingSeconds / 60)} 分钟`
+    : '未开启';
+
   return (
     <View style={styles.playerPanel}>
-      <View style={styles.playerHeader}>
-        <View style={[styles.playerCover, { backgroundColor: currentTrack.cover }]}>
-          <Text style={styles.playerCoverText}>{currentTrack.type === 'noise' ? '∞' : '♪'}</Text>
+      <View style={styles.playerTopBar}>
+        <View style={styles.playerSourcePill}>
+          <Text style={styles.playerSourcePillText}>{currentTrack.category}</Text>
+        </View>
+        <Text style={styles.playerQueueText}>
+          {queueLength > 0 ? `${queuePosition} / ${queueLength}` : '1 / 1'}
+        </Text>
+      </View>
+
+      <View style={styles.playerHeroArea}>
+        <View style={[styles.playerDisc, { borderColor: currentTrack.cover }]}>
+          <View style={[styles.playerDiscInner, { backgroundColor: currentTrack.cover }]}>
+            <Play color={colors.white} fill={colors.white} size={34} />
+          </View>
         </View>
         <View style={styles.playerHeading}>
-          <Text style={styles.playerTitle}>{currentTrack.title}</Text>
-          <Text style={styles.playerMeta}>
-            {currentTrack.category} · {queueLength > 0 ? `${queuePosition} / ${queueLength}` : '1 / 1'} ·{' '}
-            {getPlaybackModeLabel(playbackMode)}
+          <Text style={styles.playerTitle} numberOfLines={2}>
+            {currentTrack.title}
+          </Text>
+          <Text style={styles.playerMeta} numberOfLines={1}>
+            {getPlaybackModeLabel(playbackMode)} · {timerSummary}
           </Text>
         </View>
       </View>
 
-      <ProgressBar
-        positionMillis={positionMillis}
-        durationMillis={durationMillis}
-        progress={progress}
-        onSeek={onSeek}
-      />
-      <CaptionDisplay currentTrack={currentTrack} positionMillis={positionMillis} />
-      {playbackError ? (
-        <View style={styles.errorBlock}>
-          <Text style={styles.errorText}>{playbackError}</Text>
-          <Pressable style={styles.subtleButton} onPress={onNext}>
-            <Text style={styles.subtleButtonText}>换一首</Text>
+      <View style={styles.playerPrimaryArea}>
+        <ProgressBar
+          positionMillis={positionMillis}
+          durationMillis={durationMillis}
+          progress={progress}
+          onSeek={onSeek}
+        />
+        <CaptionDisplay currentTrack={currentTrack} positionMillis={positionMillis} />
+        {playbackError ? (
+          <View style={styles.errorBlock}>
+            <Text style={styles.errorText}>{playbackError}</Text>
+            <Pressable style={styles.subtleButton} onPress={onNext}>
+              <Text style={styles.subtleButtonText}>换一首</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        <View style={styles.playerControls}>
+          <IconButton label="上一首" onPress={onPrevious} variant="ghost">
+            <SkipBack color={colors.ink} fill={colors.ink} size={24} />
+          </IconButton>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={playbackState === 'playing' ? '暂停' : '播放'}
+            style={({ pressed }) => [styles.playButton, { opacity: pressed ? 0.84 : 1 }]}
+            onPress={onTogglePlayback}
+          >
+            {playbackState === 'playing' ? (
+              <Pause color={colors.white} fill={colors.white} size={34} />
+            ) : (
+              <Play color={colors.white} fill={colors.white} size={34} />
+            )}
           </Pressable>
+          <IconButton label="下一首" onPress={onNext} variant="ghost">
+            <SkipForward color={colors.ink} fill={colors.ink} size={24} />
+          </IconButton>
         </View>
-      ) : null}
-
-      <View style={styles.playerControls}>
-        <Pressable style={styles.subtleButton} onPress={onPrevious}>
-          <Text style={styles.subtleButtonText}>上一首</Text>
-        </Pressable>
-        <Pressable style={styles.primaryButton} onPress={onTogglePlayback}>
-          <Text style={styles.primaryButtonText}>
-            {playbackState === 'playing' ? '暂停' : playbackState === 'loading' ? '加载中' : '播放'}
+        <View style={styles.timerSummaryRow}>
+          <Timer color={colors.green} size={16} />
+          <Text style={styles.timerSummaryText}>
+            {activeTimerMinutes ? `定时关闭 · ${timerSummary}` : '定时关闭未开启'}
           </Text>
-        </Pressable>
-        <Pressable style={styles.subtleButton} onPress={onNext}>
-          <Text style={styles.subtleButtonText}>下一首</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.secondaryActions}>
-        <Pressable style={styles.subtleButton} onPress={onStop}>
-          <Text style={styles.subtleButtonText}>停止</Text>
-        </Pressable>
-        <Pressable style={styles.subtleButton} onPress={onFavorite}>
-          <Text style={styles.subtleButtonText}>{isFavorite ? '已收藏' : '收藏'}</Text>
-        </Pressable>
+        </View>
       </View>
 
       <View style={styles.timerBlock}>
@@ -714,16 +799,34 @@ const PlayerPanel = ({
       <View style={styles.playbackModeBlock}>
         <View style={styles.playerSectionHeader}>
           <Text style={styles.sectionTitle}>播放模式</Text>
-          <Text style={styles.modeSummary}>{getPlaybackModeLabel(playbackMode)}</Text>
+          <View style={styles.modeSummaryPill}>
+            {getPlaybackModeIcon(playbackMode, colors.green)}
+            <Text style={styles.modeSummary}>{getPlaybackModeLabel(playbackMode)}</Text>
+          </View>
         </View>
-        <View style={styles.pillWrap}>
+        <View style={styles.modeGrid}>
           {playbackModeOptions.map((option) => (
-            <PillButton
+            <Pressable
               key={option.mode}
-              label={option.label}
-              active={playbackMode === option.mode}
+              style={[
+                styles.modeButton,
+                playbackMode === option.mode && styles.modeButtonActive,
+              ]}
               onPress={() => onPlaybackMode(option.mode)}
-            />
+            >
+              {getPlaybackModeIcon(
+                option.mode,
+                playbackMode === option.mode ? colors.white : colors.muted,
+              )}
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  playbackMode === option.mode && styles.modeButtonTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -745,6 +848,19 @@ const PlayerPanel = ({
             <Text style={styles.subtleButtonText}>设置</Text>
           </Pressable>
         </View>
+      </View>
+
+      <View style={styles.secondaryActions}>
+        <IconButton label={isFavorite ? '已收藏' : '收藏'} onPress={onFavorite}>
+          <Heart
+            color={isFavorite ? colors.coral : colors.muted}
+            fill={isFavorite ? colors.coral : 'transparent'}
+            size={18}
+          />
+        </IconButton>
+        <IconButton label="停止" onPress={onStop}>
+          <Square color={colors.muted} fill={colors.muted} size={15} />
+        </IconButton>
       </View>
 
       <View style={styles.detailsBlock}>
@@ -887,11 +1003,104 @@ const EmptyState = ({ text }: { text: string }) => (
   </View>
 );
 
-const TabButton = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
-  <Pressable style={[styles.tabButton, active && styles.tabButtonActive]} onPress={onPress}>
-    <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>{label}</Text>
+const IconButton = ({
+  label,
+  children,
+  onPress,
+  variant = 'subtle',
+}: {
+  label: string;
+  children: ReactNode;
+  onPress: () => void;
+  variant?: 'subtle' | 'ghost';
+}) => (
+  <Pressable
+    accessibilityRole="button"
+    accessibilityLabel={label}
+    onPress={onPress}
+    style={({ pressed }) => [
+      styles.iconButton,
+      variant === 'ghost' && styles.iconButtonGhost,
+      { opacity: pressed ? 0.78 : 1 },
+    ]}
+  >
+    {children}
   </Pressable>
 );
+
+const MiniPlayerBar = ({
+  currentTrack,
+  playbackState,
+  progress,
+  onOpen,
+  onTogglePlayback,
+}: {
+  currentTrack: AudioItem;
+  playbackState: string;
+  progress: number;
+  onOpen: () => void;
+  onTogglePlayback: () => void;
+}) => {
+  const safeProgress = Number.isFinite(progress) ? Math.max(0, Math.min(progress, 1)) : 0;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`打开播放器：${currentTrack.title}`}
+      onPress={onOpen}
+      style={({ pressed }) => [styles.miniPlayer, { opacity: pressed ? 0.88 : 1 }]}
+    >
+      <View style={[styles.miniCover, { backgroundColor: currentTrack.cover }]}>
+        <Play color={colors.white} fill={colors.white} size={14} />
+      </View>
+      <View style={styles.miniBody}>
+        <Text style={styles.miniTitle} numberOfLines={1}>
+          {currentTrack.title}
+        </Text>
+        <View style={styles.miniProgressRail}>
+          <View style={[styles.miniProgressFill, { width: `${safeProgress * 100}%` }]} />
+        </View>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={playbackState === 'playing' ? '暂停' : '播放'}
+        onPress={(event) => {
+          event.stopPropagation();
+          onTogglePlayback();
+        }}
+        hitSlop={10}
+        style={styles.miniPlayButton}
+      >
+        {playbackState === 'playing' ? (
+          <Pause color={colors.ink} fill={colors.ink} size={18} />
+        ) : (
+          <Play color={colors.ink} fill={colors.ink} size={18} />
+        )}
+      </Pressable>
+    </Pressable>
+  );
+};
+
+const TabButton = ({
+  label,
+  icon,
+  active,
+  onPress,
+}: {
+  label: string;
+  icon: (color: string) => ReactNode;
+  active: boolean;
+  onPress: () => void;
+}) => {
+  const color = active ? colors.white : colors.muted;
+
+  return (
+    <Pressable style={[styles.tabButton, active && styles.tabButtonActive]} onPress={onPress}>
+      <View style={styles.tabIcon}>{icon(color)}</View>
+      <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>{label}</Text>
+    </Pressable>
+  );
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -901,6 +1110,7 @@ const styles = StyleSheet.create({
   app: {
     flex: 1,
     backgroundColor: colors.background,
+    overflow: 'hidden',
   },
   header: {
     paddingHorizontal: spacing.lg,
@@ -909,9 +1119,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: '100%',
   },
   eyebrow: {
-    color: colors.coral,
+    color: colors.green,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0,
@@ -919,13 +1130,13 @@ const styles = StyleSheet.create({
   appTitle: {
     color: colors.ink,
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   headerButton: {
-    minHeight: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -937,7 +1148,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
-    paddingBottom: 112,
+    paddingBottom: 138,
+    width: '100%',
+  },
+  playerScrollContent: {
+    paddingBottom: spacing.lg,
   },
   stack: {
     gap: spacing.md,
@@ -945,20 +1160,23 @@ const styles = StyleSheet.create({
   hero: {
     backgroundColor: colors.night,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
     padding: spacing.lg,
-    minHeight: 152,
+    minHeight: 148,
     justifyContent: 'center',
   },
   heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 30,
-    fontWeight: '800',
+    color: colors.white,
+    fontSize: 28,
+    fontWeight: '900',
   },
   heroCopy: {
-    color: '#DDE4F3',
-    fontSize: 15,
-    lineHeight: 23,
+    color: colors.muted,
+    fontSize: 14,
+    lineHeight: 22,
     marginTop: spacing.sm,
+    flexShrink: 1,
   },
   moduleHeader: {
     backgroundColor: colors.surface,
@@ -969,7 +1187,7 @@ const styles = StyleSheet.create({
   moduleTitle: {
     color: colors.ink,
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   moduleCopy: {
     color: colors.muted,
@@ -982,11 +1200,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
+    minWidth: 0,
   },
   sectionTitle: {
     color: colors.ink,
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '900',
   },
   sectionMeta: {
     color: colors.muted,
@@ -994,44 +1213,79 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   playerPanel: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.night,
     borderRadius: 8,
     borderColor: colors.line,
     borderWidth: 1,
     padding: spacing.md,
-    gap: spacing.sm,
-  },
-  playerHeader: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.md,
   },
-  playerCover: {
-    width: 62,
-    height: 62,
+  playerTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  playerSourcePill: {
+    minHeight: 30,
     borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
+    paddingHorizontal: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  playerCoverText: {
-    color: '#FFFFFF',
-    fontSize: 28,
+  playerSourcePillText: {
+    color: colors.green,
+    fontSize: 12,
     fontWeight: '900',
   },
+  playerQueueText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  playerHeroArea: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  playerDisc: {
+    width: 202,
+    height: 202,
+    borderRadius: 101,
+    borderWidth: 2,
+    backgroundColor: colors.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerDiscInner: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   playerHeading: {
-    flex: 1,
+    alignItems: 'center',
     gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    minWidth: 0,
   },
   playerTitle: {
     color: colors.ink,
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 25,
+    lineHeight: 31,
+    fontWeight: '900',
+    textAlign: 'center',
   },
   playerMeta: {
     color: colors.muted,
     fontSize: 13,
     lineHeight: 18,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  playerPrimaryArea: {
+    gap: spacing.md,
   },
   playerDescription: {
     color: colors.ink,
@@ -1048,7 +1302,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     textAlign: 'center',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   errorBlock: {
     alignSelf: 'stretch',
@@ -1064,25 +1318,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   progressRail: {
-    height: 7,
-    borderRadius: 4,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: colors.line,
     overflow: 'hidden',
   },
   progressFill: {
-    height: 7,
-    borderRadius: 4,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: colors.coral,
   },
   progressThumb: {
     position: 'absolute',
-    width: 18,
-    height: 18,
-    marginLeft: -9,
-    borderRadius: 9,
-    backgroundColor: colors.night,
+    width: 16,
+    height: 16,
+    marginLeft: -8,
+    borderRadius: 8,
+    backgroundColor: colors.white,
     borderWidth: 3,
-    borderColor: colors.surface,
+    borderColor: colors.coral,
   },
   progressTimes: {
     flexDirection: 'row',
@@ -1091,13 +1345,13 @@ const styles = StyleSheet.create({
   progressTime: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   captionBox: {
     alignSelf: 'stretch',
-    minHeight: 78,
+    minHeight: 62,
     borderRadius: 8,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
     borderColor: colors.line,
     paddingHorizontal: spacing.md,
@@ -1105,7 +1359,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   captionFadeGroup: {
-    minHeight: 54,
+    minHeight: 40,
     justifyContent: 'center',
     gap: spacing.xs,
   },
@@ -1121,16 +1375,41 @@ const styles = StyleSheet.create({
   },
   captionCurrent: {
     color: colors.ink,
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 23,
     fontWeight: '800',
     textAlign: 'center',
   },
   playerControls: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  playButton: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: colors.coral,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timerSummaryRow: {
+    minHeight: 38,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  timerSummaryText: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '800',
   },
   playbackModeBlock: {
     alignSelf: 'stretch',
@@ -1157,10 +1436,45 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
+  modeSummaryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   modeSummary: {
     color: colors.muted,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  modeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  modeButton: {
+    flexGrow: 1,
+    flexBasis: '47%',
+    minHeight: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceSoft,
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  modeButtonActive: {
+    backgroundColor: colors.green,
+    borderColor: colors.green,
+  },
+  modeButtonText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  modeButtonTextActive: {
+    color: colors.white,
   },
   detailsBlock: {
     alignSelf: 'stretch',
@@ -1171,29 +1485,44 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     minHeight: 44,
-    borderRadius: 22,
-    backgroundColor: colors.night,
+    borderRadius: 8,
+    backgroundColor: colors.coral,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
+    color: colors.white,
+    fontWeight: '900',
   },
   subtleButton: {
     minHeight: 38,
-    borderRadius: 19,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.line,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceElevated,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   subtleButtonText: {
     color: colors.ink,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  iconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconButtonGhost: {
+    width: 54,
+    height: 54,
+    backgroundColor: colors.surfaceSoft,
   },
   timerBlock: {
     alignSelf: 'stretch',
@@ -1219,7 +1548,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     paddingHorizontal: spacing.md,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceSoft,
+    color: colors.ink,
   },
   empty: {
     minHeight: 76,
@@ -1265,7 +1595,7 @@ const styles = StyleSheet.create({
   logTitle: {
     color: colors.ink,
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   logMeta: {
     color: colors.muted,
@@ -1293,7 +1623,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     paddingHorizontal: spacing.md,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceSoft,
     color: colors.ink,
   },
   noteInput: {
@@ -1307,11 +1637,63 @@ const styles = StyleSheet.create({
   settingTitle: {
     color: colors.ink,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   settingMeta: {
     color: colors.muted,
     fontSize: 13,
+    lineHeight: 20,
+  },
+  miniPlayer: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: 78,
+    minHeight: 58,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  miniCover: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.xs,
+  },
+  miniTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  miniProgressRail: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.line,
+    overflow: 'hidden',
+  },
+  miniProgressFill: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.coral,
+  },
+  miniPlayButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: colors.coral,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabBar: {
     position: 'absolute',
@@ -1325,22 +1707,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: spacing.xs,
     gap: spacing.xs,
+    overflow: 'hidden',
+  },
+  tabBarWithMini: {
+    bottom: spacing.md,
   },
   tabButton: {
     flex: 1,
-    minHeight: 44,
-    borderRadius: 6,
+    minWidth: 0,
+    minHeight: 48,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  tabButtonActive: {
+    backgroundColor: colors.coral,
+  },
+  tabIcon: {
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabButtonActive: {
-    backgroundColor: colors.night,
-  },
   tabButtonText: {
     color: colors.muted,
-    fontWeight: '800',
+    fontWeight: '900',
+    fontSize: 11,
+    textAlign: 'center',
   },
   tabButtonTextActive: {
-    color: '#FFFFFF',
+    color: colors.white,
   },
 });
