@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-01
 
-Codex Sleep is a local-first sleep companion app. The current version does not require login, does not upload personal data, and does not include advertising, analytics, or tracking SDKs.
+Codex Sleep is a local-first sleep companion app. Guest mode does not require login and keeps user data on the device. If the user signs in, selected app data is synchronized to the cloud for backup and multi-device recovery. The app does not include advertising, analytics, or tracking SDKs.
 
 ## Data Stored On Device
 
@@ -13,11 +13,19 @@ The app stores the following data locally on the user's device:
 - Sleep timer and app settings
 - Sleep log entries, including sleep time, wake time, rating, and optional notes
 
-This data is used only to provide app functionality and remains on the user's device.
+This data is used only to provide app functionality. In guest mode it remains on the user's device.
 
 ## Data Collection
 
-The current version does not collect or transmit personal data to a server.
+When account sync is enabled and the user signs in, the app may upload:
+
+- Account identifiers such as phone number or social login user ID
+- Favorites
+- Recently played audio IDs
+- Sleep timer and app settings
+- Sleep log entries, including sleep time, wake time, rating, and optional notes
+
+Audio files are not uploaded by account sync. Users should be offered account deletion and cloud data deletion controls before public launch.
 
 ## Health Disclaimer
 

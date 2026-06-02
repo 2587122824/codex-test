@@ -2,22 +2,27 @@ import { StatusBar } from 'expo-status-bar';
 import {
   ChevronLeft,
   Clock3,
+  Cloud,
   Heart,
   Home,
   ListMusic,
+  LogOut,
   Moon,
   Pause,
   Play,
+  RefreshCw,
   RotateCcw,
   Settings,
   Shuffle,
   SkipBack,
   SkipForward,
+  Smartphone,
   Square,
   Timer,
+  UserCircle,
 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -32,6 +37,8 @@ import {
 } from 'react-native';
 
 import { useAudioPlayer } from '../features/player/useAudioPlayer';
+import { useAccountSync, type AccountSyncController } from '../features/account/useAccountSync';
+import type { RemoteSyncData } from '../features/account/syncService';
 import { useSleepLogs } from '../features/sleep-log/useSleepLogs';
 import { appConfig } from '../shared/config/env';
 import { audioCatalog, getItemsByType, getModule, modules } from '../shared/content/audioCatalog';
@@ -44,7 +51,7 @@ import { PillButton } from '../shared/ui/PillButton';
 import { TrackRow } from '../shared/ui/TrackRow';
 import { colors, spacing } from '../shared/ui/theme';
 
-type Screen = 'home' | 'module' | 'player' | 'favorites' | 'sleep-log' | 'credits' | 'privacy' | 'settings';
+type Screen = 'home' | 'module' | 'player' | 'favorites' | 'sleep-log' | 'credits' | 'privacy' | 'settings' | 'account';
 
 const defaultSettings: UserSettings = {
   defaultSleepTimerMinutes: 30,
@@ -84,12 +91,17 @@ const parseDateTimeInput = (value: string) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const createEntityId = () => {
+  const randomUUID = globalThis.crypto?.randomUUID;
+  return randomUUID ? randomUUID.call(globalThis.crypto) : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
 const createSleepLogDraft = () => {
   const wakeAt = new Date();
   const sleepAt = new Date(wakeAt.getTime() - 7.5 * 60 * 60 * 1000);
 
   return {
-    id: `${Date.now()}`,
+    id: createEntityId(),
     sleepAt: sleepAt.toISOString(),
     wakeAt: wakeAt.toISOString(),
     durationMinutes: 450,
@@ -126,6 +138,46 @@ export default function SleepApp() {
     .map((id) => audioCatalog.find((item) => item.id === id))
     .filter(Boolean) as AudioItem[];
   const favoriteTracks = audioCatalog.filter((item) => player.favoriteIds.includes(item.id));
+  const getSyncSnapshot = useCallback(
+    () => ({
+      favoriteIds: player.favoriteIds,
+      historyIds: player.historyIds,
+      sleepLogs: sleepLogs.logs,
+      settings,
+    }),
+    [player.favoriteIds, player.historyIds, settings, sleepLogs.logs],
+  );
+  const applyRemoteData = useCallback(
+    (data: RemoteSyncData) => {
+      player.replaceLibraryData(data.favoriteIds, data.historyIds);
+      sleepLogs.replaceLogs(data.sleepLogs);
+      setSettings(data.settings);
+      storage.setJson(storageKeys.settings, data.settings);
+    },
+    [player.replaceLibraryData, sleepLogs.replaceLogs],
+  );
+  const account = useAccountSync({
+    getSnapshot: getSyncSnapshot,
+    applyRemoteData,
+  });
+
+  const syncIfSignedIn = useCallback(() => {
+    if (account.user) {
+      setTimeout(() => {
+        void account.syncNow();
+      }, 0);
+    }
+  }, [account.syncNow, account.user]);
+
+  const saveSettingsAndSync = (next: UserSettings) => {
+    saveSettings(next);
+    syncIfSignedIn();
+  };
+
+  const toggleFavoriteAndSync = (trackId: string) => {
+    player.toggleFavorite(trackId);
+    syncIfSignedIn();
+  };
 
   const openTrack = async (track: AudioItem, sourceQueue?: AudioItem[]) => {
     await player.playTrack(track, sourceQueue);
@@ -133,6 +185,7 @@ export default function SleepApp() {
       player.setSleepTimer(settings.defaultSleepTimerMinutes);
     }
     setScreen('player');
+    syncIfSignedIn();
   };
 
   const openFeedback = () => {
@@ -175,7 +228,7 @@ export default function SleepApp() {
     }
 
     const entry: SleepLogEntry = {
-      id: editingLogId ?? `${Date.now()}`,
+      id: editingLogId ?? createEntityId(),
       sleepAt: sleepAt.toISOString(),
       wakeAt: wakeAt.toISOString(),
       durationMinutes: Math.round((wakeAt.getTime() - sleepAt.getTime()) / 60000),
@@ -194,6 +247,12 @@ export default function SleepApp() {
     setWakeAtInput('');
     setRatingInput('4');
     setNoteInput('');
+    syncIfSignedIn();
+  };
+
+  const removeSleepLogAndSync = (id: string) => {
+    sleepLogs.removeLog(id);
+    syncIfSignedIn();
   };
 
   return (
@@ -251,7 +310,7 @@ export default function SleepApp() {
                 recentTracks={recentTracks}
                 favoriteTracks={favoriteTracks}
                 onOpenTrack={openTrack}
-                onFavorite={player.toggleFavorite}
+                onFavorite={toggleFavoriteAndSync}
                 isFavorite={player.isFavorite}
                 onOpenFavorites={() => setScreen('favorites')}
               />
@@ -270,7 +329,7 @@ export default function SleepApp() {
                   item={item}
                   isFavorite={player.isFavorite(item.id)}
                   onPress={() => openTrack(item, moduleItems)}
-                  onFavorite={() => player.toggleFavorite(item.id)}
+                  onFavorite={() => toggleFavoriteAndSync(item.id)}
                 />
               ))}
             </View>
@@ -296,7 +355,7 @@ export default function SleepApp() {
                 onStop={player.stop}
                 onFavorite={() => {
                   if (player.currentTrack) {
-                    player.toggleFavorite(player.currentTrack.id);
+                    toggleFavoriteAndSync(player.currentTrack.id);
                   }
                 }}
                 onTimer={player.setSleepTimer}
@@ -328,7 +387,7 @@ export default function SleepApp() {
                     item={item}
                     isFavorite={player.isFavorite(item.id)}
                     onPress={() => openTrack(item, favoriteTracks)}
-                    onFavorite={() => player.toggleFavorite(item.id)}
+                    onFavorite={() => toggleFavoriteAndSync(item.id)}
                   />
                 ))
               )}
@@ -412,7 +471,7 @@ export default function SleepApp() {
                       <Pressable onPress={() => beginSleepLogEdit(log)} style={styles.subtleButton}>
                         <Text style={styles.subtleButtonText}>编辑</Text>
                       </Pressable>
-                      <Pressable onPress={() => sleepLogs.removeLog(log.id)} style={styles.subtleButton}>
+                      <Pressable onPress={() => removeSleepLogAndSync(log.id)} style={styles.subtleButton}>
                         <Text style={styles.subtleButtonText}>删除</Text>
                       </Pressable>
                     </View>
@@ -426,6 +485,26 @@ export default function SleepApp() {
             <View style={styles.stack}>
               <Text style={styles.sectionTitle}>设置</Text>
               <View style={styles.settingRow}>
+                <View style={styles.accountSummaryRow}>
+                  <View style={styles.accountSummaryIcon}>
+                    <Cloud color={colors.green} size={20} />
+                  </View>
+                  <View style={styles.settingCopy}>
+                    <Text style={styles.settingTitle}>账号与同步</Text>
+                    <Text style={styles.settingMeta}>
+                      {account.user
+                        ? `已登录 · ${account.syncState === 'syncing' ? '同步中' : account.lastSyncedAt ? '已同步' : '待同步'}`
+                        : account.configured
+                          ? '游客使用中，可登录同步数据'
+                          : '未配置 Supabase，当前仅本地保存'}
+                    </Text>
+                  </View>
+                </View>
+                <Pressable style={styles.subtleButton} onPress={() => setScreen('account')}>
+                  <Text style={styles.subtleButtonText}>{account.user ? '管理账号' : '登录 / 注册'}</Text>
+                </Pressable>
+              </View>
+              <View style={styles.settingRow}>
                 <View style={styles.settingCopy}>
                   <Text style={styles.settingTitle}>默认定时关闭</Text>
                   <Text style={styles.settingMeta}>{settings.defaultSleepTimerMinutes} 分钟</Text>
@@ -436,7 +515,7 @@ export default function SleepApp() {
                       key={minutes}
                       label={`${minutes}`}
                       active={settings.defaultSleepTimerMinutes === minutes}
-                      onPress={() => saveSettings({ defaultSleepTimerMinutes: minutes })}
+                      onPress={() => saveSettingsAndSync({ defaultSleepTimerMinutes: minutes })}
                     />
                   ))}
                 </View>
@@ -474,6 +553,13 @@ export default function SleepApp() {
             </View>
           ) : null}
 
+          {screen === 'account' ? (
+            <AccountPanel
+              account={account}
+              onBack={() => setScreen('settings')}
+            />
+          ) : null}
+
           {screen === 'credits' ? (
             <View style={styles.stack}>
               <Text style={styles.sectionTitle}>音频来源与版权</Text>
@@ -501,7 +587,13 @@ export default function SleepApp() {
               <View style={styles.legalRow}>
                 <Text style={styles.settingTitle}>本地数据</Text>
                 <Text style={styles.settingMeta}>
-                  Codex Sleep 当前版本不登录、不上传数据、不接入广告或分析 SDK。收藏、最近播放、设置和睡眠记录只保存在本机。
+                  游客模式不上传数据。收藏、最近播放、设置和睡眠记录会先保存在本机，离线时仍可使用。
+                </Text>
+              </View>
+              <View style={styles.legalRow}>
+                <Text style={styles.settingTitle}>账号同步</Text>
+                <Text style={styles.settingMeta}>
+                  登录后会把手机号账号标识、收藏、最近播放、设置和睡眠记录同步到云端，用于多设备恢复和备份。当前不上传音频文件，不接入广告或分析 SDK。
                 </Text>
               </View>
               <View style={styles.legalRow}>
@@ -513,7 +605,7 @@ export default function SleepApp() {
               <View style={styles.legalRow}>
                 <Text style={styles.settingTitle}>正式上线前</Text>
                 <Text style={styles.settingMeta}>
-                  Google Play 数据安全表单应声明不收集云端个人数据；隐私政策页面需与这里的说明保持一致。
+                  Google Play 数据安全表单和隐私政策需要声明账号与同步数据；后续正式版应提供删除账号和清除云端数据入口。
                 </Text>
               </View>
             </View>
@@ -553,7 +645,7 @@ export default function SleepApp() {
             <TabButton
               label="设置"
               icon={(color) => <Settings color={color} size={18} />}
-              active={screen === 'settings' || screen === 'credits' || screen === 'privacy'}
+              active={screen === 'settings' || screen === 'account' || screen === 'credits' || screen === 'privacy'}
               onPress={() => setScreen('settings')}
             />
           </View>
@@ -570,6 +662,169 @@ type QuickSectionsProps = {
   onFavorite: (trackId: string) => void;
   isFavorite: (trackId: string) => boolean;
   onOpenFavorites: () => void;
+};
+
+const formatSyncTime = (isoDate: string | null) => {
+  if (!isoDate) {
+    return '尚未同步';
+  }
+
+  return `上次同步 ${formatDateTime(isoDate)}`;
+};
+
+const AccountPanel = ({
+  account,
+  onBack,
+}: {
+  account: AccountSyncController;
+  onBack: () => void;
+}) => {
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+
+  const sendOtp = async () => {
+    const normalizedPhone = phone.trim();
+    if (!normalizedPhone.startsWith('+')) {
+      Alert.alert('请输入国际区号', '手机号需要包含国家区号，例如 +86 13800000000。');
+      return;
+    }
+
+    await account.signInWithPhone(normalizedPhone);
+    setOtpSent(true);
+  };
+
+  const verifyOtp = async () => {
+    const ok = await account.verifyPhoneOtp(phone.trim(), otp.trim());
+    if (ok) {
+      setOtp('');
+      setOtpSent(false);
+    }
+  };
+
+  return (
+    <View style={styles.stack}>
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>账号与同步</Text>
+          <Text style={styles.sectionMeta}>登录后同步收藏、最近播放、睡眠记录和设置。</Text>
+        </View>
+        <IconButton label="返回设置" onPress={onBack}>
+          <ChevronLeft color={colors.ink} size={18} />
+        </IconButton>
+      </View>
+
+      {!account.configured ? (
+        <View style={styles.settingRow}>
+          <View style={styles.accountSummaryRow}>
+            <UserCircle color={colors.amber} size={22} />
+            <View style={styles.settingCopy}>
+              <Text style={styles.settingTitle}>当前为游客模式</Text>
+              <Text style={styles.settingMeta}>
+                配置 EXPO_PUBLIC_SUPABASE_URL 和 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY 后即可启用登录同步。
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {account.user ? (
+        <View style={styles.settingRow}>
+          <View style={styles.accountSummaryRow}>
+            <View style={styles.accountSummaryIcon}>
+              <UserCircle color={colors.green} size={22} />
+            </View>
+            <View style={styles.settingCopy}>
+              <Text style={styles.settingTitle}>已登录</Text>
+              <Text style={styles.settingMeta}>
+                {account.user.phone || account.user.email || account.user.id}
+              </Text>
+              <Text style={styles.settingMeta}>
+                {account.syncState === 'syncing' ? '正在同步本机数据' : formatSyncTime(account.lastSyncedAt)}
+              </Text>
+            </View>
+          </View>
+          {account.syncError ? <Text style={styles.errorText}>{account.syncError}</Text> : null}
+          <View style={styles.playerControls}>
+            <Pressable style={styles.subtleButton} onPress={account.syncNow}>
+              <View style={styles.inlineButtonContent}>
+                <RefreshCw color={colors.ink} size={16} />
+                <Text style={styles.subtleButtonText}>立即同步</Text>
+              </View>
+            </Pressable>
+            <Pressable style={styles.subtleButton} onPress={account.signOut}>
+              <View style={styles.inlineButtonContent}>
+                <LogOut color={colors.ink} size={16} />
+                <Text style={styles.subtleButtonText}>退出登录</Text>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+      ) : account.configured ? (
+        <View style={styles.settingRow}>
+          <View style={styles.accountSummaryRow}>
+            <Smartphone color={colors.green} size={22} />
+            <View style={styles.settingCopy}>
+              <Text style={styles.settingTitle}>手机号验证码登录 / 注册</Text>
+              <Text style={styles.settingMeta}>游客数据会在登录成功后自动合并到云端。</Text>
+            </View>
+          </View>
+          <TextInput
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            placeholder="+86 13800000000"
+            placeholderTextColor={colors.subtle}
+            style={styles.textInput}
+          />
+          {otpSent ? (
+            <TextInput
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="number-pad"
+              placeholder="短信验证码"
+              placeholderTextColor={colors.subtle}
+              style={styles.textInput}
+            />
+          ) : null}
+          {account.syncError ? <Text style={styles.errorText}>{account.syncError}</Text> : null}
+          <Pressable
+            style={styles.primaryButton}
+            onPress={otpSent ? verifyOtp : sendOtp}
+            disabled={account.sendingOtp || account.verifyingOtp}
+          >
+            <Text style={styles.primaryButtonText}>
+              {otpSent
+                ? account.verifyingOtp
+                  ? '验证中'
+                  : '登录并同步'
+                : account.sendingOtp
+                  ? '发送中'
+                  : '发送验证码'}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {account.configured ? (
+      <View style={styles.settingRow}>
+        <Text style={styles.settingTitle}>社交登录</Text>
+        <Text style={styles.settingMeta}>微信登录需要开放平台配置；Apple/Google 登录可在 Supabase provider 配置后启用。</Text>
+        <View style={styles.playerControls}>
+          <Pressable style={styles.subtleButton} onPress={() => account.startOAuth('wechat')}>
+            <Text style={styles.subtleButtonText}>微信</Text>
+          </Pressable>
+          <Pressable style={styles.subtleButton} onPress={() => account.startOAuth('apple')}>
+            <Text style={styles.subtleButtonText}>Apple</Text>
+          </Pressable>
+          <Pressable style={styles.subtleButton} onPress={() => account.startOAuth('google')}>
+            <Text style={styles.subtleButtonText}>Google</Text>
+          </Pressable>
+        </View>
+      </View>
+      ) : null}
+    </View>
+  );
 };
 
 const QuickSections = ({
@@ -1608,6 +1863,26 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     padding: spacing.md,
     gap: spacing.md,
+  },
+  accountSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minWidth: 0,
+  },
+  accountSummaryIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
   },
   legalRow: {
     backgroundColor: colors.surface,

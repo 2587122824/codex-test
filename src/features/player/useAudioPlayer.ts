@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { storageKeys } from '../../shared/storage/keys';
 import { storage } from '../../shared/storage/storage';
 import type { AudioItem, PlaybackMode } from '../../shared/types/audio';
+import { clearFavoriteDeleted, markFavoriteDeleted } from '../account/syncService';
 
 type PlaybackState = 'idle' | 'loading' | 'playing' | 'paused';
 
@@ -278,12 +279,19 @@ export const useAudioPlayer = () => {
 
   const toggleFavorite = useCallback((trackId: string) => {
     setFavoriteIds((current) => {
-      const next = current.includes(trackId)
-        ? current.filter((id) => id !== trackId)
-        : [trackId, ...current];
+      const isRemoving = current.includes(trackId);
+      const next = isRemoving ? current.filter((id) => id !== trackId) : [trackId, ...current];
+      void (isRemoving ? markFavoriteDeleted(trackId) : clearFavoriteDeleted(trackId));
       storage.setJson(storageKeys.favorites, next);
       return next;
     });
+  }, []);
+
+  const replaceLibraryData = useCallback((nextFavorites: string[], nextHistory: string[]) => {
+    setFavoriteIds(nextFavorites);
+    setHistoryIds(nextHistory);
+    storage.setJson(storageKeys.favorites, nextFavorites);
+    storage.setJson(storageKeys.history, nextHistory);
   }, []);
 
   const setPlaybackMode = useCallback((mode: PlaybackMode) => {
@@ -377,6 +385,7 @@ export const useAudioPlayer = () => {
     togglePlayback,
     seekToMillis,
     toggleFavorite,
+    replaceLibraryData,
     setPlaybackMode,
     setSleepTimer,
     stop,

@@ -12,6 +12,9 @@ export const appConfig = {
   audioSource: process.env.EXPO_PUBLIC_AUDIO_SOURCE || 'local',
   audioCdnBaseUrl: process.env.EXPO_PUBLIC_AUDIO_CDN_BASE_URL || '',
   apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || '',
+  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
+  supabasePublishableKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '',
+  authRedirectUrl: process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL || 'codexsleep://auth/callback',
   flags: {
     musicSleep: truthy(process.env.EXPO_PUBLIC_ENABLE_MUSIC_SLEEP),
     storySleep: truthy(process.env.EXPO_PUBLIC_ENABLE_STORY_SLEEP),
