@@ -454,3 +454,9 @@ The UI is much better than the MVP, but can still be polished:
 - `npx.cmd expo install --check`: passed after copy/accessibility polish; dependencies are up to date.
 - `git diff --check`: passed after copy/accessibility polish; only normal Windows LF-to-CRLF warnings were reported.
 - `git add docs/HANDOFF_CONTEXT.md src/application/SleepApp.tsx`: staged the copy/accessibility polish commit scope; Git reported normal Windows LF-to-CRLF warnings.
+- `git add docs/HANDOFF_CONTEXT.md; git commit -m "Improve navigation accessibility"`: created commit `20d6884 Improve navigation accessibility` with explicit navigation button accessibility labels and handoff notes.
+- `git push origin codex/playback-modes`: pushed `20d6884 Improve navigation accessibility` to the remote `codex/playback-modes` branch.
+- Browser viewport reset: cleared the temporary `360x740` viewport override after responsive verification.
+- `Get-NetTCPConnection -LocalPort 8081`: found the Expo/Metro preview listener/connection owned by process `28912`.
+- `Stop-Process -Id 28912 -Force; Start-Sleep 1; Get-NetTCPConnection -LocalPort 8081`: stopped the Expo/Metro preview process; follow-up port check returned no remaining listener/connection output.
+- `git status -sb`: after pushing UI commits and stopping preview, only `docs/HANDOFF_CONTEXT.md` remains modified with command-log updates.
