@@ -29,7 +29,10 @@
     "typecheck": "tsc --noEmit",
     "validate:audio": "node scripts/validate-audio-catalog.js",
     "validate:aliyun": "node scripts/validate-aliyun-backend.js",
-    "check": "npm run typecheck && npm run validate:audio && npm run validate:aliyun"
+    "validate:sync": "node scripts/validate-sync-merge-rules.js",
+    "validate:mock-api": "node --check scripts/mock-aliyun-api.js",
+    "mock:api": "node scripts/mock-aliyun-api.js",
+    "check": "npm run typecheck && npm run validate:audio && npm run validate:aliyun && npm run validate:sync && npm run validate:mock-api"
   },
   "private": true
 }
