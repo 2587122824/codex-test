@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-01
 
-Codex Sleep is a local-first sleep companion app. Guest mode does not require login and keeps user data on the device. If the user signs in, selected app data is synchronized to the cloud for backup and multi-device recovery. The app does not include advertising, analytics, or tracking SDKs.
+Codex Sleep is a local-first sleep companion app. Guest mode does not require login and keeps user data on the device. If the user signs in, selected app data is synchronized through the Alibaba Cloud backend for backup and multi-device recovery. The app does not include advertising, analytics, or tracking SDKs.
 
 ## Data Stored On Device
 
@@ -17,7 +17,7 @@ This data is used only to provide app functionality. In guest mode it remains on
 
 ## Data Collection
 
-When account sync is enabled and the user signs in, the app may upload:
+When account sync is enabled and the user signs in, the app may upload the following data to Alibaba Cloud Function Compute and RDS PostgreSQL:
 
 - Account identifiers such as phone number or social login user ID
 - Favorites

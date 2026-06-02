@@ -496,7 +496,7 @@ export default function SleepApp() {
                         ? `已登录 · ${account.syncState === 'syncing' ? '同步中' : account.lastSyncedAt ? '已同步' : '待同步'}`
                         : account.configured
                           ? '游客使用中，可登录同步数据'
-                          : '未配置 Supabase，当前仅本地保存'}
+                          : '未配置阿里云 API，当前仅本地保存'}
                     </Text>
                   </View>
                 </View>
@@ -721,7 +721,7 @@ const AccountPanel = ({
             <View style={styles.settingCopy}>
               <Text style={styles.settingTitle}>当前为游客模式</Text>
               <Text style={styles.settingMeta}>
-                配置 EXPO_PUBLIC_SUPABASE_URL 和 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY 后即可启用登录同步。
+                配置 EXPO_PUBLIC_API_BASE_URL 后即可启用阿里云账号登录与同步。
               </Text>
             </View>
           </View>
@@ -737,7 +737,7 @@ const AccountPanel = ({
             <View style={styles.settingCopy}>
               <Text style={styles.settingTitle}>已登录</Text>
               <Text style={styles.settingMeta}>
-                {account.user.phone || account.user.email || account.user.id}
+                {account.user.phone || account.user.nickname || account.user.id}
               </Text>
               <Text style={styles.settingMeta}>
                 {account.syncState === 'syncing' ? '正在同步本机数据' : formatSyncTime(account.lastSyncedAt)}
@@ -809,7 +809,9 @@ const AccountPanel = ({
       {account.configured ? (
       <View style={styles.settingRow}>
         <Text style={styles.settingTitle}>社交登录</Text>
-        <Text style={styles.settingMeta}>微信登录需要开放平台配置；Apple/Google 登录可在 Supabase provider 配置后启用。</Text>
+        <Text style={styles.settingMeta}>
+          微信登录需要微信开放平台；Apple/Google 登录需要对应平台配置，再由阿里云函数统一换取 App 会话。
+        </Text>
         <View style={styles.playerControls}>
           <Pressable style={styles.subtleButton} onPress={() => account.startOAuth('wechat')}>
             <Text style={styles.subtleButtonText}>微信</Text>

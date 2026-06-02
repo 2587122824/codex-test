@@ -1,9 +1,13 @@
-import type { Session, User } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState } from 'react';
-import { Linking } from 'react-native';
 
-import { appConfig } from '../../shared/config/env';
-import { isSupabaseConfigured, supabase } from '../../shared/supabase/client';
+import {
+  apiRequest,
+  clearApiSession,
+  isApiConfigured,
+  saveApiSession,
+  type ApiSession,
+  type ApiUser,
+} from '../../shared/api/client';
 import type { LocalSyncSnapshot, RemoteSyncData } from './syncService';
 import { syncUserData } from './syncService';
 
@@ -11,8 +15,8 @@ type SyncState = 'idle' | 'syncing' | 'success' | 'error';
 
 export type AccountSyncController = {
   configured: boolean;
-  session: Session | null;
-  user: User | null;
+  session: ApiSession | null;
+  user: ApiUser | null;
   syncState: SyncState;
   syncError: string | null;
   lastSyncedAt: string | null;
@@ -30,6 +34,10 @@ type Options = {
   applyRemoteData: (data: RemoteSyncData) => void;
 };
 
+type SessionResponse = {
+  session: ApiSession;
+};
+
 const formatError = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
@@ -39,7 +47,7 @@ const formatError = (error: unknown) => {
 };
 
 export const useAccountSync = ({ getSnapshot, applyRemoteData }: Options): AccountSyncController => {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<ApiSession | null>(null);
   const [syncState, setSyncState] = useState<SyncState>('idle');
   const [syncError, setSyncError] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
@@ -47,7 +55,7 @@ export const useAccountSync = ({ getSnapshot, applyRemoteData }: Options): Accou
   const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   const syncNow = useCallback(async () => {
-    if (!supabase || !session?.user) {
+    if (!session?.user) {
       return;
     }
 
@@ -55,7 +63,7 @@ export const useAccountSync = ({ getSnapshot, applyRemoteData }: Options): Accou
     setSyncError(null);
 
     try {
-      const remote = await syncUserData(session.user.id, getSnapshot());
+      const remote = await syncUserData(getSnapshot());
       applyRemoteData(remote);
       setLastSyncedAt(remote.syncedAt);
       setSyncState('success');
@@ -66,18 +74,15 @@ export const useAccountSync = ({ getSnapshot, applyRemoteData }: Options): Accou
   }, [applyRemoteData, getSnapshot, session?.user]);
 
   useEffect(() => {
-    if (!supabase) {
-      return undefined;
+    if (!isApiConfigured) {
+      return;
     }
 
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-    });
-
-    return () => subscription.unsubscribe();
+    apiRequest<SessionResponse>('/auth/session', { auth: true })
+      .then(({ session: nextSession }) => setSession(nextSession))
+      .catch(() => {
+        void clearApiSession();
+      });
   }, []);
 
   useEffect(() => {
@@ -89,8 +94,8 @@ export const useAccountSync = ({ getSnapshot, applyRemoteData }: Options): Accou
   }, [session?.user?.id]);
 
   const signInWithPhone = useCallback(async (phone: string) => {
-    if (!supabase) {
-      setSyncError('请先配置 Supabase URL 和 publishable key。');
+    if (!isApiConfigured) {
+      setSyncError('请先配置 EXPO_PUBLIC_API_BASE_URL，连接阿里云函数服务。');
       return;
     }
 
@@ -98,10 +103,10 @@ export const useAccountSync = ({ getSnapshot, applyRemoteData }: Options): Accou
     setSyncError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({ phone });
-      if (error) {
-        throw error;
-      }
+      await apiRequest<{ requestId: string }>('/auth/send-code', {
+        method: 'POST',
+        body: { phone },
+      });
     } catch (error) {
       setSyncError(formatError(error));
       throw error;
@@ -111,8 +116,8 @@ export const useAccountSync = ({ getSnapshot, applyRemoteData }: Options): Accou
   }, []);
 
   const verifyPhoneOtp = useCallback(async (phone: string, token: string) => {
-    if (!supabase) {
-      setSyncError('请先配置 Supabase URL 和 publishable key。');
+    if (!isApiConfigured) {
+      setSyncError('请先配置 EXPO_PUBLIC_API_BASE_URL，连接阿里云函数服务。');
       return false;
     }
 
@@ -120,16 +125,12 @@ export const useAccountSync = ({ getSnapshot, applyRemoteData }: Options): Accou
     setSyncError(null);
 
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone,
-        token,
-        type: 'sms',
+      const { session: nextSession } = await apiRequest<SessionResponse>('/auth/verify-code', {
+        method: 'POST',
+        body: { phone, code: token },
       });
-      if (error) {
-        throw error;
-      }
-
-      setSession(data.session);
+      await saveApiSession(nextSession);
+      setSession(nextSession);
       return true;
     } catch (error) {
       setSyncError(formatError(error));
@@ -140,44 +141,30 @@ export const useAccountSync = ({ getSnapshot, applyRemoteData }: Options): Accou
   }, []);
 
   const startOAuth = useCallback(async (provider: 'apple' | 'google' | 'wechat') => {
-    if (!supabase) {
-      setSyncError('请先配置 Supabase URL 和 publishable key。');
-      return;
-    }
-
-    if (provider === 'wechat') {
-      setSyncError('微信登录需要微信开放平台配置，当前版本先预留入口。');
-      return;
-    }
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: appConfig.authRedirectUrl,
-      },
-    });
-    if (error) {
-      setSyncError(formatError(error));
-      return;
-    }
-
-    if (data.url) {
-      await Linking.openURL(data.url);
-    }
+    const labels = {
+      apple: 'Apple',
+      google: 'Google',
+      wechat: '微信',
+    };
+    setSyncError(`${labels[provider]} 登录已预留入口，需要接入对应开放平台后由阿里云函数换取用户身份。`);
   }, []);
 
   const signOut = useCallback(async () => {
-    if (!supabase) {
-      return;
+    try {
+      if (session) {
+        await apiRequest('/auth/logout', { method: 'POST', auth: true });
+      }
+    } catch {
+      // Local sign-out should still work if the network is unavailable.
     }
 
-    await supabase.auth.signOut();
+    await clearApiSession();
     setSession(null);
     setSyncState('idle');
-  }, []);
+  }, [session]);
 
   return {
-    configured: isSupabaseConfigured,
+    configured: isApiConfigured,
     session,
     user: session?.user ?? null,
     syncState,

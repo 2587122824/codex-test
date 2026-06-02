@@ -28,8 +28,20 @@ npm run start
 ```bash
 npm run typecheck
 npm run validate:audio
+npm run validate:aliyun
 npm run check
 ```
+
+## Alibaba Cloud Backend
+
+Account sync is designed around Alibaba Cloud Function Compute, Alibaba Cloud SMS,
+and Alibaba Cloud RDS PostgreSQL. The app only needs one public endpoint:
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=https://your-function-domain.example.com
+```
+
+Backend schema and route contracts live in `server/aliyun-functions/`.
 
 ## 内测准备
 
