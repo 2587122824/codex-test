@@ -58,6 +58,13 @@ const defaultSettings: UserSettings = {
 };
 
 const betaFeedbackEmail = 'codex-sleep-feedback@example.com';
+const tabBarBottomOffset = spacing.md;
+const tabBarEstimatedHeight = 60;
+const miniPlayerEstimatedHeight = 58;
+const miniPlayerBottomOffset = tabBarBottomOffset + tabBarEstimatedHeight + spacing.sm;
+const scrollBottomPadding = tabBarBottomOffset + tabBarEstimatedHeight + spacing.xl;
+const scrollBottomPaddingWithMini =
+  miniPlayerBottomOffset + miniPlayerEstimatedHeight + spacing.xl;
 
 const formatMinutes = (minutes: number) => {
   const hours = Math.floor(minutes / 60);
@@ -274,6 +281,7 @@ export default function SleepApp() {
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
+            player.currentTrack && screen !== 'player' && styles.scrollContentWithMiniPlayer,
             screen === 'player' && styles.playerScrollContent,
           ]}
           showsVerticalScrollIndicator={false}
@@ -536,7 +544,9 @@ export default function SleepApp() {
                     <Text style={styles.subtleButtonText}>发送反馈</Text>
                   </Pressable>
                 </View>
-                <Text style={styles.settingMeta}>{betaFeedbackEmail}</Text>
+                <Text style={styles.settingMeta} numberOfLines={1}>
+                  {betaFeedbackEmail}
+                </Text>
               </View>
               <View style={styles.settingRow}>
                 <Text style={styles.settingTitle}>上线合规</Text>
@@ -572,7 +582,9 @@ export default function SleepApp() {
                   <Text style={styles.settingMeta}>作者：{item.source.author}</Text>
                   <Text style={styles.settingMeta}>授权：{item.source.license}</Text>
                   <Text style={styles.settingMeta}>来源：{item.source.name}</Text>
-                  <Text style={styles.settingMeta}>链接：{item.source.url}</Text>
+                  <Text style={styles.settingMeta} numberOfLines={1}>
+                    链接：{item.source.url}
+                  </Text>
                   <Text style={styles.settingMeta}>
                     {item.source.attributionRequired ? '需要在 App 内署名' : '无需额外署名'}
                   </Text>
@@ -736,7 +748,7 @@ const AccountPanel = ({
             </View>
             <View style={styles.settingCopy}>
               <Text style={styles.settingTitle}>已登录</Text>
-              <Text style={styles.settingMeta}>
+              <Text style={styles.settingMeta} numberOfLines={1}>
                 {account.user.phone || account.user.nickname || account.user.id}
               </Text>
               <Text style={styles.settingMeta}>
@@ -1301,28 +1313,29 @@ const MiniPlayerBar = ({
   const safeProgress = Number.isFinite(progress) ? Math.max(0, Math.min(progress, 1)) : 0;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`打开播放器：${currentTrack.title}`}
-      onPress={onOpen}
-      style={({ pressed }) => [styles.miniPlayer, { opacity: pressed ? 0.88 : 1 }]}
-    >
-      <View style={[styles.miniCover, { backgroundColor: currentTrack.cover }]}>
-        <Play color={colors.white} fill={colors.white} size={14} />
-      </View>
-      <View style={styles.miniBody}>
-        <Text style={styles.miniTitle} numberOfLines={1}>
-          {currentTrack.title}
-        </Text>
-        <View style={styles.miniProgressRail}>
-          <View style={[styles.miniProgressFill, { width: `${safeProgress * 100}%` }]} />
+    <View style={styles.miniPlayer}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`打开播放器：${currentTrack.title}`}
+        onPress={onOpen}
+        style={({ pressed }) => [styles.miniOpenButton, { opacity: pressed ? 0.88 : 1 }]}
+      >
+        <View style={[styles.miniCover, { backgroundColor: currentTrack.cover }]}>
+          <Play color={colors.white} fill={colors.white} size={14} />
         </View>
-      </View>
+        <View style={styles.miniBody}>
+          <Text style={styles.miniTitle} numberOfLines={1}>
+            {currentTrack.title}
+          </Text>
+          <View style={styles.miniProgressRail}>
+            <View style={[styles.miniProgressFill, { width: `${safeProgress * 100}%` }]} />
+          </View>
+        </View>
+      </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={playbackState === 'playing' ? '暂停' : '播放'}
         onPress={(event) => {
-          event.stopPropagation();
           onTogglePlayback();
         }}
         hitSlop={10}
@@ -1334,7 +1347,7 @@ const MiniPlayerBar = ({
           <Play color={colors.ink} fill={colors.ink} size={18} />
         )}
       </Pressable>
-    </Pressable>
+    </View>
   );
 };
 
@@ -1405,8 +1418,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
-    paddingBottom: 138,
+    paddingBottom: scrollBottomPadding,
     width: '100%',
+  },
+  scrollContentWithMiniPlayer: {
+    paddingBottom: scrollBottomPaddingWithMini,
   },
   playerScrollContent: {
     paddingBottom: spacing.lg,
@@ -1454,6 +1470,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
@@ -1463,6 +1480,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 17,
     fontWeight: '900',
+    flexShrink: 1,
   },
   sectionMeta: {
     color: colors.muted,
@@ -1499,6 +1517,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 13,
     fontWeight: '800',
+    flexShrink: 0,
   },
   playerHeroArea: {
     alignItems: 'center',
@@ -1639,9 +1658,10 @@ const styles = StyleSheet.create({
   },
   playerControls: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   playButton: {
     width: 76,
@@ -1684,11 +1704,13 @@ const styles = StyleSheet.create({
   },
   secondaryActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
     gap: spacing.sm,
   },
   playerSectionHeader: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
@@ -1702,6 +1724,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 13,
     fontWeight: '800',
+    flexShrink: 1,
   },
   modeGrid: {
     flexDirection: 'row',
@@ -1747,10 +1770,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 1,
   },
   primaryButtonText: {
     color: colors.white,
     fontWeight: '900',
+    textAlign: 'center',
   },
   subtleButton: {
     minHeight: 38,
@@ -1761,10 +1786,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 1,
   },
   subtleButtonText: {
     color: colors.ink,
     fontWeight: '800',
+    textAlign: 'center',
   },
   iconButton: {
     width: 42,
@@ -1795,11 +1822,13 @@ const styles = StyleSheet.create({
   },
   customTimerRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     alignItems: 'center',
   },
   timerInput: {
     flex: 1,
+    minWidth: 130,
     minHeight: 42,
     borderRadius: 8,
     borderWidth: 1,
@@ -1895,6 +1924,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   textInput: {
+    width: '100%',
     minHeight: 42,
     borderRadius: 8,
     borderWidth: 1,
@@ -1909,29 +1939,41 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   settingCopy: {
+    flex: 1,
+    minWidth: 0,
     gap: spacing.xs,
   },
   settingTitle: {
     color: colors.ink,
     fontSize: 16,
     fontWeight: '900',
+    flexShrink: 1,
   },
   settingMeta: {
     color: colors.muted,
     fontSize: 13,
     lineHeight: 20,
+    flexShrink: 1,
   },
   miniPlayer: {
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
-    bottom: 78,
+    bottom: miniPlayerBottomOffset,
     minHeight: 58,
     borderRadius: 8,
     backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.line,
     padding: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  miniOpenButton: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 38,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -1976,7 +2018,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
-    bottom: spacing.md,
+    bottom: tabBarBottomOffset,
     backgroundColor: colors.surface,
     borderRadius: 8,
     borderColor: colors.line,
@@ -1987,7 +2029,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tabBarWithMini: {
-    bottom: spacing.md,
+    bottom: tabBarBottomOffset,
   },
   tabButton: {
     flex: 1,

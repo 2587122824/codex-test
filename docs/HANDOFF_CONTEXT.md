@@ -369,3 +369,77 @@ The UI is much better than the MVP, but can still be polished:
 - `git diff --check`: passed before the first planned small commit; only normal Windows LF-to-CRLF working-copy warnings were reported.
 - `git add docs/HANDOFF_CONTEXT.md docs/INTERNAL_BETA_CHECKLIST.md package.json scripts/mock-aliyun-api.js scripts/validate-sync-merge-rules.js`: staged the first planned small commit scope; Git reported normal Windows LF-to-CRLF working-copy warnings.
 - `git add docs/HANDOFF_CONTEXT.md`: restaged the handoff after recording the first staging command; Git reported the normal Windows LF-to-CRLF warning.
+- `git add docs/HANDOFF_CONTEXT.md; git commit -m "Add local sync mock API"`: created commit `0623504 Add local sync mock API` with the local Mock API, sync merge validation, beta checklist updates, package scripts, and handoff notes.
+- `git push origin codex/playback-modes`: pushed `0623504 Add local sync mock API` to the remote `codex/playback-modes` branch.
+- `Get-Content`/slice reads for `src/application/SleepApp.tsx`, `src/shared/ui/TrackRow.tsx`, `src/shared/ui/ModuleCard.tsx`, and `src/shared/ui/PillButton.tsx`: inspected UI layout hotspots; found fixed bottom spacing, non-wrapping control rows, and mojibake accessibility labels in `TrackRow`.
+- `Get-Content` slice for `src/application/SleepApp.tsx` bottom styles: inspected mini player and tab bar positioning; current layout uses fixed `scrollContent.paddingBottom`, `miniPlayer.bottom`, and tab bar bottom values.
+- `Get-Content` slice for `src/application/SleepApp.tsx` top constants and `node -e` UTF-8 line check: verified `formatMinutes` contains correct Chinese in source despite PowerShell mojibake display.
+- `node -e` UTF-8 check for `src/shared/ui/TrackRow.tsx`: verified `accessibilityLabel` strings are correct Chinese in source (`播放`, `取消收藏`, `收藏`); no TrackRow text edit is needed.
+- `apply_patch` on `src/application/SleepApp.tsx`: added bottom-spacing constants, mini-player-aware scroll padding, wrapping control rows, shrinkable buttons, full-width inputs, and flexible setting copy containers for small-screen layout stability.
+- `Get-Content` slice and `node -e` UTF-8 check for mini player accessibility labels: verified `SleepApp.tsx` accessibility labels are correct Chinese in source; PowerShell output mojibake is display-only.
+- `Select-String -Path src/application/SleepApp.tsx -Pattern 'numberOfLines|betaFeedbackEmail|playerQueueText|modeSummary|settingMeta|miniTitle|playerTitle|sectionTitle' -Context 1,2`: reviewed long-text hotspots; feedback email, account identifier, and source URLs need stronger small-screen constraints.
+- `apply_patch` on `src/application/SleepApp.tsx`: constrained feedback email, source URL, and account identifier text with `numberOfLines`, and added shrink behavior for section titles, setting titles, mode summaries, and queue text.
+- `npm.cmd run check`: passed after small-screen layout polish; typecheck, audio validation, Aliyun validation, sync validation, and mock API syntax validation all succeeded.
+- `npx.cmd expo install --check`: passed after small-screen layout polish; dependencies are up to date.
+- `git diff --check`: passed after small-screen layout polish; only normal Windows LF-to-CRLF working-copy warnings were reported.
+- `Get-Content -LiteralPath C:\Users\Administrator\.codex\plugins\cache\openai-bundled\browser\26.527.31326\skills\control-in-app-browser\SKILL.md`: read the Browser skill instructions before local UI verification.
+- `Start-Process npm.cmd run web -- --port 8081`: attempted to start Expo Web in the background with logs redirected to temp files, but the command returned no process details; checking process/log state next.
+- `Get-Process | Where-Object { $_.ProcessName -in @('node','npm','cmd') } ...`: found new Node/cmd processes started at the Expo Web launch time, indicating the local preview likely started despite missing printed process details.
+- `Get-Content` temp Expo Web logs: confirmed Expo Web is running and waiting on `http://localhost:8081`.
+- Browser opened `http://localhost:8081` in the in-app browser; page loaded with title `Codex Sleep`.
+- `Get-ChildItem -Path C:\Users\Administrator\.codex\plugins\cache\openai-bundled\browser\26.527.31326 -Recurse -Filter viewport.md`: found Browser viewport capability docs at `docs\capabilities\browser\viewport.md`.
+- `Get-Content -LiteralPath C:\Users\Administrator\.codex\plugins\cache\openai-bundled\browser\26.527.31326\docs\capabilities\browser\viewport.md`: read viewport capability docs; will use `set({ width, height })` for responsive testing and reset before finishing.
+- Browser viewport set to `360x740`, reloaded `http://localhost:8081`, and inspected home metrics: no horizontal overflow (`scrollWidth=360`, `innerWidth=360`); screenshot showed bottom tab and home content fitting at narrow width.
+- Browser attempted to click Settings via `getByRole('button', { name: '设置' })`; locator count was 0 due to React Native Web accessibility mapping, while home page still reported no horizontal overflow.
+- Browser clicked the Settings tab by coordinate at `360x740`; settings page reported no horizontal overflow and showed account, timer, content source, feedback, and compliance sections fitting narrow width.
+- Browser scrolled the Settings page to the bottom at `360x740`; feedback email and compliance buttons were reachable above the bottom tab bar, with no horizontal overflow.
+- Browser opened the Account & Sync page from Settings at `360x740`; guest-mode API-not-configured state was readable, had no horizontal overflow, and did not overlap the bottom tab bar.
+- `adb devices`: failed because `adb` is not available on the current PATH; checking common Android SDK and MuMu adb locations next.
+- Common adb candidate path check found no PATH/standard SDK match, but `Get-Process` showed MuMu processes and an adb process at `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe`; broad `C:\` adb search timed out after 30s.
+- `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe devices`: adb is usable via explicit path, but MuMu appeared as `127.0.0.1:49672 offline`.
+- `adb kill-server; adb start-server; adb connect 127.0.0.1:49672; adb connect 127.0.0.1:7555; adb connect 127.0.0.1:16384; adb devices` via explicit adb path: adb daemon restarted successfully, but the combined command returned no connection/device details beyond daemon startup.
+- `adb devices -l` via explicit adb path: MuMu is online as `emulator-5554`, `127.0.0.1:7555`, and `127.0.0.1:16384` (`model:DCO_AL00`); stale `127.0.0.1:49672` remains offline.
+- `adb -s emulator-5554 shell wm size`: MuMu reports physical size `900x1600`.
+- `adb -s emulator-5554 shell pm list packages | Select-String -Pattern 'expo|host.exp|codex|sleep'`: MuMu has `com.codexsleep.app` installed and no Expo Go package was found.
+- `adb -s emulator-5554 shell dumpsys package com.codexsleep.app | Select-String ...`: installed Codex Sleep package has launcher `com.codexsleep.app/.MainActivity`, `versionCode=1`, and `versionName=1.0.0`.
+- `adb -s emulator-5554 shell am start -n com.codexsleep.app/.MainActivity` plus focus check: Codex Sleep launched on MuMu, process id `3423`, and `com.codexsleep.app/.MainActivity` is the current focused app.
+- `adb -s emulator-5554 exec-out screencap -p > tmp-mumu-codex-sleep.png`: produced a 304,618-byte screenshot file, but `view_image` could not process it as PNG, likely due to PowerShell binary redirection corruption.
+- `adb -s emulator-5554 shell screencap -p /sdcard/codex-sleep-screen.png; adb pull ... tmp-mumu-codex-sleep-pull.png`: pulled a valid 159,992-byte MuMu screenshot.
+- `view_image` on `tmp-mumu-codex-sleep-pull.png`: confirmed the installed MuMu app launches, but it is an older light-themed APK, not the current dark UI code, so it does not validate the latest UI polish changes.
+- `Test-Path android` and `rg --files android`: confirmed the repo contains an Android native project with Gradle wrapper and app resources.
+- `rg --files -g 'app.json' -g 'app.config.*' -g 'eas.json' -g '*.apk' -g '*.aab'`: found `app.json` and `eas.json`; no APK/AAB artifacts are tracked in the repo.
+- `Get-Content -LiteralPath app.json`: reviewed Expo Android package config; package is `com.codexsleep.app`, matching the MuMu-installed app.
+- `npx.cmd expo run:android --device emulator-5554`: failed because Expo could not resolve the Android SDK at the default path and `adb` is not on PATH; will retry with `ANDROID_HOME=I:\AI_Workspace\.android-build-tools\android-sdk` and PATH including platform-tools.
+- `ANDROID_HOME=I:\AI_Workspace\.android-build-tools\android-sdk` plus `npx.cmd expo run:android --device emulator-5554`: SDK/PATH resolution succeeded, but Expo failed when probing emulator console port `127.0.0.1:5554`; MuMu rejected that connection, so retrying with TCP device id `127.0.0.1:7555`.
+- `ANDROID_HOME=I:\AI_Workspace\.android-build-tools\android-sdk` plus `npx.cmd expo run:android --device 127.0.0.1:7555`: failed for the same reason because Expo still enumerated `emulator-5554` and attempted the rejected emulator console probe; switching to Gradle install with `ANDROID_SERIAL=127.0.0.1:7555`.
+- `ANDROID_HOME=... ANDROID_SERIAL=127.0.0.1:7555 .\android\gradlew.bat -p android :app:installDebug`: failed immediately because `JAVA_HOME` is not set and no `java` command is on PATH.
+- JDK/runtime discovery: common PATH lookup `where java` found no Java, bundled workspace dependencies are not configured, but `I:\AI_Workspace\.android-build-tools\jdk17` exists and will be used as `JAVA_HOME`.
+- Gradle install with `JAVA_HOME=I:\AI_Workspace\.android-build-tools\jdk17`: failed because that path is not the actual JDK root; inspecting the JDK directory structure next.
+- `Get-ChildItem -Force -Path I:\AI_Workspace\.android-build-tools\jdk17`: actual JDK root is `I:\AI_Workspace\.android-build-tools\jdk17\jdk-17.0.19+10`.
+- Gradle install with `ANDROID_HOME=I:\AI_Workspace\.android-build-tools\android-sdk`, `JAVA_HOME=I:\AI_Workspace\.android-build-tools\jdk17\jdk-17.0.19+10`, and `ANDROID_SERIAL=127.0.0.1:7555`: `.\android\gradlew.bat -p android :app:installDebug` succeeded; Gradle printed a `NODE_ENV` warning and Java deprecation/unchecked notes, but exit code was 0.
+- `adb -s 127.0.0.1:7555 shell am start ...; screencap; pull; view_image`: newly installed debug app launched but showed React Native red screen `Unable to load script`, indicating Metro bundle was not reachable; next step is `adb reverse tcp:8081 tcp:8081`.
+- `adb -s 127.0.0.1:7555 reverse tcp:8081 tcp:8081; input keyevent 46 46; screencap/pull/view_image`: adb reverse was set and reload started Metro bundling; screenshot showed `Bundling 49%...`.
+- `Start-Sleep 12; adb screencap/pull/view_image`: MuMu was still on Metro bundling progress (`52%`), so checking Expo/Metro logs for errors next.
+- `Get-Content` temp Expo/Metro logs: no Android bundle error was shown, but Expo Web reported invalid nested buttons in `MiniPlayerBar` because the outer mini-player `Pressable` contains an inner playback `Pressable`; fixing this UI/accessibility issue next.
+- `apply_patch` on `src/application/SleepApp.tsx`: refactored `MiniPlayerBar` so the root is a `View`, the open-player area is one `Pressable`, and the playback button is a sibling `Pressable`, eliminating nested Web buttons.
+- `npm.cmd run check`: passed after the mini-player nested-button fix.
+- Browser reload/log/screenshot verification after mini-player fix: timed out during screenshot capture (`Page.captureScreenshot`), likely while the page or Metro refresh was busy; retrying with a lighter no-screenshot check.
+- Browser light verification retry: first attempt failed with Node session variable redeclaration (`Identifier 'logs' has already been declared`); rerunning with unique variable names.
+- Browser light verification after mini-player fix: page at `360x740` had no horizontal overflow, but dev logs still included earlier nested-button warnings from before the reload; checking current DOM directly for `button button` nesting.
+- Browser DOM check after mini-player fix: current DOM has `document.querySelectorAll('button button').length === 0`, confirming the nested Web button issue is fixed.
+- `Get-Content` temp Expo/Metro logs after waiting: Android bundle completed successfully in `140977ms` (`2572 modules`); Web bundle also refreshed after the mini-player change.
+- `adb screencap/pull/view_image` after Android bundle completion: red screen disappeared, but MuMu showed a blank dark screen instead of the app UI; checking logcat for runtime errors next.
+- `adb logcat -d -t 500 | Select-String ...`: no obvious JS fatal or AndroidRuntime crash for `com.codexsleep.app`; logs showed React context loading and unrelated MuMu/system messages, so checking Android UI hierarchy next.
+- `adb shell uiautomator dump /sdcard/codex-ui.xml; adb pull ...; Get-Content`: Android UI hierarchy contains only root `FrameLayout` nodes and no Codex Sleep text nodes, confirming the blank MuMu screen is an unrendered React surface rather than hidden text.
+- `adb shell am force-stop com.codexsleep.app; adb shell am start ...; screencap/pull/view_image`: after restart, MuMu still shows a blank dark screen with no app UI.
+- `adb -s 127.0.0.1:7555 reverse --list`: reverse mapping exists as `tcp:8081 tcp:8081`.
+- Focused logcat check after restart: React context loaded from Metro and `ReactNativeJS` logged `Running "main"`; no JS fatal was shown, only `SafeAreaView` deprecation warning, but MuMu still displays a blank dark screen.
+- `adb shell uiautomator dump /sdcard/codex-ui-after-js.xml; adb pull ...; screencap/pull/view_image`: after waiting longer, Android UI hierarchy contained Codex Sleep text nodes and the MuMu screenshot showed the current dark home UI rendering correctly; a debug warning toast overlays the bottom but is not app layout.
+- `adb input tap` to dismiss the debug warning and open Settings, followed by `screencap/pull/view_image`: MuMu Settings page rendered correctly with no obvious overlap; account card, timer pills, feedback email, compliance buttons, and bottom tab bar fit on the 900x1600 emulator screen.
+- `git status -sb`: current changes are `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`, plus untracked temporary MuMu screenshot/XML files generated during verification.
+- `Remove-Item` for local `tmp-mumu-*` files: cleaned up temporary MuMu screenshots and UI XML artifacts generated during Android verification.
+- `git status -sb`: after cleanup, only `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx` are modified.
+- `npm.cmd run check`: passed after small-screen layout, mini-player, Web, and MuMu verification work.
+- `npx.cmd expo install --check`: passed after small-screen layout, mini-player, Web, and MuMu verification work; dependencies are up to date.
+- `git diff --check`: passed after small-screen layout, mini-player, Web, and MuMu verification work; only normal Windows LF-to-CRLF warnings were reported.
+- `git add docs/HANDOFF_CONTEXT.md src/application/SleepApp.tsx`: staged the small-screen UI layout commit scope; Git reported normal Windows LF-to-CRLF working-copy warnings.
