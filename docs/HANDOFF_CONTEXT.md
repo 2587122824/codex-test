@@ -443,3 +443,14 @@ The UI is much better than the MVP, but can still be polished:
 - `npx.cmd expo install --check`: passed after small-screen layout, mini-player, Web, and MuMu verification work; dependencies are up to date.
 - `git diff --check`: passed after small-screen layout, mini-player, Web, and MuMu verification work; only normal Windows LF-to-CRLF warnings were reported.
 - `git add docs/HANDOFF_CONTEXT.md src/application/SleepApp.tsx`: staged the small-screen UI layout commit scope; Git reported normal Windows LF-to-CRLF working-copy warnings.
+- `git add docs/HANDOFF_CONTEXT.md; git commit -m "Polish small screen UI layout"`: created commit `87edc9f Polish small screen UI layout` with small-screen layout polish, mini-player nested-button fix, and verification notes.
+- `git push origin codex/playback-modes`: pushed `87edc9f Polish small screen UI layout` to the remote `codex/playback-modes` branch.
+- `rg -n "鍚|鐧|鎾|绾||€|俙|噪|枕|尘|寰|棌|秷|屴|勫|愬|惧|叧|闂|彁|湡|€佲|銆" app.json src docs server scripts`: searched for likely mojibake; matches were normal Chinese words/content, not corrupted source strings.
+- `rg -n "�|\uFFFD" app.json src docs server scripts`: found no Unicode replacement characters in app/source/docs/server/scripts.
+- `Select-String -Path src/application/SleepApp.tsx src/shared/ui/*.tsx -Pattern 'Pressable|accessibilityLabel|accessibilityRole' -Context 0,2`: failed due to incorrect PowerShell multi-path argument form; rerunning with a path array.
+- `Select-String -Path @('src/application/SleepApp.tsx','src/shared/ui/*.tsx') -Pattern 'Pressable|accessibilityLabel|accessibilityRole' -Context 0,2`: reviewed Pressable/accessibility usage; no remaining nested button pattern was found, and `TrackRow` has sibling play/favorite buttons with correct Chinese labels.
+- `apply_patch` on `src/application/SleepApp.tsx`: added explicit `accessibilityRole`/`accessibilityLabel` to the header home button and bottom tab buttons.
+- `npm.cmd run check`: passed after copy/accessibility polish.
+- `npx.cmd expo install --check`: passed after copy/accessibility polish; dependencies are up to date.
+- `git diff --check`: passed after copy/accessibility polish; only normal Windows LF-to-CRLF warnings were reported.
+- `git add docs/HANDOFF_CONTEXT.md src/application/SleepApp.tsx`: staged the copy/accessibility polish commit scope; Git reported normal Windows LF-to-CRLF warnings.

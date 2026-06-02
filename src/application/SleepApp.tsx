@@ -269,10 +269,15 @@ export default function SleepApp() {
         <View style={styles.header}>
           <View>
             <Text style={styles.eyebrow}>{appConfig.appEnv.toUpperCase()}</Text>
-            <Text style={styles.appTitle}>{appConfig.appName}</Text>
+          <Text style={styles.appTitle}>{appConfig.appName}</Text>
           </View>
           {screen !== 'home' ? (
-            <Pressable style={styles.headerButton} onPress={() => setScreen('home')}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="返回首页"
+              style={styles.headerButton}
+              onPress={() => setScreen('home')}
+            >
               <Home color={colors.ink} size={18} />
             </Pressable>
           ) : null}
@@ -1365,7 +1370,12 @@ const TabButton = ({
   const color = active ? colors.white : colors.muted;
 
   return (
-    <Pressable style={[styles.tabButton, active && styles.tabButtonActive]} onPress={onPress}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={[styles.tabButton, active && styles.tabButtonActive]}
+      onPress={onPress}
+    >
       <View style={styles.tabIcon}>{icon(color)}</View>
       <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>{label}</Text>
     </Pressable>
