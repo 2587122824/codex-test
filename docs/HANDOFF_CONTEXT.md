@@ -584,3 +584,4 @@ The UI is much better than the MVP, but can still be polished:
 - `git add docs/HANDOFF_CONTEXT.md`: restaged handoff after recording the PowerShell `&&` parser failure.
 - `git commit -m "Improve player and Android navigation polish"`: created commit `2d0b257` with player scroll reset, compact header, Android navigation/back handling, and verification notes.
 - `git add docs/HANDOFF_CONTEXT.md; git commit --amend --no-edit`: amended the commit to include the commit log entry; the amended commit hash at that moment was `22a6935`.
+- `git push origin codex/playback-modes`: pushed navigation polish commit `ebe351e` to the remote branch.
