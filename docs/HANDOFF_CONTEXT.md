@@ -625,3 +625,16 @@ Validation:
 - `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
 - Local preview at `http://localhost:8081/` returned `200 OK`.
 - MuMu visual smoke check passed: home opens directly to the three module entries, the music module shows filter chips/count/sort state, and AI Sleep shows the lightweight `今晚慢一点入睡` companion cue.
+
+## 2026-06-03 Home Entry Simplification
+
+- Simplified the home screen to show only the three core module cards: music, stories, and white noise.
+- Removed the home `QuickSections` preview block, including the recent-play preview and favorite preview, so the home screen stays focused as a clean entry layer.
+- Kept the Favorites tab, account sync support for favorites/history, and mini player behavior unchanged.
+
+Validation:
+
+- `npm.cmd run check` passed.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`.

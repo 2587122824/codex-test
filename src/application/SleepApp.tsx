@@ -262,9 +262,6 @@ export default function SleepApp() {
     [selectedModuleCategory, sortedModuleItems],
   );
   const activeModuleInfo = getModule(activeModule);
-  const recentTracks = player.historyIds
-    .map((id) => audioCatalog.find((item) => item.id === id))
-    .filter(Boolean) as AudioItem[];
   const favoriteTracks = audioCatalog.filter((item) => player.favoriteIds.includes(item.id));
   const selectedAiIntent =
     aiSleepIntents.find((intent) => intent.id === selectedAiIntentId) ?? aiSleepIntents[0];
@@ -404,15 +401,6 @@ export default function SleepApp() {
                     />
                   ))}
               </View>
-
-              <QuickSections
-                recentTracks={recentTracks}
-                favoriteTracks={favoriteTracks}
-                onOpenTrack={openTrack}
-                onFavorite={toggleFavoriteAndSync}
-                isFavorite={player.isFavorite}
-                onOpenFavorites={() => navigateTo('favorites')}
-              />
             </View>
           ) : null}
 
@@ -714,15 +702,6 @@ export default function SleepApp() {
   );
 }
 
-type QuickSectionsProps = {
-  recentTracks: AudioItem[];
-  favoriteTracks: AudioItem[];
-  onOpenTrack: (track: AudioItem, sourceQueue?: AudioItem[]) => void;
-  onFavorite: (trackId: string) => void;
-  isFavorite: (trackId: string) => boolean;
-  onOpenFavorites: () => void;
-};
-
 const formatSyncTime = (isoDate: string | null) => {
   if (!isoDate) {
     return '尚未同步';
@@ -887,51 +866,6 @@ const AccountPanel = ({
     </View>
   );
 };
-
-const QuickSections = ({
-  recentTracks,
-  favoriteTracks,
-  onOpenTrack,
-  onFavorite,
-  isFavorite,
-  onOpenFavorites,
-}: QuickSectionsProps) => (
-  <View style={styles.stack}>
-    <Text style={styles.sectionTitle}>最近播放</Text>
-    {recentTracks.length === 0 ? (
-      <EmptyState text="播放任意内容后，这里会显示最近记录。" />
-    ) : (
-      recentTracks.slice(0, 3).map((item) => (
-        <TrackRow
-          key={item.id}
-          item={item}
-          isFavorite={isFavorite(item.id)}
-          onPress={() => onOpenTrack(item, recentTracks)}
-          onFavorite={() => onFavorite(item.id)}
-        />
-      ))
-    )}
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>我的收藏</Text>
-      <Pressable style={styles.subtleButton} onPress={onOpenFavorites}>
-        <Text style={styles.subtleButtonText}>查看全部</Text>
-      </Pressable>
-    </View>
-    {favoriteTracks.length === 0 ? (
-      <EmptyState text="点击列表里的星标即可收藏。" />
-    ) : (
-      favoriteTracks.slice(0, 3).map((item) => (
-        <TrackRow
-          key={item.id}
-          item={item}
-          isFavorite={isFavorite(item.id)}
-          onPress={() => onOpenTrack(item, favoriteTracks)}
-          onFavorite={() => onFavorite(item.id)}
-        />
-      ))
-    )}
-  </View>
-);
 
 const AiSleepPanel = ({
   intents,
