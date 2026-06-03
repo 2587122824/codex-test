@@ -110,7 +110,15 @@ if (!fs.existsSync(indexPath)) {
   missing.push('server/aliyun-functions/index.js');
 } else {
   const index = fs.readFileSync(indexPath, 'utf8');
-  for (const phrase of ['createPostgresAdapter()', 'createSmsAdapter()', "process.env.SMS_PROVIDER === 'local'", 'createAliyunSmsAdapter()', 'exports.handler']) {
+  for (const phrase of [
+    'createPostgresAdapter()',
+    'createSmsAdapter()',
+    "process.env.SMS_PROVIDER === 'local'",
+    'createAliyunSmsAdapter()',
+    'getApp().handle(event)',
+    'FUNCTION_HANDLER_ERROR',
+    'exports.handler',
+  ]) {
     if (!index.includes(phrase)) {
       missing.push(`production entry missing: ${phrase}`);
     }
