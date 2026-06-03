@@ -33,8 +33,8 @@ Screenshots to prepare:
 
 - Run `npm run check` before every beta or release candidate build.
 - Complete `docs/INTERNAL_BETA_CHECKLIST.md` before inviting external testers.
-- Replace generated MVP audio with licensed production audio before public launch.
-- Verify each audio item has author, license, source URL, and attribution flag.
+- Review project-owned generated/TTS beta audio quality before public launch; replace any weak item with commissioned or licensed production audio.
+- Verify each of the 30 beta audio items has author, license, source URL, and attribution flag.
 - Publish `docs/PRIVACY_POLICY_DRAFT.md` as a real web page and replace the contact section.
 - Google Play data safety: declare local-only data storage and no server collection for this version.
 - Avoid medical claims such as treating insomnia or diagnosing sleep disorders.

@@ -8,7 +8,7 @@ const catalog = fs.readFileSync(catalogPath, 'utf8');
 const errors = [];
 const ids = new Set();
 const counts = { music: 0, story: 0, noise: 0 };
-const minimumCounts = { music: 5, story: 3, noise: 5 };
+const minimumCounts = { music: 10, story: 8, noise: 12 };
 
 const itemPattern = /\{\s*id:\s*'([^']+)'([\s\S]*?)source:\s*([a-zA-Z0-9_]+),\s*\}/g;
 const requiredFields = ['type', 'title', 'description', 'duration', 'category', 'asset', 'cover'];

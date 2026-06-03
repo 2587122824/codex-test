@@ -20,10 +20,17 @@ const sourcePattern = /const\s+([a-zA-Z0-9_]+)\s*=\s*\{([\s\S]*?)\};/g;
 const itemPattern = /\{\s*id:\s*'([^']+)'([\s\S]*?)source:\s*([a-zA-Z0-9_]+),\s*\}/g;
 const sourceFields = ['name', 'author', 'license', 'url', 'attributionRequired'];
 const counts = {
+  music: 0,
+  story: 0,
+  noise: 0,
   licensedCandidates: 0,
   betaPlaceholders: 0,
   attributionRequired: 0,
 };
+const minimumCounts = { music: 10, story: 8, noise: 12 };
+const minimumTotalItems = 30;
+const maximumBetaPlaceholders = 2;
+const maximumAudioBytes = 50 * 1024 * 1024;
 const sources = new Map();
 
 const readStringField = (body, field) => {
@@ -32,7 +39,20 @@ const readStringField = (body, field) => {
 };
 
 const hasReplacementArtifacts = (value) =>
-  /�|\uFFFD|锟斤拷|ï¿½/.test(value);
+  /锟|�|閿熸枻鎷|茂驴陆/.test(value);
+
+const getDirectoryBytes = (directory) => {
+  let total = 0;
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      total += getDirectoryBytes(entryPath);
+    } else if (entry.isFile()) {
+      total += fs.statSync(entryPath).size;
+    }
+  }
+  return total;
+};
 
 let sourceMatch;
 while ((sourceMatch = sourcePattern.exec(catalog)) !== null) {
@@ -72,6 +92,13 @@ while ((itemMatch = itemPattern.exec(catalog)) !== null) {
   itemCount += 1;
   const [, id, body, sourceName] = itemMatch;
   const source = sources.get(sourceName);
+  const type = readStringField(body, 'type');
+
+  if (['music', 'story', 'noise'].includes(type)) {
+    counts[type] += 1;
+  } else {
+    errors.push(`${id} has invalid type: ${type || 'missing'}`);
+  }
 
   for (const field of ['title', 'description', 'category']) {
     const value = readStringField(body, field);
@@ -116,12 +143,32 @@ if (itemCount === 0) {
   errors.push('No audio catalog items found for content audit');
 }
 
+if (itemCount < minimumTotalItems) {
+  errors.push(`Content audit expected at least ${minimumTotalItems} items, found ${itemCount}`);
+}
+
+for (const [type, minimum] of Object.entries(minimumCounts)) {
+  if (counts[type] < minimum) {
+    errors.push(`Content audit expected at least ${minimum} ${type} items, found ${counts[type]}`);
+  }
+}
+
 if (counts.licensedCandidates === 0) {
   errors.push('Content audit expected at least one licensed production candidate');
 }
 
-if (counts.betaPlaceholders === 0) {
-  errors.push('Content audit expected at least one beta placeholder item to track before public release');
+if (counts.betaPlaceholders > maximumBetaPlaceholders) {
+  errors.push(
+    `Content audit allows at most ${maximumBetaPlaceholders} beta placeholder items, found ${counts.betaPlaceholders}`,
+  );
+}
+
+const audioBytes = getDirectoryBytes(path.join(rootDir, 'assets', 'audio'));
+
+if (audioBytes > maximumAudioBytes) {
+  errors.push(
+    `Content audit expected local audio assets under ${maximumAudioBytes} bytes, found ${audioBytes} bytes`,
+  );
 }
 
 if (errors.length > 0) {
@@ -133,5 +180,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Content audit passed: ${itemCount} items, ${counts.licensedCandidates} licensed candidates, ${counts.betaPlaceholders} beta placeholders, ${counts.attributionRequired} attribution-required items.`,
+  `Content audit passed: ${itemCount} items (${counts.music} music, ${counts.story} story, ${counts.noise} noise), ${counts.licensedCandidates} licensed/original candidates, ${counts.betaPlaceholders} beta placeholders, ${counts.attributionRequired} attribution-required items, ${Math.round(audioBytes / 1024 / 1024)}MB local audio.`,
 );

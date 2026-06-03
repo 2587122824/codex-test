@@ -302,6 +302,12 @@ The UI is much better than the MVP, but can still be polished:
 - Updated `docs/INTERNAL_BETA_CHECKLIST.md` so beta testing covers Account & Sync behavior and describes the app as local-first with Aliyun sync available only when the API endpoint and handlers are configured.
 - Added `scripts/mock-aliyun-api.js`, a dependency-free local Mock API for phone OTP login, session recovery, logout, and sync merge testing.
 - Updated `package.json` with `mock:api` and updated `docs/INTERNAL_BETA_CHECKLIST.md` with Mock API setup, fixed OTP `123456`, and local-only limitations.
+- Expanded the local beta audio catalog from 13 to 30 items: 10 music, 8 story/guidance, and 12 white-noise/environment items.
+- Added project-owned original generated audio assets and original Mandarin TTS story/guidance assets under `assets/audio`.
+- Replaced `Internal beta placeholder` catalog sourcing with auditable licensed or project-owned original source records; current placeholder count is 0.
+- Updated AI Sleep recommendation queues so each sleep goal recommends 5 tracks from the expanded catalog.
+- Strengthened audio/content validation: minimum catalog counts are now 10/8/12, content audit requires at least 30 items, allows at most 2 placeholders, and enforces a 50MB local audio budget.
+- Updated audio source, internal beta, and Play Store checklist docs for the expanded authorization-first beta catalog.
 
 ### 2026-06-03 Validation
 
@@ -585,3 +591,7 @@ The UI is much better than the MVP, but can still be polished:
 - `git commit -m "Improve player and Android navigation polish"`: created commit `2d0b257` with player scroll reset, compact header, Android navigation/back handling, and verification notes.
 - `git add docs/HANDOFF_CONTEXT.md; git commit --amend --no-edit`: amended the commit to include the commit log entry; the amended commit hash at that moment was `22a6935`.
 - `git push origin codex/playback-modes`: pushed navigation polish commit `ebe351e` to the remote branch.
+- Audio expansion validation: `npm.cmd run check` passed, reporting 30 catalog items (10 music, 8 story, 12 noise), 30 licensed/original candidates, 0 beta placeholders, 3 attribution-required items, and about 45MB local audio.
+- `npx.cmd expo install --check` passed after using the approved Expo cache write path; dependencies are up to date.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Web narrow-screen smoke verification passed for the expanded catalog: music list shows 10 items and played `慢响风铃` with `0:52`; story list shows 8 items and played `身体慢慢安静` with `0:31`; noise list shows 12 items and played `棕噪睡眠底` with `0:55`; AI Sleep displays 5 recommended tracks for the default goal.

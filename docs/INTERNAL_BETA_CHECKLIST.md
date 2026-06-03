@@ -13,7 +13,8 @@ Use this checklist before sharing Codex Sleep with a small test group.
 7. Confirm AI Sleep opens the player, starts the recommended queue, and applies the selected timer.
 8. Set a custom sleep timer and confirm the timer state appears on the player screen.
 9. Open Settings, Privacy, Audio Credits, and the beta feedback link.
-10. Open Account & Sync from Settings:
+10. Play at least 3 music tracks, 3 story/guidance tracks, and 3 white-noise tracks from the expanded 30-item catalog.
+11. Open Account & Sync from Settings:
    - With no `EXPO_PUBLIC_API_BASE_URL`, confirm guest mode explains that data is saved locally.
    - With the local Mock API configured, send a phone code, enter `123456`, sign in, and confirm favorites, recent plays, and settings merge after login.
    - Sign out and confirm local playback and favorites remain usable.
@@ -48,6 +49,15 @@ hash tokens, or implement real cloud revocation policy.
 - Confirm the bottom navigation shows Home, AI Sleep, Favorites, and Settings; the full player is opened from tracks or the mini player.
 - Confirm guest mode remains usable when the Aliyun API endpoint is empty or unreachable.
 
+## Audio Quality Checks
+
+- Current beta catalog target: 10 music, 8 story/guidance, and 12 white-noise items.
+- Confirm no track has a sudden volume jump at start or end.
+- For loopable music/noise, confirm the first repeat does not feel sharply cut.
+- For Mandarin story/guidance tracks, confirm speech is slow enough for bedtime use.
+- Open Audio Credits and confirm every item has source, author, license, and URL.
+- Treat project-owned generated/TTS audio as beta-quality: usable for internal testing, but still subject to final public-release quality review.
+
 ## Feedback To Collect
 
 - Which audio category felt most useful?
@@ -59,6 +69,6 @@ hash tokens, or implement real cloud revocation policy.
 
 ## Known Beta Limitations
 
-- Some audio items are internal placeholders and must be replaced before public launch.
+- The expanded audio catalog is authorization-first and currently has no `Internal beta placeholder` items, but project-owned generated/TTS audio still needs a final quality review before public launch.
 - The app is local-first. Account sync can be tested with the local Mock API; real beta cloud sync still requires a configured Aliyun API endpoint and real Function Compute handlers.
 - Codex Sleep is a relaxation tool, not a medical device or treatment.

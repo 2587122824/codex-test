@@ -85,7 +85,7 @@ const aiSleepIntents: AiSleepIntent[] = [
     title: '快速入睡',
     summary: '低刺激音乐先降速，再用稳定声场收尾。',
     guidance: '把手机放远一点，跟着声音把注意力从白天慢慢放下来。',
-    trackIds: ['music-breathing-pad', 'music-moon-piano', 'noise-rain-window'],
+    trackIds: ['music-soft-piano-loop', 'music-breathing-pad', 'music-floating-pad', 'noise-rain-window', 'noise-pink-soft'],
     playbackMode: 'sequential',
   },
   {
@@ -93,7 +93,7 @@ const aiSleepIntents: AiSleepIntent[] = [
     title: '焦虑放松',
     summary: '呼吸铺底加轻引导，适合睡前脑子停不下来。',
     guidance: '不需要努力睡着，只要把每一次呼气听完整。',
-    trackIds: ['music-breathing-demo', 'music-deep-meditation', 'story-forest-letter'],
+    trackIds: ['music-breathing-demo', 'story-breath-countdown', 'music-warm-drone', 'story-body-scan', 'noise-brown-bed'],
     playbackMode: 'repeat-all',
   },
   {
@@ -101,7 +101,7 @@ const aiSleepIntents: AiSleepIntent[] = [
     title: '半夜醒来',
     summary: '少人声、少变化，帮助重新回到安静状态。',
     guidance: '保持闭眼，先不要看时间，让稳定的环境声接住注意力。',
-    trackIds: ['noise-night-wind', 'noise-ocean-waves', 'noise-rain-window'],
+    trackIds: ['noise-brown-bed', 'noise-room-fan', 'story-midnight-return', 'music-floating-pad', 'noise-soft-wind'],
     playbackMode: 'repeat-all',
   },
   {
@@ -109,7 +109,7 @@ const aiSleepIntents: AiSleepIntent[] = [
     title: '自然白噪音',
     summary: '雨声、海岸和篝火氛围，适合遮盖环境噪音。',
     guidance: '选择一个舒服音量，让声音留在背景里，不用追着听。',
-    trackIds: ['noise-rain-window', 'noise-ocean-waves', 'noise-night-wind'],
+    trackIds: ['noise-rain-window', 'noise-ocean-waves', 'noise-night-wind', 'noise-forest-night', 'noise-creek-stones'],
     playbackMode: 'shuffle',
   },
   {
@@ -117,7 +117,7 @@ const aiSleepIntents: AiSleepIntent[] = [
     title: '睡前故事',
     summary: '轻故事配合定时关闭，适合需要一点陪伴的夜晚。',
     guidance: '故事只是陪你慢下来，听到哪里睡着都刚刚好。',
-    trackIds: ['story-stars-falling', 'story-cloud-boat', 'story-forest-letter'],
+    trackIds: ['story-stars-falling', 'story-cloud-boat', 'story-forest-letter', 'story-lake-lantern', 'story-garden-path'],
     playbackMode: 'sequential',
   },
 ];
