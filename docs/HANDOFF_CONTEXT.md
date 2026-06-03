@@ -1134,3 +1134,5 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - Sync race fix cleanup: removed temporary MuMu playback/favorite screenshot and UI hierarchy files after verification.
 - Sync race fix pre-commit status: inspected git status and diff stat after cleanup; remaining diff is SleepApp sync scheduling plus handoff log.
 - Sync race fix diff review: inspected SleepApp diff before committing the post-render signed-in sync scheduling fix.
+- Sync race fix commit: committed post-render signed-in sync timing fix as a6bfd8f (Fix signed-in library sync timing); MuMu verified favorite toggles to 取消收藏 and persists in Favorites after restart.
+- Post-sync-commit status: inspected git status and latest commits after a6bfd8f; only handoff logging remains modified.
