@@ -1100,3 +1100,37 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - Login optimization cleanup: removed temporary MuMu screenshot PNG files from the workspace after using them to verify the login UI and full login flow.
 - Login optimization final workspace state: inspected git status and diff stat after screenshot cleanup; remaining changes are tracked source/docs updates only.
 - Login fix pre-commit review: inspected frontend/API and backend/smoke/API-contract diffs; scope is limited to China-default phone login normalization, SecureStore-compatible token keys, docs, and handoff logging.
+- Login fix commit: committed China-default phone login and SecureStore token-key fix as c3d0a64 (Fix China phone login flow).
+- Post-login continuation: read INTERNAL_BETA_CHECKLIST.md, PLAY_STORE_CHECKLIST.md, and git status after committing c3d0a64; found remaining handoff-only diff plus mojibake in beta/store checklist docs that should be cleaned before broader internal testing.
+- Mojibake scan: searched docs/src/config/scripts for common garbled Chinese markers before choosing the next internal-beta documentation cleanup scope.
+- Mojibake scan result: current rg scan showed app/config/scripts and key docs contain normal 古德眠 Chinese text; the earlier checklist mojibake appears to be terminal rendering, so the next useful beta step is cloud/API and sync verification rather than broad doc rewriting.
+- Cloud smoke rerun after login fix: ran npm.cmd run smoke:aliyun-cloud against https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run using +8613900000618 and fixed code 123456 to confirm live auth/session/refresh/sync/logout still works.
+- Deploy package freshness check: compared dist\\aliyun-functions-deploy.zip handler.js with current server handler; checked zip size and local-China-phone normalization presence.
+- Aliyun deploy capability check: checked for aliyun/fc CLIs and Alibaba Cloud credential/function env vars before deciding whether Codex can upload the refreshed Function Compute zip itself.
+- MuMu playback smoke start: checked adb devices, tapped Home then music module in the installed APK on 127.0.0.1:7555, and captured tmp-gudemian-music-list.png.
+- MuMu playback smoke: tapped the first music track play button, waited 4 seconds, and captured tmp-gudemian-music-playing.png to verify playback UI state.
+- MuMu favorite smoke: tapped the player favorite button while Sopofiric was playing and captured tmp-gudemian-favorite-tapped.png before app restart.
+- MuMu favorite smoke retry: tapped the player heart button again at its center and captured tmp-gudemian-favorite-confirm.png to confirm visual state.
+- Player/favorite inspection: source read confirmed player favorite button should fill Heart when isFavorite=true, but PlayerPanel contains real mojibake strings in labels/copy; this should be cleaned as a UI polish item before broader beta.
+- PlayerPanel mojibake inspection: printed SleepApp PlayerPanel source lines 1221-1456 via Node UTF-8 JSON output to capture exact corrupted strings before patching.
+- MuMu favorite accessibility check: dumped Android UI hierarchy and searched for 收藏/已收藏/Soporific/停止 labels to verify player favorite button state more reliably than screenshot color.
+- MuMu favorite accessibility retry: paused playback and retried compressed uiautomator dump to inspect player favorite accessibility labels.
+- MuMu favorite exact-bounds retry: tapped the favorite button center from UI hierarchy bounds and re-dumped accessibility labels to check 收藏 versus 已收藏 state.
+- MuMu list favorite smoke: returned home, reopened music list, tapped the first row favorite button, and dumped UI labels to see whether list-level favorite toggling works.
+- TrackRow mojibake inspection: printed TrackRow source via Node UTF-8 JSON and confirmed accessibility labels/separator strings are actually garbled in source.
+- Sync race inspection: printed SleepApp account/sync helper area and identified syncIfSignedIn runs immediately after player state mutations, likely before updated favorite/history state is available to getSnapshot.
+- Sync race patch context: printed SleepApp state initialization lines after first sync-request patch context did not match exactly.
+- Sync race patch: added syncRequestId state and replaced immediate syncIfSignedIn with requestSyncIfSignedIn plus effect-based post-render sync for settings, favorites, and openTrack.
+- Sync race remaining reference: located a leftover syncIfSignedIn call after rg found one remaining reference.
+- Sync race patch completion: replaced the remaining AI Sleep syncIfSignedIn call with requestSyncIfSignedIn and verified no old helper references remain.
+- Sync race fix validation: ran npm.cmd run check after moving signed-in sync to a post-render syncRequestId effect.
+- Sync race fix APK build: rebuilt release APK after post-render signed-in sync fix for favorites/history/settings mutations.
+- Sync race fix APK artifact: copied rebuilt APK to dist\\gudemian-cloud-internal-beta.apk for MuMu favorite/sync retest.
+- Sync race fix MuMu setup: reinstalled rebuilt APK, cleared app data, and relaunched com.gudemian.app for a clean signed-in favorite retest.
+- Sync race fix MuMu retest: logged in with local phone 13900000619 and fixed code 123456, opened music list, tapped Soporific favorite, then dumped UI labels to check favorite state after signed-in sync.
+- MuMu favorite persistence smoke: force-stopped and relaunched the rebuilt APK, opened Favorites, and dumped UI labels to verify Soporific persisted after restart.
+- Sync race fix validation: npx.cmd expo install --check passed after rebuilding and MuMu-testing the favorite persistence fix.
+- Sync race fix validation: git diff --check passed with only normal Windows CRLF warnings before cleanup/commit.
+- Sync race fix cleanup: removed temporary MuMu playback/favorite screenshot and UI hierarchy files after verification.
+- Sync race fix pre-commit status: inspected git status and diff stat after cleanup; remaining diff is SleepApp sync scheduling plus handoff log.
+- Sync race fix diff review: inspected SleepApp diff before committing the post-render signed-in sync scheduling fix.

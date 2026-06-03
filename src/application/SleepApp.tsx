@@ -221,6 +221,7 @@ export default function SleepApp() {
   const [selectedAiIntentId, setSelectedAiIntentId] = useState(aiSleepIntents[0].id);
   const [selectedAiDuration, setSelectedAiDuration] = useState(defaultAiSleepDuration);
   const [aiCompanionInput, setAiCompanionInput] = useState('');
+  const [syncRequestId, setSyncRequestId] = useState(0);
   const settingsRef = useRef<UserSettings>(defaultSettings);
   const resolvedThemeMode = resolveThemeMode(settings.themeMode, systemColorScheme);
   const themeColors = resolvedThemeMode === 'light' ? lightColors : darkColors;
@@ -335,31 +336,41 @@ export default function SleepApp() {
     applyRemoteData,
   });
 
-  const syncIfSignedIn = useCallback(() => {
+  const requestSyncIfSignedIn = useCallback(() => {
     if (account.user) {
-      setTimeout(() => {
-        void account.syncNow();
-      }, 0);
+      setSyncRequestId((value) => value + 1);
     }
-  }, [account.syncNow, account.user]);
+  }, [account.user]);
+
+  useEffect(() => {
+    if (!account.user || syncRequestId === 0) {
+      return undefined;
+    }
+
+    const syncTimer = setTimeout(() => {
+      void account.syncNow();
+    }, 0);
+
+    return () => clearTimeout(syncTimer);
+  }, [account.syncNow, account.user, syncRequestId]);
 
   const saveSettingsAndSync = (nextSettings: UserSettings) => {
     const normalizedSettings = normalizeSettings(nextSettings);
     settingsRef.current = normalizedSettings;
     setSettings(normalizedSettings);
     storage.setJson(storageKeys.settings, normalizedSettings);
-    syncIfSignedIn();
+    requestSyncIfSignedIn();
   };
 
   const toggleFavoriteAndSync = (trackId: string) => {
     player.toggleFavorite(trackId);
-    syncIfSignedIn();
+    requestSyncIfSignedIn();
   };
 
   const openTrack = async (track: AudioItem, sourceQueue?: AudioItem[]) => {
     await player.playTrack(track, sourceQueue);
     navigateTo('player');
-    syncIfSignedIn();
+    requestSyncIfSignedIn();
   };
 
   const startAiSleep = async () => {
@@ -372,7 +383,7 @@ export default function SleepApp() {
     await player.playTrack(selectedAiTracks[0], selectedAiTracks);
     player.setSleepTimer(selectedAiDuration);
     navigateTo('player');
-    syncIfSignedIn();
+    requestSyncIfSignedIn();
   };
 
   const updateCompanionRequest = (text: string) => {
