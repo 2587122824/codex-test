@@ -26,13 +26,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  BackHandler,
   Linking,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  ToastAndroid,
   View,
 } from 'react-native';
 
@@ -129,6 +132,10 @@ const formatDateTime = (isoDate: string) =>
 
 export default function SleepApp() {
   const player = useAudioPlayer();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const currentScreenRef = useRef<Screen>('home');
+  const screenHistoryRef = useRef<Screen[]>([]);
+  const lastHomeBackPressRef = useRef(0);
   const [screen, setScreen] = useState<Screen>('home');
   const [activeModule, setActiveModule] = useState<AudioType>('music');
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
@@ -139,6 +146,58 @@ export default function SleepApp() {
   useEffect(() => {
     storage.getJson(storageKeys.settings, defaultSettings).then(setSettings);
   }, []);
+
+  useEffect(() => {
+    currentScreenRef.current = screen;
+    const timeout = setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    }, 0);
+
+    return () => clearTimeout(timeout);
+  }, [screen]);
+
+  const navigateTo = useCallback((nextScreen: Screen) => {
+    const currentScreen = currentScreenRef.current;
+    if (currentScreen === nextScreen) {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
+
+    screenHistoryRef.current = [...screenHistoryRef.current, currentScreen].slice(-16);
+    setScreen(nextScreen);
+  }, []);
+
+  const navigateBack = useCallback(() => {
+    if (currentScreenRef.current === 'home') {
+      const now = Date.now();
+      if (now - lastHomeBackPressRef.current < 1800) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      lastHomeBackPressRef.current = now;
+      ToastAndroid.show('再按一次退出 Codex Sleep', ToastAndroid.SHORT);
+      return true;
+    }
+
+    const previousScreen = screenHistoryRef.current.pop();
+    if (previousScreen) {
+      setScreen(previousScreen);
+      return true;
+    }
+
+    setScreen('home');
+    return true;
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return undefined;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', navigateBack);
+    return () => subscription.remove();
+  }, [navigateBack]);
 
   const saveSettings = (next: UserSettings) => {
     setSettings(next);
@@ -201,7 +260,7 @@ export default function SleepApp() {
     if (!player.timerEndsAt && settings.defaultSleepTimerMinutes > 0) {
       player.setSleepTimer(settings.defaultSleepTimerMinutes);
     }
-    setScreen('player');
+    navigateTo('player');
     syncIfSignedIn();
   };
 
@@ -214,7 +273,7 @@ export default function SleepApp() {
     player.setPlaybackMode(selectedAiIntent.playbackMode);
     await player.playTrack(selectedAiTracks[0], selectedAiTracks);
     player.setSleepTimer(selectedAiDuration);
-    setScreen('player');
+    navigateTo('player');
     syncIfSignedIn();
   };
 
@@ -247,7 +306,7 @@ export default function SleepApp() {
               accessibilityRole="button"
               accessibilityLabel="返回首页"
               style={styles.headerButton}
-              onPress={() => setScreen('home')}
+              onPress={() => navigateTo('home')}
             >
               <Home color={colors.ink} size={18} />
             </Pressable>
@@ -255,6 +314,7 @@ export default function SleepApp() {
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={[
             styles.scrollContent,
             player.currentTrack && screen !== 'player' && styles.scrollContentWithMiniPlayer,
@@ -284,7 +344,7 @@ export default function SleepApp() {
                       module={module}
                       onPress={() => {
                         setActiveModule(module.type);
-                        setScreen('module');
+                        navigateTo('module');
                       }}
                     />
                   ))}
@@ -296,7 +356,7 @@ export default function SleepApp() {
                 onOpenTrack={openTrack}
                 onFavorite={toggleFavoriteAndSync}
                 isFavorite={player.isFavorite}
-                onOpenFavorites={() => setScreen('favorites')}
+                onOpenFavorites={() => navigateTo('favorites')}
               />
             </View>
           ) : null}
@@ -410,7 +470,7 @@ export default function SleepApp() {
                     </Text>
                   </View>
                 </View>
-                <Pressable style={styles.subtleButton} onPress={() => setScreen('account')}>
+                <Pressable style={styles.subtleButton} onPress={() => navigateTo('account')}>
                   <Text style={styles.subtleButtonText}>{account.user ? '管理账号' : '登录 / 注册'}</Text>
                 </Pressable>
               </View>
@@ -454,10 +514,10 @@ export default function SleepApp() {
                 <Text style={styles.settingTitle}>上线合规</Text>
                 <Text style={styles.settingMeta}>查看音频版权和隐私说明，确保上架资料与 App 行为一致。</Text>
                 <View style={styles.playerControls}>
-                  <Pressable style={styles.subtleButton} onPress={() => setScreen('credits')}>
+                  <Pressable style={styles.subtleButton} onPress={() => navigateTo('credits')}>
                     <Text style={styles.subtleButtonText}>音频版权</Text>
                   </Pressable>
-                  <Pressable style={styles.subtleButton} onPress={() => setScreen('privacy')}>
+                  <Pressable style={styles.subtleButton} onPress={() => navigateTo('privacy')}>
                     <Text style={styles.subtleButtonText}>隐私说明</Text>
                   </Pressable>
                 </View>
@@ -468,7 +528,7 @@ export default function SleepApp() {
           {screen === 'account' ? (
             <AccountPanel
               account={account}
-              onBack={() => setScreen('settings')}
+              onBack={() => navigateTo('settings')}
             />
           ) : null}
 
@@ -531,7 +591,7 @@ export default function SleepApp() {
             currentTrack={player.currentTrack}
             playbackState={player.playbackState}
             progress={player.progress}
-            onOpen={() => setScreen('player')}
+            onOpen={() => navigateTo('player')}
             onTogglePlayback={player.togglePlayback}
           />
         ) : null}
@@ -542,25 +602,25 @@ export default function SleepApp() {
               label="首页"
               icon={(color) => <Moon color={color} size={18} />}
               active={screen === 'home' || screen === 'module'}
-              onPress={() => setScreen('home')}
+              onPress={() => navigateTo('home')}
             />
             <TabButton
               label="AI助眠"
               icon={(color) => <Sparkles color={color} size={18} />}
               active={screen === 'ai'}
-              onPress={() => setScreen('ai')}
+              onPress={() => navigateTo('ai')}
             />
             <TabButton
               label="收藏"
               icon={(color) => <Heart color={color} fill={screen === 'favorites' ? color : 'transparent'} size={18} />}
               active={screen === 'favorites'}
-              onPress={() => setScreen('favorites')}
+              onPress={() => navigateTo('favorites')}
             />
             <TabButton
               label="设置"
               icon={(color) => <Settings color={color} size={18} />}
               active={screen === 'settings' || screen === 'account' || screen === 'credits' || screen === 'privacy'}
-              onPress={() => setScreen('settings')}
+              onPress={() => navigateTo('settings')}
             />
           </View>
         ) : null}
@@ -1392,7 +1452,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1400,18 +1460,18 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: colors.green,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0,
   },
   appTitle: {
     color: colors.ink,
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '900',
   },
   headerButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: 8,
     backgroundColor: colors.surfaceElevated,
     alignItems: 'center',

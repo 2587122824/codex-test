@@ -533,3 +533,54 @@ The UI is much better than the MVP, but can still be polished:
 - `Invoke-WebRequest http://localhost:8081/`: local Expo Web page responded `200 OK` with content length `1262`, confirming the preview is reachable.
 - `git diff --check`: passed after local preview handoff updates, with only the normal Windows LF-to-CRLF warning for `docs/HANDOFF_CONTEXT.md`.
 - `git add docs/HANDOFF_CONTEXT.md`: staged the local preview handoff update; Git reported the normal Windows LF-to-CRLF warning.
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md`, `git status -sb`, and `rg` for `ScrollView`/header/screen navigation references: resumed from a clean branch and identified `SleepApp.tsx` as the place to add scroll-to-top-on-player-entry, compact header styles, and Android back-stack behavior.
+- `Get-Content` slices for `src/application/SleepApp.tsx`: confirmed navigation currently uses direct `setScreen` calls, the main `ScrollView` has no ref, and the header uses a large 28px app title with 40px back button.
+- `apply_patch` on `src/application/SleepApp.tsx`: added `BackHandler`, `ToastAndroid`, a main `ScrollView` ref, screen history refs, `navigateTo`, `navigateBack`, scroll-to-top-on-screen-change, Android hardware-back handling, and wired track/AI player entry plus header home button through the new navigation helper.
+- `apply_patch` on `src/application/SleepApp.tsx`: replaced remaining module, favorites, settings subpage, mini-player, and bottom-tab `setScreen` calls with `navigateTo` so Android back can return to the previous app screen.
+- `apply_patch` on `src/application/SleepApp.tsx`: compacted the fixed header by reducing top/bottom padding, shrinking the environment eyebrow, reducing the app title from 28px to 22px, and reducing the header home button from 40px to 36px.
+- `rg` for `setScreen`/navigation/back/scroll references and `git diff` review: confirmed remaining `setScreen` calls are internal to the navigation helpers, and all user-facing navigation entries now go through `navigateTo`.
+- `apply_patch` on `src/application/SleepApp.tsx`: added an Android platform guard around the hardware back listener so Web/iOS do not register Android-only back behavior.
+- `npm.cmd run check` and `git diff --check`: passed after scroll-reset, compact header, and Android back-navigation changes; `git diff --check` reported only normal Windows LF-to-CRLF warnings.
+- `npx.cmd expo install --check`: passed after the navigation/header changes; Expo dependencies are up to date.
+- `Get-NetTCPConnection -LocalPort 8081` and `Invoke-WebRequest http://localhost:8081/`: existing Expo Web preview process `20716` is still serving the app and returns `200 OK`, so the in-app browser can be refreshed to view the compact header.
+- `adb devices -l` and `adb reverse --list`: MuMu is online as `127.0.0.1:7555`/`127.0.0.1:16384`/`emulator-5554`, and reverse mapping `tcp:8081 tcp:8081` is active for loading the current Metro bundle.
+- MuMu app restart/reload and home screenshot: compact header title is visibly smaller, but the reduced top padding placed the environment label too close to the Android status bar; increasing only the header top padding while keeping the smaller title/button.
+- `apply_patch` on `src/application/SleepApp.tsx`: restored header top padding to `spacing.md` while keeping the smaller 22px app title, 10px eyebrow, 36px header button, and compact bottom padding.
+- `npm.cmd run check` and `git diff --check`: passed after restoring header top padding; `git diff --check` reported only normal Windows LF-to-CRLF warnings.
+- MuMu hardware Back verification screenshots: from `收藏` first Back returned to `AI助眠`, second Back returned to `首页`; the corrected compact header no longer overlaps the Android status bar.
+- Attempted homepage double-Back verification with `C:\Users\Administrator\AppData\Local\Android\Sdk\platform-tools\adb.exe`, but that exact adb path was not present in this environment; locating the active adb binary before retrying.
+- `where.exe adb`: no adb binary is currently available on `PATH`, so the next step is searching common SDK/MuMu install locations for `adb.exe`.
+- Narrow common-directory search for `adb.exe` under LocalAppData/Program Files timed out after 30s, so switching to environment-variable and known emulator install path checks.
+- Checked `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and common MuMu/Android SDK adb paths; none currently exist, so adb verification is temporarily blocked until the active adb binary is located.
+- Read the Browser in-app-browser skill instructions to verify the local Web preview through the existing `http://localhost:8081/` tab while adb path discovery is blocked.
+- Browser in-app preview connected to `http://localhost:8081/` and reloaded successfully for Web-side header and player scroll-reset verification.
+- Browser screenshot of Web home: compact header displays smaller `Codex Sleep` title with stable bottom navigation and no visible overlap in the narrow preview.
+- Browser DOM snapshot on Web home: located `播放 Soporific` in the recent-play list for player entry scroll-reset verification.
+- Browser player entry check: clicking `播放 Soporific` opened the player at `window.scrollY = 0`, showing the top of the player instead of a previous scroll position.
+- Browser scroll-reset path: after scrolling the player, trying to click a strict `首页` role timed out because no matching button was exposed at the current DOM state; inspecting the visible player DOM before retrying navigation.
+- Browser scrolled-player screenshot/DOM: player remained scrollable and exposed the header `返回首页` button, so using that entry to continue the scroll-reset path.
+- Browser click on `返回首页`: returned from the scrolled player to the home screen with `window.scrollY = 0`, and the mini player remained visible for re-entry testing.
+- Browser DOM snapshot on home with mini player: located the mini-player entry `打开播放器：Soporific` for player re-entry scroll-reset verification.
+- Browser mini-player click retry note: strict role click on `打开播放器：Soporific` timed out inside the browser automation runtime, so retrying with visible coordinate interaction and a fresh state check.
+- Browser coordinate retry landed on the `AI助眠` bottom tab instead of the mini player; app stayed stable at `window.scrollY = 0`, and mini player remained visible for another re-entry attempt.
+- Browser mini-player coordinate re-entry succeeded: tapping the mini player opened the full player at `window.scrollY = 0`, confirming the player no longer reuses the previous scrolled position.
+- `Get-Process` for adb/MuMu processes located the active adb binary at `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe`, so Android homepage double-Back verification can resume.
+- MuMu homepage double-Back verification with the active adb binary: first Back kept focus on `com.codexsleep.app/.MainActivity`, second Back moved focus to `app.lawnchair/.LawnchairLauncher`, confirming "press twice to exit" behavior on Home.
+- Final `npm.cmd run check`: passed after header, player scroll-reset, and Android back-navigation changes; audio/content/Aliyun/sync/mock validations all passed.
+- Final `npx.cmd expo install --check`: passed; Expo dependencies are up to date.
+- Final `git diff --check`: passed with only normal Windows LF-to-CRLF warnings for `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`.
+- `Get-ChildItem -Filter tmp-codex-*`: found three temporary MuMu screenshots (`tmp-codex-back-home.png`, `tmp-codex-back-after-one.png`, `tmp-codex-back-after-two.png`) to remove before commit.
+- `Remove-Item` for the three `tmp-codex-*` MuMu screenshots: cleaned temporary verification artifacts before commit.
+- `git status -sb`, `git diff --stat`, and `git diff` review: only `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx` are modified; review found one refinement needed so Home always uses double-Back exit before consuming screen history.
+- `apply_patch` on `src/application/SleepApp.tsx`: reordered `navigateBack` so Home always handles the double-Back exit flow first, while non-Home screens still consume navigation history or fall back to Home.
+- Re-ran `npm.cmd run check` after the Home-first back handling refinement; typecheck and all validation scripts passed.
+- Re-ran `npx.cmd expo install --check` after the Home-first back handling refinement; Expo dependencies remain up to date.
+- Re-ran `git diff --check` after the Home-first back handling refinement; passed with only normal Windows LF-to-CRLF warnings.
+- Re-ran MuMu homepage double-Back verification after the Home-first back handling refinement: first Back kept focus on `com.codexsleep.app/.MainActivity`, second Back moved focus to `app.lawnchair/.LawnchairLauncher`.
+- Final pre-commit `git status -sb`, `git diff --stat`, and `Get-ChildItem -Filter tmp-codex-*`: only `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx` are modified, and no temporary `tmp-codex-*` files remain.
+- `git add src/application/SleepApp.tsx docs/HANDOFF_CONTEXT.md`: staged the header/player-scroll/back-navigation changes and handoff updates; Git reported normal Windows LF-to-CRLF warnings.
+- `git add docs/HANDOFF_CONTEXT.md`: restaged handoff after adding the staging log entry; Git reported the normal Windows LF-to-CRLF warning.
+- Attempted chained `git add docs/HANDOFF_CONTEXT.md && git commit ...`, but this PowerShell version rejected `&&`; splitting the staging and commit commands.
+- `git add docs/HANDOFF_CONTEXT.md`: restaged handoff after recording the PowerShell `&&` parser failure.
+- `git commit -m "Improve player and Android navigation polish"`: created commit `2d0b257` with player scroll reset, compact header, Android navigation/back handling, and verification notes.
+- `git add docs/HANDOFF_CONTEXT.md; git commit --amend --no-edit`: amended the commit to include the commit log entry; the amended commit hash at that moment was `22a6935`.
