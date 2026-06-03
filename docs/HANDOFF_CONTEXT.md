@@ -609,3 +609,19 @@ Validation:
 - `npx.cmd expo install --check` passed.
 - `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
 - Local preview at `http://localhost:8081/` returned `200 OK`; refresh the in-app browser to view the updated screen.
+
+## 2026-06-03 Core Module Discovery Polish
+
+- Removed the home hero/title card so the first screen now starts directly with the three core module entries: music, stories, and white noise.
+- Kept `今晚慢一点入睡` only as a lightweight companion cue inside the AI Sleep panel.
+- Added local recommended sorting for module lists using existing `audioCatalog.category` and duration metadata.
+- Added module category filter chips, count display, and current filter state without changing the `AudioItem` type, catalog schema, playback hook, or sync protocol.
+- Confirmed `TrackRow` source text is UTF-8 correct in code; the visible mojibake during earlier terminal/automation output is from the inspection layer, not the source file.
+
+Validation:
+
+- `npm.cmd run check` passed, including the 30-item audio/content audit.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`.
+- MuMu visual smoke check passed: home opens directly to the three module entries, the music module shows filter chips/count/sort state, and AI Sleep shows the lightweight `今晚慢一点入睡` companion cue.

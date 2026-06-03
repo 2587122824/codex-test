@@ -99,6 +99,25 @@ const getCompanionIntentId = (text: string, fallbackIntentId: string) => {
   return fallbackIntentId;
 };
 
+const allCategoryLabel = '全部';
+
+const categoryPriority: Record<AudioType, string[]> = {
+  music: ['冥想音乐', '轻音乐', '舒缓音乐', '呼吸引导'],
+  story: ['呼吸引导', '身体放松', '夜醒安抚', '温柔故事', '梦境故事', '自然故事'],
+  noise: ['雨声', '粉噪', '棕噪', '风声', '风扇', '海浪', '海岸', '森林', '溪流', '雨夜', '篝火'],
+};
+
+const getSortedModuleItems = (items: AudioItem[], type: AudioType) => {
+  const priority = categoryPriority[type];
+  return [...items].sort((a, b) => {
+    const aIndex = priority.includes(a.category) ? priority.indexOf(a.category) : priority.length;
+    const bIndex = priority.includes(b.category) ? priority.indexOf(b.category) : priority.length;
+    const categoryDelta = aIndex - bIndex;
+    if (categoryDelta !== 0) return categoryDelta;
+    return b.duration - a.duration;
+  });
+};
+
 const aiSleepIntents: AiSleepIntent[] = [
   {
     id: 'fast-sleep',
@@ -158,6 +177,7 @@ export default function SleepApp() {
   const lastHomeBackPressRef = useRef(0);
   const [screen, setScreen] = useState<Screen>('home');
   const [activeModule, setActiveModule] = useState<AudioType>('music');
+  const [selectedModuleCategory, setSelectedModuleCategory] = useState(allCategoryLabel);
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [customTimer, setCustomTimer] = useState('25');
   const [selectedAiIntentId, setSelectedAiIntentId] = useState(aiSleepIntents[0].id);
@@ -226,6 +246,21 @@ export default function SleepApp() {
   };
 
   const moduleItems = useMemo(() => getItemsByType(activeModule), [activeModule]);
+  const sortedModuleItems = useMemo(
+    () => getSortedModuleItems(moduleItems, activeModule),
+    [activeModule, moduleItems],
+  );
+  const moduleCategories = useMemo(
+    () => [allCategoryLabel, ...Array.from(new Set(sortedModuleItems.map((item) => item.category)))],
+    [sortedModuleItems],
+  );
+  const visibleModuleItems = useMemo(
+    () =>
+      selectedModuleCategory === allCategoryLabel
+        ? sortedModuleItems
+        : sortedModuleItems.filter((item) => item.category === selectedModuleCategory),
+    [selectedModuleCategory, sortedModuleItems],
+  );
   const activeModuleInfo = getModule(activeModule);
   const recentTracks = player.historyIds
     .map((id) => audioCatalog.find((item) => item.id === id))
@@ -350,10 +385,6 @@ export default function SleepApp() {
         >
           {screen === 'home' ? (
             <View style={styles.stack}>
-              <View style={styles.hero}>
-                <Text style={styles.heroTitle}>今晚慢一点入睡</Text>
-              </View>
-
               <View style={styles.stack}>
                 {modules
                   .filter((module) => {
@@ -367,6 +398,7 @@ export default function SleepApp() {
                       module={module}
                       onPress={() => {
                         setActiveModule(module.type);
+                        setSelectedModuleCategory(allCategoryLabel);
                         navigateTo('module');
                       }}
                     />
@@ -387,15 +419,43 @@ export default function SleepApp() {
           {screen === 'module' && activeModuleInfo ? (
             <View style={styles.stack}>
               <View style={[styles.moduleHeader, { borderColor: activeModuleInfo.accent }]}>
-                <Text style={styles.moduleTitle}>{activeModuleInfo.title}</Text>
+                <View style={styles.moduleHeaderTop}>
+                  <Text style={styles.moduleTitle}>{activeModuleInfo.title}</Text>
+                  <Text style={styles.moduleCount}>
+                    {visibleModuleItems.length} / {moduleItems.length}
+                  </Text>
+                </View>
                 <Text style={styles.moduleCopy}>{activeModuleInfo.description}</Text>
+                <Text style={styles.moduleFilterMeta}>
+                  {selectedModuleCategory === allCategoryLabel
+                    ? '推荐排序 · 全部内容'
+                    : `筛选 · ${selectedModuleCategory}`}
+                </Text>
               </View>
-              {moduleItems.map((item) => (
+              <View style={styles.categoryChips}>
+                {moduleCategories.map((category) => {
+                  const active = category === selectedModuleCategory;
+                  return (
+                    <Pressable
+                      key={category}
+                      accessibilityRole="button"
+                      accessibilityLabel={`筛选 ${category}`}
+                      style={[styles.categoryChip, active && styles.categoryChipActive]}
+                      onPress={() => setSelectedModuleCategory(category)}
+                    >
+                      <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>
+                        {category}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {visibleModuleItems.map((item) => (
                 <TrackRow
                   key={item.id}
                   item={item}
                   isFavorite={player.isFavorite(item.id)}
-                  onPress={() => openTrack(item, moduleItems)}
+                  onPress={() => openTrack(item, visibleModuleItems)}
                   onFavorite={() => toggleFavoriteAndSync(item.id)}
                 />
               ))}
@@ -907,6 +967,7 @@ const AiSleepPanel = ({
             <Sparkles color={colors.white} size={20} />
           </View>
           <View style={styles.settingCopy}>
+            <Text style={styles.companionKicker}>今晚慢一点入睡</Text>
             <Text style={styles.heroTitle}>AI助眠</Text>
             <Text style={styles.companionStatus}>{selectedIntent.guidance}</Text>
           </View>
@@ -1581,9 +1642,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: spacing.lg,
   },
+  moduleHeaderTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    minWidth: 0,
+  },
   moduleTitle: {
     color: colors.ink,
     fontSize: 24,
+    fontWeight: '900',
+    flexShrink: 1,
+  },
+  moduleCount: {
+    color: colors.green,
+    fontSize: 13,
     fontWeight: '900',
   },
   moduleCopy: {
@@ -1591,6 +1665,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     marginTop: spacing.xs,
+  },
+  moduleFilterMeta: {
+    color: colors.subtle,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: spacing.sm,
+  },
+  categoryChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  categoryChip: {
+    minHeight: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+  },
+  categoryChipActive: {
+    borderColor: colors.green,
+    backgroundColor: colors.surfaceElevated,
+  },
+  categoryChipText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  categoryChipTextActive: {
+    color: colors.green,
   },
   aiIntentGrid: {
     flexDirection: 'row',
@@ -1647,6 +1753,11 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 13,
     lineHeight: 19,
+  },
+  companionKicker: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: '900',
   },
   companionInput: {
     minHeight: 74,
