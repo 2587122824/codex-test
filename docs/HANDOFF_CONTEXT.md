@@ -526,3 +526,10 @@ The UI is much better than the MVP, but can still be polished:
 - `git add docs/HANDOFF_CONTEXT.md docs/INTERNAL_BETA_CHECKLIST.md docs/PLAY_STORE_CHECKLIST.md docs/PRIVACY_POLICY_DRAFT.md src/application/SleepApp.tsx`: staged AI Sleep/navigation and docs changes; Git reported normal Windows LF-to-CRLF warnings.
 - `git add docs/HANDOFF_CONTEXT.md`: restaged the handoff after adding the staging log entry; Git reported the normal Windows LF-to-CRLF warning.
 - `git commit -m "Add local AI sleep module"`: created commit `a38b3cc` with the AI Sleep module, simplified navigation, sleep-record UI removal, MuMu verification notes, and current beta doc updates.
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md`: read current handoff before locally running the latest AI Sleep UI for the user.
+- `Get-NetTCPConnection` check plus `Start-Process npm.cmd run web -- --port 8081`: attempted to start or reuse the Expo Web preview for the user; the command returned no process details, so port/log state will be checked next.
+- `Get-NetTCPConnection` and Expo Web log reads: confirmed the local Expo Web preview is running at `http://localhost:8081` under process `20716`, with no stderr output.
+- `tool_search` for Browser/in-app browser navigation: no callable Browser navigation tool was exposed in this turn, so the user should open or refresh `http://localhost:8081/` manually in the in-app browser.
+- `Invoke-WebRequest http://localhost:8081/`: local Expo Web page responded `200 OK` with content length `1262`, confirming the preview is reachable.
+- `git diff --check`: passed after local preview handoff updates, with only the normal Windows LF-to-CRLF warning for `docs/HANDOFF_CONTEXT.md`.
+- `git add docs/HANDOFF_CONTEXT.md`: staged the local preview handoff update; Git reported the normal Windows LF-to-CRLF warning.
