@@ -53,34 +53,32 @@ const normalizeDeleted = (value) =>
     : [];
 
 const readSyncSnapshot = async (client, userId) => {
-  const [favorites, history, sleepLogs, settings] = await Promise.all([
-    client.query(
-      `select track_id from user_favorites
-       where user_id = $1 and deleted_at is null
-       order by updated_at desc`,
-      [userId],
-    ),
-    client.query(
-      `select track_id from play_history
-       where user_id = $1 and deleted_at is null
-       order by last_played_at desc
-       limit 12`,
-      [userId],
-    ),
-    client.query(
-      `select id, sleep_at, wake_at, duration_minutes, rating, note
-       from sleep_logs
-       where user_id = $1 and deleted_at is null
-       order by coalesce(wake_at, sleep_at) desc nulls last`,
-      [userId],
-    ),
-    client.query(
-      `select default_sleep_timer_minutes, theme_mode
-       from user_settings
-       where user_id = $1 and deleted_at is null`,
-      [userId],
-    ),
-  ]);
+  const favorites = await client.query(
+    `select track_id from user_favorites
+     where user_id = $1 and deleted_at is null
+     order by updated_at desc`,
+    [userId],
+  );
+  const history = await client.query(
+    `select track_id from play_history
+     where user_id = $1 and deleted_at is null
+     order by last_played_at desc
+     limit 12`,
+    [userId],
+  );
+  const sleepLogs = await client.query(
+    `select id, sleep_at, wake_at, duration_minutes, rating, note
+     from sleep_logs
+     where user_id = $1 and deleted_at is null
+     order by coalesce(wake_at, sleep_at) desc nulls last`,
+    [userId],
+  );
+  const settings = await client.query(
+    `select default_sleep_timer_minutes, theme_mode
+     from user_settings
+     where user_id = $1 and deleted_at is null`,
+    [userId],
+  );
 
   return {
     favoriteIds: favorites.rows.map((row) => row.track_id),

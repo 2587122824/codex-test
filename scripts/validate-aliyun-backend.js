@@ -110,7 +110,7 @@ if (!fs.existsSync(indexPath)) {
   missing.push('server/aliyun-functions/index.js');
 } else {
   const index = fs.readFileSync(indexPath, 'utf8');
-  for (const phrase of ['createPostgresAdapter()', 'createAliyunSmsAdapter()', 'exports.handler']) {
+  for (const phrase of ['createPostgresAdapter()', 'createSmsAdapter()', "process.env.SMS_PROVIDER === 'local'", 'createAliyunSmsAdapter()', 'exports.handler']) {
     if (!index.includes(phrase)) {
       missing.push(`production entry missing: ${phrase}`);
     }
@@ -154,7 +154,7 @@ if (!fs.existsSync(envExamplePath)) {
   missing.push('server/aliyun-functions/.env.example');
 } else {
   const envExample = fs.readFileSync(envExamplePath, 'utf8');
-  for (const phrase of ['DB_HOST', 'ALIYUN_SMS_SIGN_NAME', 'ALIYUN_SMS_TEMPLATE_CODE', 'SESSION_SECRET']) {
+  for (const phrase of ['DB_HOST', 'SMS_PROVIDER', 'LOCAL_SMS_FIXED_CODE', 'ALIYUN_SMS_SIGN_NAME', 'ALIYUN_SMS_TEMPLATE_CODE', 'SESSION_SECRET']) {
     if (!envExample.includes(phrase)) {
       missing.push(`env example missing: ${phrase}`);
     }

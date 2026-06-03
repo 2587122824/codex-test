@@ -302,7 +302,8 @@ const createApp = ({ adapter = createMemoryAdapter(), sms = createMockSmsAdapter
       return errorResponse(429, 'Too many verification codes requested.', 'SMS_HOURLY_LIMIT');
     }
 
-    const fixedCode = !isProduction && process.env.LOCAL_SMS_FIXED_CODE;
+    const fixedCode =
+      process.env.SMS_PROVIDER === 'local' ? process.env.LOCAL_SMS_FIXED_CODE : !isProduction && process.env.LOCAL_SMS_FIXED_CODE;
     const code = fixedCode || String(crypto.randomInt(0, 1000000)).padStart(6, '0');
     const { requestId } = await sms.sendCode({ phone, code });
     await adapter.saveSmsCode({

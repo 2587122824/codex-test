@@ -73,6 +73,18 @@ not need backend dependencies installed in the Expo project.
 loads the official Alibaba SDK packages only when instantiated by the deployment
 bundle.
 
+For early internal cloud smoke before the SMS signature/template qualification is
+approved, deploy with:
+
+```bash
+SMS_PROVIDER=local
+LOCAL_SMS_FIXED_CODE=123456
+```
+
+This keeps the RDS-backed auth/session/sync flow active while bypassing the real
+SMS provider. Switch `SMS_PROVIDER` back to `aliyun` or leave it unset after the
+real Alibaba Cloud SMS signature and template are approved.
+
 Production wiring should create the app like this:
 
 ```js
@@ -109,5 +121,7 @@ $env:ALIYUN_SMOKE_CODE="123456"
 npm.cmd run smoke:aliyun-cloud
 ```
 
-The first command sends a real SMS code. The second command completes
-verify/refresh/session/sync/logout after the code is available.
+With `SMS_PROVIDER=local`, the first command records a fixed local code and the
+second command should use `ALIYUN_SMOKE_CODE=123456`. With the Aliyun SMS
+provider, the first command sends a real SMS code and the second command
+completes verify/refresh/session/sync/logout after the code is available.
