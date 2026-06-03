@@ -4,6 +4,21 @@ const baseUrl = (process.env.ALIYUN_FUNCTION_BASE_URL || process.env.EXPO_PUBLIC
 const phone = process.env.ALIYUN_SMOKE_PHONE || '';
 const code = process.env.ALIYUN_SMOKE_CODE || '';
 
+const normalizeExpectedPhone = (value) => {
+  const normalized = value.trim().replace(/[\s-]/g, '');
+  if (/^\+\d{8,15}$/.test(normalized)) {
+    return normalized;
+  }
+
+  const digits = normalized.replace(/\D/g, '');
+  const localDigits = digits.startsWith('86') && digits.length === 13 ? digits.slice(2) : digits;
+  if (/^1\d{10}$/.test(localDigits)) {
+    return `+86${localDigits}`;
+  }
+
+  return normalized;
+};
+
 const request = async (path, { method = 'GET', body, token } = {}) => {
   const headers = { Accept: 'application/json' };
   if (body !== undefined) {
@@ -52,6 +67,7 @@ const requireEnv = () => {
 
 const run = async () => {
   requireEnv();
+  const expectedPhone = normalizeExpectedPhone(phone);
 
   const send = await request('/auth/send-code', {
     method: 'POST',
@@ -71,7 +87,7 @@ const run = async () => {
     body: { phone, code },
   });
   assert.equal(verify.status, 200, `verify-code failed: ${describeResponse(verify)}`);
-  assert.equal(verify.data.session.user.phone, phone);
+  assert.equal(verify.data.session.user.phone, expectedPhone);
   assert.ok(verify.data.session.accessToken, 'verify-code should return accessToken');
   assert.ok(verify.data.session.refreshToken, 'verify-code should return refreshToken');
   const token = verify.data.session.accessToken;
@@ -79,7 +95,7 @@ const run = async () => {
 
   const session = await request('/auth/session', { token });
   assert.equal(session.status, 200, `session failed: ${describeResponse(session)}`);
-  assert.equal(session.data.session.user.phone, phone);
+  assert.equal(session.data.session.user.phone, expectedPhone);
   console.log('Cloud session passed.');
 
   const refresh = await request('/auth/refresh', {
@@ -87,7 +103,7 @@ const run = async () => {
     body: { refreshToken: verify.data.session.refreshToken },
   });
   assert.equal(refresh.status, 200, `refresh failed: ${describeResponse(refresh)}`);
-  assert.equal(refresh.data.session.user.phone, phone);
+  assert.equal(refresh.data.session.user.phone, expectedPhone);
   assert.ok(refresh.data.session.accessToken, 'refresh should return accessToken');
   assert.ok(refresh.data.session.refreshToken, 'refresh should return refreshToken');
   assert.notEqual(refresh.data.session.accessToken, token, 'refresh should rotate accessToken');

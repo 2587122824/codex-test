@@ -1247,3 +1247,51 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - 2026-06-04 01:30 CST: Removed temporary feedback-contact Settings/Alert smoke screenshots after verification.
 
 - 2026-06-04 01:31 CST: Pre-commit review for feedback contact config patch: git status/diff show only .env.example, privacy draft, android beta validator, SleepApp, env config, and handoff; git diff --check has no whitespace errors beyond normal CRLF warnings.
+
+- 2026-06-04 01:32 CST: Committed feedback contact config patch as b1ec9b9 (Make beta feedback contact configurable).
+
+- 2026-06-04 01:33 CST: Pushed b1ec9b9 to origin/codex/playback-modes after rebuilding and MuMu-verifying configurable beta feedback contact behavior.
+
+- 2026-06-04 01:34 CST: Final status after feedback contact config push: origin/codex/playback-modes is at b1ec9b9; only this post-push handoff log remains modified locally, and .env is confirmed ignored by .gitignore.
+
+- 2026-06-04 01:35 CST: Continuation after user confirmation: read handoff/status/.env; user provided beta feedback email 2587122824@qq.com and confirmed Function Compute zip was deployed. Current repo only has post-push handoff modified; .env needs the confirmed email before rebuilding APK.
+
+- 2026-06-04 01:36 CST: Updated ignored local .env with confirmed EXPO_PUBLIC_BETA_FEEDBACK_EMAIL=2587122824@qq.com for the next internal-beta APK build.
+
+- 2026-06-04 01:37 CST: Real cloud smoke after user deployment passed send-code against https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run for local phone 13900000621; response requestId=local-sms-1780528067855, indicating deployed backend is active in local SMS mode.
+
+- 2026-06-04 01:38 CST: Full cloud smoke retry with 13900000621 and ALIYUN_SMOKE_CODE=123456 was blocked at send-code by expected SMS_COOLDOWN 429; switching to a fresh smoke phone for full auth/session/sync/logout validation.
+
+- 2026-06-04 01:39 CST: Full cloud smoke with fresh phone 13900000622 reached verify/session but failed because scripts/smoke-aliyun-cloud.js still expected returned phone to equal local 11-digit input; deployed backend correctly returned normalized +8613900000622. Need patch smoke script for China phone normalization.
+
+- 2026-06-04 01:40 CST: Inspected scripts/smoke-aliyun-cloud.js and handler normalizePhone; cloud smoke must compare returned user.phone with normalized expected phone rather than raw ALIYUN_SMOKE_PHONE.
+
+- 2026-06-04 01:41 CST: Patched scripts/smoke-aliyun-cloud.js with normalizeExpectedPhone so cloud smoke accepts backend-normalized +86 phone values for local China 11-digit inputs.
+
+- 2026-06-04 01:42 CST: Full real cloud smoke passed after script fix using local China phone 13900000623 and fixed code 123456: send-code, verify, session, refresh, sync, logout, and post-logout 401 all succeeded against deployed Function Compute.
+
+- 2026-06-04 01:43 CST: Local validation after cloud-smoke script fix and feedback email env passed: npm run check passed, and npx expo install --check passed with EXPO_PUBLIC_BETA_FEEDBACK_EMAIL exported from .env.
+
+- 2026-06-04 01:44 CST: Gradle :app:assembleRelease completed successfully for the APK build that includes EXPO_PUBLIC_BETA_FEEDBACK_EMAIL=2587122824@qq.com; only Expo NODE_ENV informational warning was printed.
+
+- 2026-06-04 01:45 CST: Copied rebuilt email-configured APK to dist\\gudemian-cloud-internal-beta.apk; artifact size is 67,260,335 bytes, timestamp 2026-06-04 07:13:39.
+
+- 2026-06-04 01:46 CST: Static verification of email-configured APK passed: apksigner verified, aapt shows com.gudemian.app/古德眠/minSdk24/targetSdk36, and release bundle contains 2587122824@qq.com while excluding gudemian-feedback@example.com.
+
+- 2026-06-04 01:47 CST: Installed email-configured rebuilt APK on MuMu 127.0.0.1:7555 successfully.
+
+- 2026-06-04 01:48 CST: Launched email-configured APK on MuMu, opened Settings, and captured tmp-gudemian-feedback-email-settings.png for feedback email UI verification.
+
+- 2026-06-04 01:49 CST: MuMu Settings screenshot verified email-configured APK displays beta feedback email 2587122824@qq.com in the feedback section.
+
+- 2026-06-04 01:50 CST: Cleared com.gudemian.app data on MuMu, relaunched email-configured APK, navigated to Settings account entry, and captured tmp-gudemian-login-email-build-start.png for fresh login smoke.
+
+- 2026-06-04 01:51 CST: MuMu fresh login smoke: entered local China phone 13900000624 into fixed +86 login UI, tapped 发送验证码, waited, and captured tmp-gudemian-login-email-build-code.png.
+
+- 2026-06-04 01:52 CST: MuMu fresh login smoke: entered fixed local SMS code 123456 for 13900000624, tapped 登录并同步, waited, and captured tmp-gudemian-login-email-build-success.png.
+
+- 2026-06-04 01:53 CST: MuMu fresh login smoke succeeded on email-configured APK and deployed cloud backend: Account screen shows logged-in +8613900000624 with last sync time after entering local 11-digit phone and fixed code 123456.
+
+- 2026-06-04 01:54 CST: Removed temporary feedback email and fresh login smoke screenshots after MuMu verification.
+
+- 2026-06-04 01:55 CST: Pre-commit review after deployed-cloud/email APK validation: git status/diff show only docs/HANDOFF_CONTEXT.md and scripts/smoke-aliyun-cloud.js modified; git diff --check has no whitespace errors beyond normal CRLF warnings.
