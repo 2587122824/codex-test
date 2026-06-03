@@ -1160,3 +1160,5 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - Theme sync patch final gates: npx.cmd expo install --check passed, git diff --check passed with normal Windows CRLF warnings, and aapt confirmed final APK package com.gudemian.app / label 古德眠 / minSdk 24 / targetSdk 36.
 - Theme sync patch cleanup: removed temporary MuMu AI/theme smoke screenshots and stale UI hierarchy files after verification.
 - Theme sync patch pre-commit review: inspected git status, diff stat, and SleepApp diff; source change is limited to pending local settings protection while handoff contains verification notes.
+- Theme sync patch commit/push: committed and pushed 0879dfb (Preserve local settings during sync); MuMu verified signed-in theme switching to 浅色, 深色, and 跟随系统, plus AI Sleep playback/timer smoke.
+- Final status after theme sync push: inspected git status and latest commits; only this post-push handoff log remains modified locally.
