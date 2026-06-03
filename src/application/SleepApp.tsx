@@ -765,6 +765,19 @@ const formatSyncTime = (isoDate: string | null) => {
   return `上次同步 ${formatDateTime(isoDate)}`;
 };
 
+const normalizeChinaPhoneInput = (value: string) => {
+  const compact = value.trim().replace(/[\s-]/g, '');
+
+  if (/^\+\d{8,15}$/.test(compact)) {
+    return compact;
+  }
+
+  const digits = compact.replace(/\D/g, '');
+  const localDigits = digits.startsWith('86') && digits.length === 13 ? digits.slice(2) : digits;
+
+  return /^1[3-9]\d{9}$/.test(localDigits) ? `+86${localDigits}` : null;
+};
+
 const AccountPanel = ({
   account,
   onBack,
@@ -777,9 +790,9 @@ const AccountPanel = ({
   const [otpSent, setOtpSent] = useState(false);
 
   const sendOtp = async () => {
-    const normalizedPhone = phone.trim();
-    if (!normalizedPhone.startsWith('+')) {
-      Alert.alert('请输入国际区号', '手机号需要包含国家区号，例如 +86 13800000000。');
+    const normalizedPhone = normalizeChinaPhoneInput(phone);
+    if (!normalizedPhone) {
+      Alert.alert('请输入正确的手机号', '内测登录默认使用中国大陆手机号，请输入 11 位手机号。');
       return;
     }
 
@@ -788,7 +801,18 @@ const AccountPanel = ({
   };
 
   const verifyOtp = async () => {
-    const ok = await account.verifyPhoneOtp(phone.trim(), otp.trim());
+    const normalizedPhone = normalizeChinaPhoneInput(phone);
+    if (!normalizedPhone) {
+      Alert.alert('请输入正确的手机号', '内测登录默认使用中国大陆手机号，请输入 11 位手机号。');
+      return;
+    }
+
+    if (!/^\d{4,8}$/.test(otp.trim())) {
+      Alert.alert('请输入验证码', '请输入短信里的数字验证码。');
+      return;
+    }
+
+    const ok = await account.verifyPhoneOtp(normalizedPhone, otp.trim());
     if (ok) {
       setOtp('');
       setOtpSent(false);
@@ -859,17 +883,26 @@ const AccountPanel = ({
             <Smartphone color={colors.green} size={22} />
             <View style={styles.settingCopy}>
               <Text style={styles.settingTitle}>手机号验证码登录 / 注册</Text>
-              <Text style={styles.settingMeta}>游客数据会在登录成功后自动合并到云端。</Text>
+              <Text style={styles.settingMeta}>默认中国大陆手机号，游客数据会在登录成功后自动合并到云端。</Text>
             </View>
           </View>
-          <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            placeholder="+86 13800000000"
-            placeholderTextColor={colors.subtle}
-            style={styles.textInput}
-          />
+          <View style={styles.phoneInputRow}>
+            <View style={styles.phonePrefixBox}>
+              <Text style={styles.phonePrefixText}>+86</Text>
+            </View>
+            <TextInput
+              value={phone}
+              onChangeText={(value) => {
+                setPhone(value);
+                setOtpSent(false);
+              }}
+              keyboardType="phone-pad"
+              placeholder="请输入 11 位手机号"
+              placeholderTextColor={colors.subtle}
+              style={styles.phoneInput}
+              maxLength={13}
+            />
+          </View>
           {otpSent ? (
             <TextInput
               value={otp}
@@ -878,6 +911,7 @@ const AccountPanel = ({
               placeholder="短信验证码"
               placeholderTextColor={colors.subtle}
               style={styles.textInput}
+              maxLength={8}
             />
           ) : null}
           {account.syncError ? <Text style={styles.errorText}>{account.syncError}</Text> : null}
@@ -2503,6 +2537,39 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   textInput: {
     width: '100%',
+    minHeight: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surfaceSoft,
+    color: colors.ink,
+  },
+  phoneInputRow: {
+    width: '100%',
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacing.sm,
+  },
+  phonePrefixBox: {
+    minWidth: 58,
+    minHeight: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  phonePrefixText: {
+    color: colors.ink,
+    fontWeight: '900',
+  },
+  phoneInput: {
+    flex: 1,
+    minWidth: 0,
     minHeight: 42,
     borderRadius: 8,
     borderWidth: 1,

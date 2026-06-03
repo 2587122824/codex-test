@@ -1037,3 +1037,66 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - MuMu visual smoke: captured `tmp-gudemian-home.png` showing the renamed app title `古德眠`, dark home UI, and stable bottom navigation; captured `tmp-gudemian-settings.png` showing the settings/account section with enabled login/sync copy; an attempted login tap returned to the light home screen and showed a mini-player for `窗边细雨`, so the next step is to navigate back to Settings and retry the account login flow.
 - MuMu account UI smoke: returned to Settings in the installed `com.gudemian.app` APK, confirmed light theme settings page shows `账号与同步` with `登录 / 注册`, and opened the phone-code login screen. Sending code initially failed because the field placeholder was not an actual value, and subsequent adb text input attempts mangled the leading `+` or appended stale digits, producing the expected service-side phone validation error. This appears to be an adb input limitation rather than a cloud/API failure.
 - Final cloud account verification for phone testing: inspected `normalizePhone` and confirmed the backend accepts `+` followed by 8-15 digits after removing spaces/hyphens; reran `npm.cmd run smoke:aliyun-cloud` against `https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run` with `+8613900000615` and fixed code `123456`, passing send-code, verify-code, session, refresh, sync, logout, and post-logout 401. The APK is ready for manual phone testing with code `123456`.
+- Login module optimization request: user reported China beta login should not require manual country code input and current login flow did not seem to complete; continuing with account UI/API inspection and fixes.
+- Login inspection command: searched frontend/backend for phone, OTP, login, country-code, and +86 references to locate account UI and API validation paths.
+- Account UI read: inspected SleepApp account section around phone-code login; found it still asks for international country code, uses +86 placeholder, and submits raw trimmed phone for send/verify.
+- Account hook read: inspected signInWithPhone and verifyPhoneOtp; both trust the UI-provided phone string and surface backend errors without local China-number normalization.
+- Backend phone validation read: inspected normalizePhone in Aliyun handler; it currently accepts only plus-prefixed E.164-style numbers after removing spaces and hyphens.
+- Account style lookup: searched SleepApp styles for text input and button containers before adding a default +86 phone row without layout regressions.
+- Account style read: inspected existing error, primary button, setting row, inline content, and textInput styles for the phone-prefix UI patch.
+- Account UI patch attempt: first apply_patch failed because the existing SleepApp Chinese text is mojibake and did not match the displayed patch context; switching to narrower ASCII code anchors.
+- Account UI anchor lookup: located ASCII anchors for AccountPanel, sendOtp, verifyOtp, placeholders, and account phone API calls before retrying the patch.
+- Account UI patch: added normalizeChinaPhoneInput helper in SleepApp to convert 11-digit China mainland phone numbers, pasted 86-prefixed numbers, or plus-prefixed values into backend-ready E.164 strings.
+- Account UI patch: sendOtp and verifyOtp now validate local China phone input, auto-submit +86-normalized numbers, and validate that OTP input is numeric before calling the account API.
+- Account UI patch: replaced the single +86 placeholder input with a fixed +86 prefix box plus local 11-digit phone field; phone edits reset OTP-sent state and OTP input now caps at 8 digits.
+- Account style patch context: inspected textInput style location after the first style patch context did not match exactly.
+- Account UI patch: added responsive phone input row, fixed +86 prefix box, and flexible phone field styles for small Android screens.
+- Backend phone patch: Aliyun handler normalizePhone now accepts local China mainland 11-digit numbers and 86-prefixed numbers, normalizing them to +86 E.164 format before storage, SMS, and verification.
+- Backend smoke patch: local Aliyun handler smoke now sends 13800000000 and asserts the stored/session phone is normalized to +8613800000000.
+- API contract read: inspected auth send-code and verify-code phone examples before documenting China-local phone input acceptance.
+- API contract patch: documented that China beta auth accepts 11-digit mainland numbers or 86-prefixed pasted numbers and normalizes them to +86 before storage/SMS/session responses.
+- Login optimization diff check: reviewed diff stat after phone input/backend normalization changes before running validation.
+- Login optimization validation: ran npm.cmd run check after China-default phone UI and backend normalization changes.
+- Login optimization validation: npx.cmd expo install --check passed after account UI changes, with Expo dependencies still aligned.
+- Login optimization validation: server/aliyun-functions npm.cmd run check passed after backend phone normalization changes.
+- Login optimization validation: git diff --check passed with only normal Windows CRLF warnings after phone login changes.
+- Login optimization packaging: rebuilt dist\\aliyun-functions-deploy.zip after backend China phone normalization changes.
+- Login optimization package audit: verified deploy zip includes index.js, handler.js, pg and Alibaba SMS SDK package files with forward-slash paths, excludes .env, and has no backslash pg package entry.
+- APK rebuild env check: read local ignored .env before rebuilding APK to confirm the internal beta bundle still points at the working Function Compute URL.
+- APK rebuild env fix: rewrote ignored local .env with clean EXPO_PUBLIC_APP_NAME=古德眠, EXPO_PUBLIC_APP_ENV=development, and the working Function Compute API URL before rebuilding.
+- APK rebuild env verification: reread .env after cleanup to confirm app name, app env, feature flags, and API base URL are on separate clean lines.
+- APK rebuild env verification: used Node UTF-8 parsing to inspect .env line boundaries after PowerShell rendered Chinese as mojibake.
+- Login optimization APK build: ran android Gradle assembleRelease after China-default phone login UI, backend normalization, and clean local .env changes.
+- APK build environment lookup: searched common Windows JDK and Android SDK locations after Gradle reported JAVA_HOME was not set.
+- APK build environment lookup: checked android/local.properties and PATH java lookup after common JDK location scan did not find a configured Java runtime.
+- APK build environment lookup: Codex workspace dependency runtime lookup returned no configured bundled Java/Android runtime paths.
+- APK build environment lookup: checked Android Studio, JetBrains, Gradle, and user JDK cache paths for a usable Java runtime.
+- APK build environment lookup: performed a bounded recursive java.exe search under Program Files, Administrator profile, C:/Android, D:/, and I:/ after JAVA_HOME was unavailable.
+- APK build environment lookup: checked local .android-build-tools and default Android SDK locations after finding the JDK under I:/Ai_WorkSpace/.android-build-tools.
+- Login optimization APK build: Gradle assembleRelease rerun with JAVA_HOME pointing to local jdk17 and ANDROID_HOME pointing to local .android-build-tools Android SDK.
+- Login optimization APK artifact: copied rebuilt release APK to dist\\gudemian-cloud-internal-beta.apk for internal beta testing.
+- APK verification tool lookup: located aapt and apksigner under the local Android SDK build-tools for static APK verification.
+- Login optimization APK static verification: aapt/apksigner checked rebuilt internal beta APK package metadata, launcher label, SDK levels, and signing certificate.
+- Login optimization bundle verification: searched release JS bundle for Function Compute host, default-China phone copy, 11-digit placeholder, and +86 prefix references.
+- Login optimization bundle verification: Node UTF-8 check confirmed whether release bundle contains the cloud API host and updated China-default login UI strings.
+- MuMu login smoke check: queried adb devices before installing the rebuilt APK with China-default phone login UI.
+- MuMu login smoke setup: installed rebuilt APK on 127.0.0.1:7555, launched com.gudemian.app/.MainActivity, and checked focused app state.
+- MuMu login smoke screenshot: captured tmp-gudemian-login-start.png after launching the rebuilt APK.
+- MuMu login smoke screenshot fix: recaptured screenshot on device and pulled it locally to avoid PowerShell binary redirection corruption.
+- MuMu login UI smoke: tapped Settings then account login area on 127.0.0.1:7555 and captured tmp-gudemian-login-panel.png for the rebuilt APK.
+- MuMu login UI smoke: tapped the 登录 / 注册 button precisely and recaptured the account login panel screenshot.
+- MuMu login flow smoke: entered local phone 13900000616 without country code, tapped send code in rebuilt APK, waited for cloud response, and captured the OTP-stage screenshot.
+- MuMu login flow wait: waited an additional 8 seconds after send-code from rebuilt APK and captured the account screen again to inspect whether OTP state completed.
+- MuMu login flow smoke: entered fixed local-SMS code 123456 for phone 13900000616, tapped 登录并同步, waited for completion, and captured the account result screen.
+- SecureStore login failure investigation: inspected storage key constants and API session storage code after MuMu verify-code reached SecureStore invalid-key error.
+- SecureStore login fix: changed mobile API token keys from colon-separated gudemian:aliyun-* to SecureStore-compatible gudemian.aliyun-* names after MuMu login failed at session save.
+- SecureStore login fix validation: ran npm.cmd run check after changing API token SecureStore keys to dot-separated names.
+- SecureStore login fix APK build: rebuilt release APK after dot-separated token key fix so mobile login can save the verified session.
+- SecureStore login fix APK artifact: copied rebuilt release APK with dot-separated token keys to dist\\gudemian-cloud-internal-beta.apk.
+- SecureStore login fix MuMu setup: reinstalled rebuilt APK, cleared com.gudemian.app data for a clean login smoke, and relaunched the app on 127.0.0.1:7555.
+- SecureStore login fix MuMu smoke: completed clean login attempt with local phone 13900000617 and fixed code 123456 after reinstalling the rebuilt APK; captured tmp-gudemian-login-fixed-complete.png.
+- SecureStore login fix APK static verification: rechecked final rebuilt dist APK with aapt and apksigner after successful MuMu login smoke.
+- Login optimization final status check: git diff --check passed with normal Windows CRLF warnings and git status was inspected before final handoff.
+- Login optimization cleanup: removed temporary MuMu screenshot PNG files from the workspace after using them to verify the login UI and full login flow.
+- Login optimization final workspace state: inspected git status and diff stat after screenshot cleanup; remaining changes are tracked source/docs updates only.
+- Login fix pre-commit review: inspected frontend/API and backend/smoke/API-contract diffs; scope is limited to China-default phone login normalization, SecureStore-compatible token keys, docs, and handoff logging.

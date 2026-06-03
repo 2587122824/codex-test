@@ -22,6 +22,10 @@ Request:
 { "phone": "+8613800000000" }
 ```
 
+For the China internal beta, the backend also accepts a local mainland number
+such as `13800000000` or a pasted `8613800000000`, then normalizes it to
+`+8613800000000` before storage, SMS delivery, and session responses.
+
 Response:
 
 ```json
@@ -43,6 +47,8 @@ Request:
 ```json
 { "phone": "+8613800000000", "code": "123456" }
 ```
+
+China-local numbers are normalized with the same rules as `/auth/send-code`.
 
 Response:
 

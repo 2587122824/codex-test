@@ -21,7 +21,8 @@ const invoke = async ({ method, path, body, token }) => {
 };
 
 const run = async () => {
-  const phone = '+8613800000000';
+  const phone = '13800000000';
+  const normalizedPhone = '+8613800000000';
 
   const send = await invoke({
     method: 'POST',
@@ -37,14 +38,14 @@ const run = async () => {
     body: { phone, code: '123456' },
   });
   assert.equal(verify.statusCode, 200);
-  assert.equal(verify.json.session.user.phone, phone);
+  assert.equal(verify.json.session.user.phone, normalizedPhone);
   assert.ok(verify.json.session.accessToken);
   assert.ok(verify.json.session.refreshToken);
 
   const token = verify.json.session.accessToken;
   const session = await invoke({ method: 'GET', path: '/auth/session', token });
   assert.equal(session.statusCode, 200);
-  assert.equal(session.json.session.user.phone, phone);
+  assert.equal(session.json.session.user.phone, normalizedPhone);
 
   const refresh = await invoke({
     method: 'POST',
@@ -52,7 +53,7 @@ const run = async () => {
     body: { refreshToken: verify.json.session.refreshToken },
   });
   assert.equal(refresh.statusCode, 200);
-  assert.equal(refresh.json.session.user.phone, phone);
+  assert.equal(refresh.json.session.user.phone, normalizedPhone);
   assert.ok(refresh.json.session.accessToken);
   assert.ok(refresh.json.session.refreshToken);
   assert.notEqual(refresh.json.session.accessToken, token);
@@ -64,7 +65,7 @@ const run = async () => {
   const refreshedToken = refresh.json.session.accessToken;
   const refreshedSession = await invoke({ method: 'GET', path: '/auth/session', token: refreshedToken });
   assert.equal(refreshedSession.statusCode, 200);
-  assert.equal(refreshedSession.json.session.user.phone, phone);
+  assert.equal(refreshedSession.json.session.user.phone, normalizedPhone);
 
   const httpV2Session = await app.handle({
     requestContext: { http: { method: 'GET', path: '/auth/session' } },

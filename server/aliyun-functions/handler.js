@@ -30,8 +30,14 @@ const normalizePhone = (phone) => {
     return null;
   }
 
-  const normalized = phone.replace(/[\s-]/g, '');
-  return /^\+\d{8,15}$/.test(normalized) ? normalized : null;
+  const normalized = phone.trim().replace(/[\s-]/g, '');
+  if (/^\+\d{8,15}$/.test(normalized)) {
+    return normalized;
+  }
+
+  const digits = normalized.replace(/\D/g, '');
+  const localDigits = digits.startsWith('86') && digits.length === 13 ? digits.slice(2) : digits;
+  return /^1[3-9]\d{9}$/.test(localDigits) ? `+86${localDigits}` : null;
 };
 
 const isIsoAfterOrEqual = (left, right) => new Date(left).getTime() >= new Date(right).getTime();
