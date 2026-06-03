@@ -16,6 +16,9 @@ type PlaybackState = 'idle' | 'loading' | 'playing' | 'paused';
 
 const timerOptions = [15, 30, 45, 60];
 const defaultPlaybackMode: PlaybackMode = 'repeat-all';
+const defaultPlayerVolume = 0.85;
+const fadeOutWindowSeconds = 30;
+const minimumFadeVolume = 0.08;
 
 const getRandomNextIndex = (queueLength: number, currentIndex: number) => {
   if (queueLength <= 1) {
@@ -124,7 +127,7 @@ export const useAudioPlayer = () => {
         });
 
         player.loop = false;
-        player.volume = 0.85;
+        player.volume = defaultPlayerVolume;
         playerRef.current = player;
         statusSubscriptionRef.current = player.addListener(
           'playbackStatusUpdate',
@@ -309,11 +312,18 @@ export const useAudioPlayer = () => {
       if (!minutes) {
         setTimerEndsAt(null);
         setRemainingSeconds(0);
+        if (playerRef.current) {
+          playerRef.current.volume = defaultPlayerVolume;
+        }
         return;
       }
 
       const endsAt = Date.now() + minutes * 60 * 1000;
       setTimerEndsAt(endsAt);
+      setRemainingSeconds(minutes * 60);
+      if (playerRef.current) {
+        playerRef.current.volume = defaultPlayerVolume;
+      }
       timerRef.current = setTimeout(() => {
         stop();
       }, minutes * 60 * 1000);
@@ -342,6 +352,9 @@ export const useAudioPlayer = () => {
 
   useEffect(() => {
     if (!timerEndsAt) {
+      if (playerRef.current) {
+        playerRef.current.volume = defaultPlayerVolume;
+      }
       return undefined;
     }
 
@@ -351,6 +364,27 @@ export const useAudioPlayer = () => {
 
     return () => clearInterval(interval);
   }, [timerEndsAt]);
+
+  useEffect(() => {
+    const player = playerRef.current;
+
+    if (!player || !timerEndsAt) {
+      return;
+    }
+
+    if (remainingSeconds <= 0) {
+      player.volume = minimumFadeVolume;
+      return;
+    }
+
+    if (remainingSeconds > fadeOutWindowSeconds) {
+      player.volume = defaultPlayerVolume;
+      return;
+    }
+
+    const fadeRatio = remainingSeconds / fadeOutWindowSeconds;
+    player.volume = Math.max(minimumFadeVolume, defaultPlayerVolume * fadeRatio);
+  }, [remainingSeconds, timerEndsAt]);
 
   const activeTimerMinutes = useMemo(() => {
     if (!timerEndsAt) {

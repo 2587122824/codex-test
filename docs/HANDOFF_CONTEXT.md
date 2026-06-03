@@ -652,3 +652,18 @@ Validation:
 - `npx.cmd expo install --check` passed.
 - `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
 - Local preview at `http://localhost:8081/` returned `200 OK`.
+
+## 2026-06-03 Player Immersion Polish
+
+- Reworked the player first screen into a calmer sleep-mode layout with a prominent countdown, sleep cue, track title, progress, captions, and large playback controls.
+- Collapsed timer, playback mode, and audio details into quiet foldable cards so the player no longer exposes every setting at once.
+- Moved custom timer controls into the audio-details foldout to reduce bedtime UI density.
+- Added real timer fade-out behavior in `useAudioPlayer`: when a sleep timer is active, the final 30 seconds gradually lower player volume before stop; canceling the timer or changing tracks restores normal volume.
+- MuMu visual smoke check confirmed the player opens cleanly on a narrow Android screen with no obvious overlap.
+
+Validation:
+
+- `npm.cmd run check` passed.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`.

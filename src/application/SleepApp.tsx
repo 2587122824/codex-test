@@ -1101,6 +1101,13 @@ const getPlaybackModeIcon = (mode: PlaybackMode, color = colors.muted) => {
   return <RotateCcw color={color} size={16} />;
 };
 
+const formatCountdown = (seconds: number) => {
+  const safeSeconds = Math.max(0, Math.ceil(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const restSeconds = safeSeconds % 60;
+  return `${minutes}:${restSeconds.toString().padStart(2, '0')}`;
+};
+
 const PlayerPanel = ({
   currentTrack,
   playbackMode,
@@ -1127,6 +1134,10 @@ const PlayerPanel = ({
   onTimer,
   onCustomTimer,
 }: PlayerPanelProps) => {
+  const [timerExpanded, setTimerExpanded] = useState(false);
+  const [modeExpanded, setModeExpanded] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
+
   if (!currentTrack) {
     return <EmptyState text="还没有正在播放的内容，请先从首页选择一首音乐、故事或白噪音。" />;
   }
@@ -1134,6 +1145,12 @@ const PlayerPanel = ({
   const timerSummary = activeTimerMinutes
     ? `剩余 ${Math.ceil(remainingSeconds / 60)} 分钟`
     : '未开启';
+  const countdownText = activeTimerMinutes ? formatCountdown(remainingSeconds) : '--:--';
+  const sleepHint = activeTimerMinutes
+    ? remainingSeconds <= 5 * 60
+      ? '快到时间了，声音会慢慢淡下去'
+      : '最后 30 秒会淡出并停止'
+    : '建议开启定时，让声音陪到刚刚好';
 
   return (
     <View style={styles.playerPanel}>
@@ -1147,10 +1164,10 @@ const PlayerPanel = ({
       </View>
 
       <View style={styles.playerHeroArea}>
-        <View style={[styles.playerDisc, { borderColor: currentTrack.cover }]}>
-          <View style={[styles.playerDiscInner, { backgroundColor: currentTrack.cover }]}>
-            <Play color={colors.white} fill={colors.white} size={34} />
-          </View>
+        <View style={[styles.playerSleepOrb, { borderColor: currentTrack.cover }]}>
+          <Text style={styles.playerSleepKicker}>睡前模式</Text>
+          <Text style={styles.playerCountdown}>{countdownText}</Text>
+          <Text style={styles.playerSleepHint}>{sleepHint}</Text>
         </View>
         <View style={styles.playerHeading}>
           <Text style={styles.playerTitle} numberOfLines={2}>
@@ -1206,83 +1223,94 @@ const PlayerPanel = ({
         </View>
       </View>
 
-      <View style={styles.timerBlock}>
-        <View style={styles.playerSectionHeader}>
-          <Text style={styles.sectionTitle}>定时关闭</Text>
-          <Text style={styles.modeSummary}>
-            {activeTimerMinutes
-              ? `约 ${activeTimerMinutes} 分钟后关闭`
-              : '未开启'}
-          </Text>
-        </View>
-        <View style={styles.pillWrap}>
-          {timerOptions.map((minutes) => (
-            <PillButton
-              key={minutes}
-              label={`${minutes} 分`}
-              active={activeTimerMinutes === minutes}
-              onPress={() => onTimer(minutes)}
-            />
-          ))}
-          <PillButton label="关闭" active={!activeTimerMinutes} onPress={() => onTimer(null)} />
-        </View>
-        {activeTimerMinutes ? (
-          <Text style={styles.sectionMeta}>剩余 {Math.ceil(remainingSeconds / 60)} 分钟</Text>
+      <View style={styles.playerFoldBlock}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={timerExpanded ? '收起定时关闭设置' : '展开定时关闭设置'}
+          style={styles.playerFoldHeader}
+          onPress={() => setTimerExpanded((value) => !value)}
+        >
+          <View style={styles.settingCopy}>
+            <Text style={styles.sectionTitle}>定时关闭</Text>
+            <Text style={styles.sectionMeta}>{activeTimerMinutes ? `约 ${activeTimerMinutes} 分钟后关闭` : '未开启'}</Text>
+          </View>
+          <View style={styles.playerFoldToggle}>
+            <Text style={styles.modeSummary}>{timerExpanded ? '收起' : timerSummary}</Text>
+            {timerExpanded ? (
+              <ChevronUp color={colors.muted} size={18} />
+            ) : (
+              <ChevronDown color={colors.muted} size={18} />
+            )}
+          </View>
+        </Pressable>
+        {timerExpanded ? (
+          <View style={styles.playerFoldBody}>
+            <View style={styles.pillWrap}>
+              {timerOptions.map((minutes) => (
+                <PillButton
+                  key={minutes}
+                  label={`${minutes} 分`}
+                  active={activeTimerMinutes === minutes}
+                  onPress={() => onTimer(minutes)}
+                />
+              ))}
+              <PillButton label="关闭" active={!activeTimerMinutes} onPress={() => onTimer(null)} />
+            </View>
+            {activeTimerMinutes ? (
+              <Text style={styles.sectionMeta}>剩余 {Math.ceil(remainingSeconds / 60)} 分钟，最后 30 秒会逐步淡出。</Text>
+            ) : null}
+          </View>
         ) : null}
       </View>
 
-      <View style={styles.playbackModeBlock}>
-        <View style={styles.playerSectionHeader}>
-          <Text style={styles.sectionTitle}>播放模式</Text>
-          <View style={styles.modeSummaryPill}>
+      <View style={styles.playerFoldBlock}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={modeExpanded ? '收起播放模式设置' : '展开播放模式设置'}
+          style={styles.playerFoldHeader}
+          onPress={() => setModeExpanded((value) => !value)}
+        >
+          <View style={styles.settingCopy}>
+            <Text style={styles.sectionTitle}>播放模式</Text>
+            <Text style={styles.sectionMeta}>睡前只保留一个轻量入口</Text>
+          </View>
+          <View style={styles.playerFoldToggle}>
             {getPlaybackModeIcon(playbackMode, colors.green)}
             <Text style={styles.modeSummary}>{getPlaybackModeLabel(playbackMode)}</Text>
+            {modeExpanded ? (
+              <ChevronUp color={colors.muted} size={18} />
+            ) : (
+              <ChevronDown color={colors.muted} size={18} />
+            )}
           </View>
-        </View>
-        <View style={styles.modeGrid}>
-          {playbackModeOptions.map((option) => (
-            <Pressable
-              key={option.mode}
-              style={[
-                styles.modeButton,
-                playbackMode === option.mode && styles.modeButtonActive,
-              ]}
-              onPress={() => onPlaybackMode(option.mode)}
-            >
-              {getPlaybackModeIcon(
-                option.mode,
-                playbackMode === option.mode ? colors.white : colors.muted,
-              )}
-              <Text
+        </Pressable>
+        {modeExpanded ? (
+          <View style={styles.modeGrid}>
+            {playbackModeOptions.map((option) => (
+              <Pressable
+                key={option.mode}
                 style={[
-                  styles.modeButtonText,
-                  playbackMode === option.mode && styles.modeButtonTextActive,
+                  styles.modeButton,
+                  playbackMode === option.mode && styles.modeButtonActive,
                 ]}
+                onPress={() => onPlaybackMode(option.mode)}
               >
-                {option.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.customTimerBlock}>
-        <View style={styles.playerSectionHeader}>
-          <Text style={styles.sectionTitle}>自定义定时</Text>
-          <Text style={styles.modeSummary}>1-480 分钟</Text>
-        </View>
-        <View style={styles.customTimerRow}>
-          <TextInput
-            value={customTimer}
-            onChangeText={setCustomTimer}
-            keyboardType="number-pad"
-            placeholder="自定义分钟"
-            style={styles.timerInput}
-          />
-          <Pressable style={styles.subtleButton} onPress={onCustomTimer}>
-            <Text style={styles.subtleButtonText}>设置</Text>
-          </Pressable>
-        </View>
+                {getPlaybackModeIcon(
+                  option.mode,
+                  playbackMode === option.mode ? colors.white : colors.muted,
+                )}
+                <Text
+                  style={[
+                    styles.modeButtonText,
+                    playbackMode === option.mode && styles.modeButtonTextActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.secondaryActions}>
@@ -1298,11 +1326,43 @@ const PlayerPanel = ({
         </IconButton>
       </View>
 
-      <View style={styles.detailsBlock}>
-        <Text style={styles.playerDescription}>{currentTrack.description}</Text>
-        <Text style={styles.playerSource}>
-          来源：{currentTrack.source.name} · {currentTrack.source.license}
-        </Text>
+      <View style={styles.playerFoldBlock}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={detailsExpanded ? '收起音频详情' : '展开音频详情'}
+          style={styles.playerFoldHeader}
+          onPress={() => setDetailsExpanded((value) => !value)}
+        >
+          <View style={styles.settingCopy}>
+            <Text style={styles.sectionTitle}>音频详情</Text>
+            <Text style={styles.sectionMeta}>来源、说明和自定义定时</Text>
+          </View>
+          {detailsExpanded ? (
+            <ChevronUp color={colors.muted} size={18} />
+          ) : (
+            <ChevronDown color={colors.muted} size={18} />
+          )}
+        </Pressable>
+        {detailsExpanded ? (
+          <View style={styles.playerFoldBody}>
+            <Text style={styles.playerDescription}>{currentTrack.description}</Text>
+            <Text style={styles.playerSource}>
+              来源：{currentTrack.source.name} · {currentTrack.source.license}
+            </Text>
+            <View style={styles.customTimerRow}>
+              <TextInput
+                value={customTimer}
+                onChangeText={setCustomTimer}
+                keyboardType="number-pad"
+                placeholder="自定义分钟"
+                style={styles.timerInput}
+              />
+              <Pressable style={styles.subtleButton} onPress={onCustomTimer}>
+                <Text style={styles.subtleButtonText}>设置定时</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -1955,7 +2015,37 @@ const styles = StyleSheet.create({
   playerHeroArea: {
     alignItems: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  playerSleepOrb: {
+    width: 224,
+    minHeight: 178,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: colors.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    padding: spacing.lg,
+  },
+  playerSleepKicker: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  playerCountdown: {
+    color: colors.ink,
+    fontSize: 48,
+    lineHeight: 56,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  playerSleepHint: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
   },
   playerDisc: {
     width: 202,
@@ -2120,6 +2210,39 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 13,
     fontWeight: '800',
+  },
+  playerFoldBlock: {
+    alignSelf: 'stretch',
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  playerFoldHeader: {
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    minWidth: 0,
+  },
+  playerFoldToggle: {
+    minHeight: 32,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexShrink: 1,
+  },
+  playerFoldBody: {
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    paddingTop: spacing.sm,
   },
   playbackModeBlock: {
     alignSelf: 'stretch',
