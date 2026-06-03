@@ -85,6 +85,9 @@ const normalizeSettings = (settings: Partial<UserSettings> | null | undefined): 
   themeMode: isThemePreference(settings?.themeMode) ? settings.themeMode : defaultSettings.themeMode,
 });
 
+const settingsEqual = (left: UserSettings, right: UserSettings) =>
+  left.defaultSleepTimerMinutes === right.defaultSleepTimerMinutes && left.themeMode === right.themeMode;
+
 const resolveThemeMode = (preference: UserThemePreference, systemMode: ColorSchemeName): ThemeMode => {
   if (preference === 'dark' || preference === 'light') {
     return preference;
@@ -223,6 +226,7 @@ export default function SleepApp() {
   const [aiCompanionInput, setAiCompanionInput] = useState('');
   const [syncRequestId, setSyncRequestId] = useState(0);
   const settingsRef = useRef<UserSettings>(defaultSettings);
+  const pendingLocalSettingsSyncRef = useRef(false);
   const resolvedThemeMode = resolveThemeMode(settings.themeMode, systemColorScheme);
   const themeColors = resolvedThemeMode === 'light' ? lightColors : darkColors;
   const themedStyles = useMemo(() => createStyles(themeColors), [themeColors]);
@@ -325,6 +329,13 @@ export default function SleepApp() {
     (data: RemoteSyncData) => {
       player.replaceLibraryData(data.favoriteIds, data.historyIds);
       const nextSettings = normalizeSettings(data.settings);
+      if (pendingLocalSettingsSyncRef.current) {
+        if (settingsEqual(nextSettings, settingsRef.current)) {
+          pendingLocalSettingsSyncRef.current = false;
+        }
+        return;
+      }
+
       settingsRef.current = nextSettings;
       setSettings(nextSettings);
       storage.setJson(storageKeys.settings, nextSettings);
@@ -356,6 +367,7 @@ export default function SleepApp() {
 
   const saveSettingsAndSync = (nextSettings: UserSettings) => {
     const normalizedSettings = normalizeSettings(nextSettings);
+    pendingLocalSettingsSyncRef.current = true;
     settingsRef.current = normalizedSettings;
     setSettings(normalizedSettings);
     storage.setJson(storageKeys.settings, normalizedSettings);

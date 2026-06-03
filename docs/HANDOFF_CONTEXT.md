@@ -1138,3 +1138,25 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - Post-sync-commit status: inspected git status and latest commits after a6bfd8f; only handoff logging remains modified.
 - Handoff cleanup commit: committed handoff-only log as abbc3c9 (Record beta login sync handoff); final status/log inspection followed.
 - Remote push: pushed codex/playback-modes to origin after commits c3d0a64, a6bfd8f, and abbc3c9; local handoff now has this post-push log entry.
+- Post-push handoff cleanup: committed and pushed the previous post-push handoff log as 1b0afea (Record login sync push); continuing local internal-beta checks next.
+- AI Sleep smoke start: launched the installed APK on MuMu 127.0.0.1:7555, tapped the AI助眠 tab, and captured tmp-gudemian-ai-screen.png for visual inspection.
+- AI Sleep smoke playback: tapped 按这个陪我睡, waited 5 seconds, and captured tmp-gudemian-ai-player.png to verify player, queue, and timer state.
+- Theme smoke start: navigated to Settings in MuMu, captured dark settings screenshot, tapped light theme, and captured light settings screenshot for readability inspection.
+- Theme smoke correction: previous screenshots were still on the player because bottom nav is absent in full player; tapped top Home then Settings and captured tmp-gudemian-settings-current.png.
+- Theme smoke light mode: tapped 浅色 in Settings, captured tmp-gudemian-settings-light2.png, then opened AI助眠 and captured tmp-gudemian-ai-light.png for readability.
+- Theme smoke hierarchy: returned to Settings and dumped UI hierarchy to locate exact 跟随系统/深色/浅色 button bounds after the first light-mode tap did not switch themes.
+- Theme smoke pause/locate: paused the mini player, tapped Settings, and captured tmp-gudemian-settings-theme-locate.png to visually locate theme buttons.
+- Theme smoke light retry: tapped the visually confirmed 浅色 button center and captured tmp-gudemian-settings-light3.png after waiting for theme update.
+- Theme sync investigation reads: inspected useAccountSync, storage keys, and UserSettings type; current settings snapshot lacks a client-side updatedAt, so signed-in theme changes can be overwritten by remote settings during sync races.
+- Theme sync patch context: printed normalizeSettings, state refs, applyRemoteData, and saveSettingsAndSync regions after first pending-settings patch context did not match.
+- Theme sync patch: added settingsEqual and pendingLocalSettingsSyncRef so concurrent remote sync responses cannot overwrite a just-changed local theme until remote settings match the local settings.
+- Theme sync patch validation: ran npm.cmd run check after adding local pending-settings sync protection.
+- Theme sync patch APK build: rebuilt release APK after pending-settings protection so MuMu can retest signed-in theme changes.
+- Theme sync patch APK artifact: copied rebuilt APK with pending-settings protection to dist\\gudemian-cloud-internal-beta.apk.
+- Theme sync patch MuMu setup: reinstalled rebuilt APK, cleared com.gudemian.app data, and relaunched for clean signed-in theme switching smoke.
+- Theme sync patch MuMu smoke: logged in with 13900000620/123456, returned to Settings, tapped 浅色, waited, and captured tmp-gudemian-theme-light-fixed.png.
+- Theme sync patch MuMu smoke: tapped 深色 after successful light mode, opened AI助眠, and captured tmp-gudemian-theme-dark-ai-fixed.png to confirm dark-mode readability still works.
+- Theme sync patch MuMu smoke: returned to Settings, tapped 跟随系统, and captured tmp-gudemian-theme-system-fixed.png to verify the system theme option remains selectable after the fix.
+- Theme sync patch final gates: npx.cmd expo install --check passed, git diff --check passed with normal Windows CRLF warnings, and aapt confirmed final APK package com.gudemian.app / label 古德眠 / minSdk 24 / targetSdk 36.
+- Theme sync patch cleanup: removed temporary MuMu AI/theme smoke screenshots and stale UI hierarchy files after verification.
+- Theme sync patch pre-commit review: inspected git status, diff stat, and SleepApp diff; source change is limited to pending local settings protection while handoff contains verification notes.
