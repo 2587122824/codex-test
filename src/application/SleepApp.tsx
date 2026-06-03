@@ -1,7 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import {
   ChevronLeft,
-  Clock3,
   Cloud,
   Heart,
   Home,
@@ -14,6 +13,7 @@ import {
   RotateCcw,
   Settings,
   Shuffle,
+  Sparkles,
   SkipBack,
   SkipForward,
   Smartphone,
@@ -39,19 +39,18 @@ import {
 import { useAudioPlayer } from '../features/player/useAudioPlayer';
 import { useAccountSync, type AccountSyncController } from '../features/account/useAccountSync';
 import type { RemoteSyncData } from '../features/account/syncService';
-import { useSleepLogs } from '../features/sleep-log/useSleepLogs';
 import { appConfig } from '../shared/config/env';
 import { audioCatalog, getItemsByType, getModule, modules } from '../shared/content/audioCatalog';
 import { storageKeys } from '../shared/storage/keys';
 import { storage } from '../shared/storage/storage';
 import type { AudioItem, AudioType, PlaybackMode } from '../shared/types/audio';
-import type { SleepLogEntry, UserSettings } from '../shared/types/sleep';
+import type { UserSettings } from '../shared/types/sleep';
 import { ModuleCard } from '../shared/ui/ModuleCard';
 import { PillButton } from '../shared/ui/PillButton';
 import { TrackRow } from '../shared/ui/TrackRow';
 import { colors, spacing } from '../shared/ui/theme';
 
-type Screen = 'home' | 'module' | 'player' | 'favorites' | 'sleep-log' | 'credits' | 'privacy' | 'settings' | 'account';
+type Screen = 'home' | 'module' | 'ai' | 'player' | 'favorites' | 'credits' | 'privacy' | 'settings' | 'account';
 
 const defaultSettings: UserSettings = {
   defaultSleepTimerMinutes: 30,
@@ -66,16 +65,59 @@ const scrollBottomPadding = tabBarBottomOffset + tabBarEstimatedHeight + spacing
 const scrollBottomPaddingWithMini =
   miniPlayerBottomOffset + miniPlayerEstimatedHeight + spacing.xl;
 
-const formatMinutes = (minutes: number) => {
-  const hours = Math.floor(minutes / 60);
-  const remainder = minutes % 60;
-
-  if (hours === 0) {
-    return `${remainder} 分钟`;
-  }
-
-  return `${hours} 小时 ${remainder} 分钟`;
+type AiSleepIntent = {
+  id: string;
+  title: string;
+  summary: string;
+  guidance: string;
+  trackIds: string[];
+  playbackMode: PlaybackMode;
 };
+
+const aiSleepDurations = [5, 10, 20, 30];
+
+const aiSleepIntents: AiSleepIntent[] = [
+  {
+    id: 'fast-sleep',
+    title: '快速入睡',
+    summary: '低刺激音乐先降速，再用稳定声场收尾。',
+    guidance: '把手机放远一点，跟着声音把注意力从白天慢慢放下来。',
+    trackIds: ['music-breathing-pad', 'music-moon-piano', 'noise-rain-window'],
+    playbackMode: 'sequential',
+  },
+  {
+    id: 'calm-anxiety',
+    title: '焦虑放松',
+    summary: '呼吸铺底加轻引导，适合睡前脑子停不下来。',
+    guidance: '不需要努力睡着，只要把每一次呼气听完整。',
+    trackIds: ['music-breathing-demo', 'music-deep-meditation', 'story-forest-letter'],
+    playbackMode: 'repeat-all',
+  },
+  {
+    id: 'night-wake',
+    title: '半夜醒来',
+    summary: '少人声、少变化，帮助重新回到安静状态。',
+    guidance: '保持闭眼，先不要看时间，让稳定的环境声接住注意力。',
+    trackIds: ['noise-night-wind', 'noise-ocean-waves', 'noise-rain-window'],
+    playbackMode: 'repeat-all',
+  },
+  {
+    id: 'nature-noise',
+    title: '自然白噪音',
+    summary: '雨声、海岸和篝火氛围，适合遮盖环境噪音。',
+    guidance: '选择一个舒服音量，让声音留在背景里，不用追着听。',
+    trackIds: ['noise-rain-window', 'noise-ocean-waves', 'noise-night-wind'],
+    playbackMode: 'shuffle',
+  },
+  {
+    id: 'bedtime-story',
+    title: '睡前故事',
+    summary: '轻故事配合定时关闭，适合需要一点陪伴的夜晚。',
+    guidance: '故事只是陪你慢下来，听到哪里睡着都刚刚好。',
+    trackIds: ['story-stars-falling', 'story-cloud-boat', 'story-forest-letter'],
+    playbackMode: 'sequential',
+  },
+];
 
 const formatDateTime = (isoDate: string) =>
   new Intl.DateTimeFormat('zh-CN', {
@@ -85,50 +127,14 @@ const formatDateTime = (isoDate: string) =>
     minute: '2-digit',
   }).format(new Date(isoDate));
 
-const toDateTimeInput = (isoDate: string) => {
-  const date = new Date(isoDate);
-  const pad = (value: number) => value.toString().padStart(2, '0');
-
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-};
-
-const parseDateTimeInput = (value: string) => {
-  const normalized = value.trim().replace(' ', 'T');
-  const date = new Date(normalized);
-  return Number.isNaN(date.getTime()) ? null : date;
-};
-
-const createEntityId = () => {
-  const randomUUID = globalThis.crypto?.randomUUID;
-  return randomUUID ? randomUUID.call(globalThis.crypto) : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-};
-
-const createSleepLogDraft = () => {
-  const wakeAt = new Date();
-  const sleepAt = new Date(wakeAt.getTime() - 7.5 * 60 * 60 * 1000);
-
-  return {
-    id: createEntityId(),
-    sleepAt: sleepAt.toISOString(),
-    wakeAt: wakeAt.toISOString(),
-    durationMinutes: 450,
-    rating: 4 as const,
-    note: '睡前完成一次助眠播放',
-  };
-};
-
 export default function SleepApp() {
   const player = useAudioPlayer();
-  const sleepLogs = useSleepLogs();
   const [screen, setScreen] = useState<Screen>('home');
   const [activeModule, setActiveModule] = useState<AudioType>('music');
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [customTimer, setCustomTimer] = useState('25');
-  const [editingLogId, setEditingLogId] = useState<string | null>(null);
-  const [sleepAtInput, setSleepAtInput] = useState('');
-  const [wakeAtInput, setWakeAtInput] = useState('');
-  const [ratingInput, setRatingInput] = useState('4');
-  const [noteInput, setNoteInput] = useState('');
+  const [selectedAiIntentId, setSelectedAiIntentId] = useState(aiSleepIntents[0].id);
+  const [selectedAiDuration, setSelectedAiDuration] = useState(20);
 
   useEffect(() => {
     storage.getJson(storageKeys.settings, defaultSettings).then(setSettings);
@@ -145,23 +151,27 @@ export default function SleepApp() {
     .map((id) => audioCatalog.find((item) => item.id === id))
     .filter(Boolean) as AudioItem[];
   const favoriteTracks = audioCatalog.filter((item) => player.favoriteIds.includes(item.id));
+  const selectedAiIntent =
+    aiSleepIntents.find((intent) => intent.id === selectedAiIntentId) ?? aiSleepIntents[0];
+  const selectedAiTracks = selectedAiIntent.trackIds
+    .map((id) => audioCatalog.find((item) => item.id === id))
+    .filter(Boolean) as AudioItem[];
   const getSyncSnapshot = useCallback(
     () => ({
       favoriteIds: player.favoriteIds,
       historyIds: player.historyIds,
-      sleepLogs: sleepLogs.logs,
+      sleepLogs: [],
       settings,
     }),
-    [player.favoriteIds, player.historyIds, settings, sleepLogs.logs],
+    [player.favoriteIds, player.historyIds, settings],
   );
   const applyRemoteData = useCallback(
     (data: RemoteSyncData) => {
       player.replaceLibraryData(data.favoriteIds, data.historyIds);
-      sleepLogs.replaceLogs(data.sleepLogs);
       setSettings(data.settings);
       storage.setJson(storageKeys.settings, data.settings);
     },
-    [player.replaceLibraryData, sleepLogs.replaceLogs],
+    [player.replaceLibraryData],
   );
   const account = useAccountSync({
     getSnapshot: getSyncSnapshot,
@@ -195,6 +205,19 @@ export default function SleepApp() {
     syncIfSignedIn();
   };
 
+  const startAiSleep = async () => {
+    if (!selectedAiTracks[0]) {
+      Alert.alert('暂无可播放内容', '当前推荐队列没有找到对应音频，请先检查本地音频目录。');
+      return;
+    }
+
+    player.setPlaybackMode(selectedAiIntent.playbackMode);
+    await player.playTrack(selectedAiTracks[0], selectedAiTracks);
+    player.setSleepTimer(selectedAiDuration);
+    setScreen('player');
+    syncIfSignedIn();
+  };
+
   const openFeedback = () => {
     Linking.openURL(
       `mailto:${betaFeedbackEmail}?subject=${encodeURIComponent('Codex Sleep 内测反馈')}`,
@@ -208,58 +231,6 @@ export default function SleepApp() {
       return;
     }
     player.setSleepTimer(minutes);
-  };
-
-  const beginSleepLogEdit = (log?: SleepLogEntry) => {
-    const draft = log ?? createSleepLogDraft();
-    setEditingLogId(log?.id ?? null);
-    setSleepAtInput(toDateTimeInput(draft.sleepAt));
-    setWakeAtInput(toDateTimeInput(draft.wakeAt));
-    setRatingInput(`${draft.rating}`);
-    setNoteInput(draft.note ?? '');
-  };
-
-  const saveSleepLog = () => {
-    const sleepAt = parseDateTimeInput(sleepAtInput);
-    const wakeAt = parseDateTimeInput(wakeAtInput);
-    const rating = Number(ratingInput);
-
-    if (!sleepAt || !wakeAt || wakeAt <= sleepAt) {
-      Alert.alert('请检查睡眠时间', '醒来时间需要晚于入睡时间，格式示例：2026-06-01 23:30');
-      return;
-    }
-
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-      Alert.alert('请填写 1 到 5 之间的睡眠评分');
-      return;
-    }
-
-    const entry: SleepLogEntry = {
-      id: editingLogId ?? createEntityId(),
-      sleepAt: sleepAt.toISOString(),
-      wakeAt: wakeAt.toISOString(),
-      durationMinutes: Math.round((wakeAt.getTime() - sleepAt.getTime()) / 60000),
-      rating: rating as SleepLogEntry['rating'],
-      note: noteInput.trim(),
-    };
-
-    if (editingLogId) {
-      sleepLogs.updateLog(entry);
-    } else {
-      sleepLogs.addLog(entry);
-    }
-
-    setEditingLogId(null);
-    setSleepAtInput('');
-    setWakeAtInput('');
-    setRatingInput('4');
-    setNoteInput('');
-    syncIfSignedIn();
-  };
-
-  const removeSleepLogAndSync = (id: string) => {
-    sleepLogs.removeLog(id);
-    syncIfSignedIn();
   };
 
   return (
@@ -296,7 +267,7 @@ export default function SleepApp() {
               <View style={styles.hero}>
                 <Text style={styles.heroTitle}>今晚慢一点入睡</Text>
                 <Text style={styles.heroCopy}>
-                  选择音乐、故事或白噪音，设置定时关闭，留下一条简单睡眠记录。
+                  选择音乐、故事或白噪音，也可以让本地智能推荐帮你组合一段睡前流程。
                 </Text>
               </View>
 
@@ -346,6 +317,19 @@ export default function SleepApp() {
                 />
               ))}
             </View>
+          ) : null}
+
+          {screen === 'ai' ? (
+            <AiSleepPanel
+              intents={aiSleepIntents}
+              durations={aiSleepDurations}
+              selectedIntentId={selectedAiIntentId}
+              selectedDuration={selectedAiDuration}
+              selectedTracks={selectedAiTracks}
+              onSelectIntent={setSelectedAiIntentId}
+              onSelectDuration={setSelectedAiDuration}
+              onStart={startAiSleep}
+            />
           ) : null}
 
           {screen === 'player' ? (
@@ -407,93 +391,6 @@ export default function SleepApp() {
             </View>
           ) : null}
 
-          {screen === 'sleep-log' ? (
-            <View style={styles.stack}>
-              <View style={styles.sectionHeader}>
-                <View>
-                  <Text style={styles.sectionTitle}>睡眠记录</Text>
-                  <Text style={styles.sectionMeta}>
-                    平均睡眠 {sleepLogs.averageMinutes ? formatMinutes(sleepLogs.averageMinutes) : '暂无'}
-                  </Text>
-                </View>
-                <Pressable style={styles.primaryButton} onPress={() => beginSleepLogEdit()}>
-                  <Text style={styles.primaryButtonText}>新增</Text>
-                </Pressable>
-              </View>
-              {sleepAtInput || wakeAtInput ? (
-                <View style={styles.formPanel}>
-                  <Text style={styles.settingTitle}>{editingLogId ? '编辑睡眠记录' : '新增睡眠记录'}</Text>
-                  <TextInput
-                    value={sleepAtInput}
-                    onChangeText={setSleepAtInput}
-                    placeholder="入睡时间，例如 2026-06-01 23:30"
-                    style={styles.textInput}
-                  />
-                  <TextInput
-                    value={wakeAtInput}
-                    onChangeText={setWakeAtInput}
-                    placeholder="醒来时间，例如 2026-06-02 07:00"
-                    style={styles.textInput}
-                  />
-                  <TextInput
-                    value={ratingInput}
-                    onChangeText={setRatingInput}
-                    keyboardType="number-pad"
-                    placeholder="睡眠评分 1-5"
-                    style={styles.textInput}
-                  />
-                  <TextInput
-                    value={noteInput}
-                    onChangeText={setNoteInput}
-                    placeholder="备注，例如 半夜醒来一次"
-                    style={[styles.textInput, styles.noteInput]}
-                    multiline
-                  />
-                  <View style={styles.playerControls}>
-                    <Pressable style={styles.primaryButton} onPress={saveSleepLog}>
-                      <Text style={styles.primaryButtonText}>保存</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.subtleButton}
-                      onPress={() => {
-                        setEditingLogId(null);
-                        setSleepAtInput('');
-                        setWakeAtInput('');
-                        setNoteInput('');
-                      }}
-                    >
-                      <Text style={styles.subtleButtonText}>取消</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ) : null}
-              {sleepLogs.logs.length === 0 ? (
-                <EmptyState text="还没有睡眠记录，先新增一条快速记录。" />
-              ) : (
-                sleepLogs.logs.map((log) => (
-                  <View key={log.id} style={styles.logRow}>
-                    <View style={styles.logBody}>
-                      <Text style={styles.logTitle}>{formatMinutes(log.durationMinutes)}</Text>
-                      <Text style={styles.logMeta}>
-                        {formatDateTime(log.sleepAt)} - {formatDateTime(log.wakeAt)}
-                      </Text>
-                      <Text style={styles.logMeta}>睡眠评分：{log.rating}/5</Text>
-                      {log.note ? <Text style={styles.logMeta}>备注：{log.note}</Text> : null}
-                    </View>
-                    <View style={styles.logActions}>
-                      <Pressable onPress={() => beginSleepLogEdit(log)} style={styles.subtleButton}>
-                        <Text style={styles.subtleButtonText}>编辑</Text>
-                      </Pressable>
-                      <Pressable onPress={() => removeSleepLogAndSync(log.id)} style={styles.subtleButton}>
-                        <Text style={styles.subtleButtonText}>删除</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                ))
-              )}
-            </View>
-          ) : null}
-
           {screen === 'settings' ? (
             <View style={styles.stack}>
               <Text style={styles.sectionTitle}>设置</Text>
@@ -542,7 +439,7 @@ export default function SleepApp() {
               <View style={styles.settingRow}>
                 <Text style={styles.settingTitle}>内测反馈</Text>
                 <Text style={styles.settingMeta}>
-                  遇到播放失败、定时不准或文案问题，可以把复现步骤发给我们。
+                  遇到播放失败、布局遮挡、AI 推荐不合适、登录同步或音频问题，可以把复现步骤发给我们。
                 </Text>
                 <View style={styles.playerControls}>
                   <Pressable style={styles.subtleButton} onPress={openFeedback}>
@@ -604,13 +501,13 @@ export default function SleepApp() {
               <View style={styles.legalRow}>
                 <Text style={styles.settingTitle}>本地数据</Text>
                 <Text style={styles.settingMeta}>
-                  游客模式不上传数据。收藏、最近播放、设置和睡眠记录会先保存在本机，离线时仍可使用。
+                  游客模式不上传数据。收藏、最近播放、设置和默认定时器会先保存在本机，离线时仍可使用。
                 </Text>
               </View>
               <View style={styles.legalRow}>
                 <Text style={styles.settingTitle}>账号同步</Text>
                 <Text style={styles.settingMeta}>
-                  登录后会把手机号账号标识、收藏、最近播放、设置和睡眠记录同步到云端，用于多设备恢复和备份。当前不上传音频文件，不接入广告或分析 SDK。
+                  登录后会把手机号账号标识、收藏、最近播放和设置同步到云端，用于多设备恢复和备份。当前不上传音频文件，不接入广告或分析 SDK。
                 </Text>
               </View>
               <View style={styles.legalRow}>
@@ -642,22 +539,22 @@ export default function SleepApp() {
         {screen !== 'player' ? (
           <View style={[styles.tabBar, player.currentTrack && styles.tabBarWithMini]}>
             <TabButton
-              label="助眠"
+              label="首页"
               icon={(color) => <Moon color={color} size={18} />}
               active={screen === 'home' || screen === 'module'}
               onPress={() => setScreen('home')}
             />
             <TabButton
-              label="播放"
-              icon={(color) => <Play color={color} fill={color} size={18} />}
-              active={false}
-              onPress={() => setScreen('player')}
+              label="AI助眠"
+              icon={(color) => <Sparkles color={color} size={18} />}
+              active={screen === 'ai'}
+              onPress={() => setScreen('ai')}
             />
             <TabButton
-              label="记录"
-              icon={(color) => <Clock3 color={color} size={18} />}
-              active={screen === 'sleep-log'}
-              onPress={() => setScreen('sleep-log')}
+              label="收藏"
+              icon={(color) => <Heart color={color} fill={screen === 'favorites' ? color : 'transparent'} size={18} />}
+              active={screen === 'favorites'}
+              onPress={() => setScreen('favorites')}
             />
             <TabButton
               label="设置"
@@ -724,7 +621,7 @@ const AccountPanel = ({
       <View style={styles.sectionHeader}>
         <View>
           <Text style={styles.sectionTitle}>账号与同步</Text>
-          <Text style={styles.sectionMeta}>登录后同步收藏、最近播放、睡眠记录和设置。</Text>
+          <Text style={styles.sectionMeta}>登录后同步收藏、最近播放和设置。</Text>
         </View>
         <IconButton label="返回设置" onPress={onBack}>
           <ChevronLeft color={colors.ink} size={18} />
@@ -890,6 +787,106 @@ const QuickSections = ({
     )}
   </View>
 );
+
+const AiSleepPanel = ({
+  intents,
+  durations,
+  selectedIntentId,
+  selectedDuration,
+  selectedTracks,
+  onSelectIntent,
+  onSelectDuration,
+  onStart,
+}: {
+  intents: AiSleepIntent[];
+  durations: number[];
+  selectedIntentId: string;
+  selectedDuration: number;
+  selectedTracks: AudioItem[];
+  onSelectIntent: (intentId: string) => void;
+  onSelectDuration: (duration: number) => void;
+  onStart: () => void;
+}) => {
+  const selectedIntent =
+    intents.find((intent) => intent.id === selectedIntentId) ?? intents[0];
+
+  return (
+    <View style={styles.stack}>
+      <View style={styles.aiHero}>
+        <View style={styles.aiHeroIcon}>
+          <Sparkles color={colors.white} size={22} />
+        </View>
+        <Text style={styles.heroTitle}>AI助眠</Text>
+        <Text style={styles.heroCopy}>
+          先用本地规则按你的入睡目标生成播放队列和定时器。内测阶段暂未接入在线 AI。
+        </Text>
+      </View>
+
+      <View style={styles.stack}>
+        <View>
+          <Text style={styles.sectionTitle}>今晚想怎么睡？</Text>
+          <Text style={styles.sectionMeta}>选择一个目标，App 会给出曲目顺序、播放模式和睡前提示。</Text>
+        </View>
+        <View style={styles.aiIntentGrid}>
+          {intents.map((intent) => {
+            const active = intent.id === selectedIntentId;
+            return (
+              <Pressable
+                key={intent.id}
+                accessibilityRole="button"
+                accessibilityLabel={`选择${intent.title}`}
+                style={[styles.aiIntentCard, active && styles.aiIntentCardActive]}
+                onPress={() => onSelectIntent(intent.id)}
+              >
+                <View style={styles.aiIntentHeader}>
+                  <Text style={styles.aiIntentTitle}>{intent.title}</Text>
+                  {active ? <Sparkles color={colors.green} size={16} /> : null}
+                </View>
+                <Text style={styles.aiIntentSummary}>{intent.summary}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.settingRow}>
+        <Text style={styles.settingTitle}>助眠时长</Text>
+        <View style={styles.pillWrap}>
+          {durations.map((minutes) => (
+            <PillButton
+              key={minutes}
+              label={`${minutes} 分钟`}
+              active={selectedDuration === minutes}
+              onPress={() => onSelectDuration(minutes)}
+            />
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.aiRecommendation}>
+        <Text style={styles.settingTitle}>本次推荐</Text>
+        <Text style={styles.settingMeta}>{selectedIntent.guidance}</Text>
+        <View style={styles.aiTrackList}>
+          {selectedTracks.map((track, index) => (
+            <View key={track.id} style={styles.aiTrackChip}>
+              <Text style={styles.aiTrackIndex}>{index + 1}</Text>
+              <View style={styles.settingCopy}>
+                <Text style={styles.aiTrackTitle} numberOfLines={1}>{track.title}</Text>
+                <Text style={styles.settingMeta} numberOfLines={1}>{track.category}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+        <Text style={styles.aiDisclaimer}>
+          当前为本地智能推荐，暂未接入在线 AI；正式接入大模型前会单独确认供应商、费用和隐私策略。
+        </Text>
+        <Pressable style={styles.primaryButton} onPress={onStart}>
+          <Text style={styles.primaryButtonText}>开始助眠</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
 
 type PlayerPanelProps = {
   currentTrack: AudioItem | null;
@@ -1449,6 +1446,22 @@ const styles = StyleSheet.create({
     minHeight: 148,
     justifyContent: 'center',
   },
+  aiHero: {
+    backgroundColor: colors.night,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  aiHeroIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    backgroundColor: colors.coral,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroTitle: {
     color: colors.white,
     fontSize: 28,
@@ -1477,6 +1490,87 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     marginTop: spacing.xs,
+  },
+  aiIntentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  aiIntentCard: {
+    flexGrow: 1,
+    flexBasis: '47%',
+    minWidth: 136,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  aiIntentCardActive: {
+    borderColor: colors.green,
+    backgroundColor: colors.surfaceElevated,
+  },
+  aiIntentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  aiIntentTitle: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: '900',
+    flexShrink: 1,
+  },
+  aiIntentSummary: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  aiRecommendation: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  aiTrackList: {
+    gap: spacing.sm,
+  },
+  aiTrackChip: {
+    minHeight: 48,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minWidth: 0,
+  },
+  aiTrackIndex: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    color: colors.white,
+    textAlign: 'center',
+    fontWeight: '900',
+    lineHeight: 24,
+  },
+  aiTrackTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  aiDisclaimer: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 18,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1862,41 +1956,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  logRow: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  logActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    justifyContent: 'flex-end',
-  },
-  formPanel: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  logBody: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  logTitle: {
-    color: colors.ink,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  logMeta: {
-    color: colors.muted,
-    fontSize: 13,
-  },
   settingRow: {
     backgroundColor: colors.surface,
     borderRadius: 8,
@@ -1942,11 +2001,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surfaceSoft,
     color: colors.ink,
-  },
-  noteInput: {
-    minHeight: 76,
-    paddingTop: spacing.sm,
-    textAlignVertical: 'top',
   },
   settingCopy: {
     flex: 1,

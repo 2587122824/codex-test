@@ -9,13 +9,14 @@ Use this checklist before sharing Codex Sleep with a small test group.
 3. Switch playback mode between single repeat, sequential, repeat all, and shuffle.
 4. Favorite one track, restart the app, and confirm it remains in favorites.
 5. Play two different tracks and confirm they appear in recently played.
-6. Add one sleep log entry with a rating and note, then edit it.
-7. Set a custom sleep timer and confirm the timer state appears on the player screen.
-8. Open Settings, Privacy, Audio Credits, and the beta feedback link.
-9. Open Account & Sync from Settings:
+6. Open AI Sleep, select each sleep goal, switch between 5/10/20/30 minute durations, and start one recommendation.
+7. Confirm AI Sleep opens the player, starts the recommended queue, and applies the selected timer.
+8. Set a custom sleep timer and confirm the timer state appears on the player screen.
+9. Open Settings, Privacy, Audio Credits, and the beta feedback link.
+10. Open Account & Sync from Settings:
    - With no `EXPO_PUBLIC_API_BASE_URL`, confirm guest mode explains that data is saved locally.
-   - With the local Mock API configured, send a phone code, enter `123456`, sign in, and confirm favorites, recent plays, settings, and sleep logs merge after login.
-   - Sign out and confirm local playback, favorites, and sleep logs remain usable.
+   - With the local Mock API configured, send a phone code, enter `123456`, sign in, and confirm favorites, recent plays, and settings merge after login.
+   - Sign out and confirm local playback and favorites remain usable.
 
 ## Local Mock Account API
 
@@ -44,15 +45,17 @@ hash tokens, or implement real cloud revocation policy.
 - Confirm the timer stops audio when it reaches zero.
 - Confirm a failed audio load does not show `NaN` time or break the layout.
 - Confirm bottom navigation does not cover the main player controls.
+- Confirm the bottom navigation shows Home, AI Sleep, Favorites, and Settings; the full player is opened from tracks or the mini player.
 - Confirm guest mode remains usable when the Aliyun API endpoint is empty or unreachable.
 
 ## Feedback To Collect
 
 - Which audio category felt most useful?
+- Did the AI Sleep recommendation match the selected goal?
 - Did the timer behavior match expectations?
 - Were any labels confusing?
 - Did playback fail or stop unexpectedly?
-- Was the sleep log worth keeping, or did it feel like extra work?
+- Was anything missing after removing the manual sleep log?
 
 ## Known Beta Limitations
 
