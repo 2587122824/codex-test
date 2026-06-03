@@ -46,16 +46,36 @@ const run = async () => {
   assert.equal(session.statusCode, 200);
   assert.equal(session.json.session.user.phone, phone);
 
+  const refresh = await invoke({
+    method: 'POST',
+    path: '/auth/refresh',
+    body: { refreshToken: verify.json.session.refreshToken },
+  });
+  assert.equal(refresh.statusCode, 200);
+  assert.equal(refresh.json.session.user.phone, phone);
+  assert.ok(refresh.json.session.accessToken);
+  assert.ok(refresh.json.session.refreshToken);
+  assert.notEqual(refresh.json.session.accessToken, token);
+  assert.notEqual(refresh.json.session.refreshToken, verify.json.session.refreshToken);
+
+  const oldSessionAfterRefresh = await invoke({ method: 'GET', path: '/auth/session', token });
+  assert.equal(oldSessionAfterRefresh.statusCode, 401);
+
+  const refreshedToken = refresh.json.session.accessToken;
+  const refreshedSession = await invoke({ method: 'GET', path: '/auth/session', token: refreshedToken });
+  assert.equal(refreshedSession.statusCode, 200);
+  assert.equal(refreshedSession.json.session.user.phone, phone);
+
   const httpV2Session = await app.handle({
     requestContext: { http: { method: 'GET', path: '/auth/session' } },
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${refreshedToken}` },
   });
   assert.equal(httpV2Session.statusCode, 200);
 
   const sync = await invoke({
     method: 'POST',
     path: '/sync/merge',
-    token,
+    token: refreshedToken,
     body: {
       local: {
         favoriteIds: ['rain-window'],
@@ -83,16 +103,16 @@ const run = async () => {
   assert.equal(sync.json.data.settings.themeMode, 'light');
   assert.equal(sync.json.data.settings.defaultSleepTimerMinutes, 0);
 
-  const logout = await invoke({ method: 'POST', path: '/auth/logout', token });
+  const logout = await invoke({ method: 'POST', path: '/auth/logout', token: refreshedToken });
   assert.equal(logout.statusCode, 204);
 
-  const afterLogout = await invoke({ method: 'GET', path: '/auth/session', token });
+  const afterLogout = await invoke({ method: 'GET', path: '/auth/session', token: refreshedToken });
   assert.equal(afterLogout.statusCode, 401);
 };
 
 run()
   .then(() => {
-    console.log('Aliyun Function handler smoke passed: auth, session, sync, logout.');
+    console.log('Aliyun Function handler smoke passed: auth, refresh, session, sync, logout.');
   })
   .catch((error) => {
     console.error(error);

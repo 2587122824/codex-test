@@ -28,6 +28,7 @@ const requiredTables = [
 const requiredRoutes = [
   'POST /auth/send-code',
   'POST /auth/verify-code',
+  'POST /auth/refresh',
   'GET /auth/session',
   'POST /auth/logout',
   'POST /sync/merge',
@@ -91,9 +92,11 @@ if (!fs.existsSync(handlerPath)) {
   for (const phrase of [
     "path === '/auth/send-code'",
     "path === '/auth/verify-code'",
+    "path === '/auth/refresh'",
     "path === '/auth/session'",
     "path === '/auth/logout'",
     "path === '/sync/merge'",
+    'findSessionByRefreshToken',
     'exports.handler',
     'createMemoryAdapter',
   ]) {
@@ -127,13 +130,20 @@ if (!fs.existsSync(packagePath)) {
 
 if (!fs.existsSync(smokePath)) {
   missing.push('scripts/smoke-aliyun-handler.js');
+} else {
+  const smoke = fs.readFileSync(smokePath, 'utf8');
+  for (const phrase of ['/auth/refresh', 'oldSessionAfterRefresh', 'refreshedToken']) {
+    if (!smoke.includes(phrase)) {
+      missing.push(`handler smoke missing: ${phrase}`);
+    }
+  }
 }
 
 if (!fs.existsSync(cloudSmokePath)) {
   missing.push('scripts/smoke-aliyun-cloud.js');
 } else {
   const cloudSmoke = fs.readFileSync(cloudSmokePath, 'utf8');
-  for (const phrase of ['ALIYUN_FUNCTION_BASE_URL', 'ALIYUN_SMOKE_PHONE', 'ALIYUN_SMOKE_CODE', '/sync/merge']) {
+  for (const phrase of ['ALIYUN_FUNCTION_BASE_URL', 'ALIYUN_SMOKE_PHONE', 'ALIYUN_SMOKE_CODE', '/auth/refresh', '/sync/merge']) {
     if (!cloudSmoke.includes(phrase)) {
       missing.push(`cloud smoke missing: ${phrase}`);
     }
@@ -170,6 +180,8 @@ if (!fs.existsSync(postgresAdapterPath)) {
     'createPostgresAdapter',
     'auth_sms_codes',
     'auth_sessions',
+    'findSessionByRefreshToken',
+    'refresh_token_hash',
     'user_favorites',
     'play_history',
     'sleep_logs',

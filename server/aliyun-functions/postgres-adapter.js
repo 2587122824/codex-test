@@ -217,6 +217,42 @@ const createPostgresAdapter = ({ pool = createPoolFromEnv() } = {}) => ({
     };
   },
 
+  async findSessionByRefreshToken(refreshTokenHash) {
+    const result = await pool.query(
+      `select s.access_token_hash as "accessTokenHash",
+              s.refresh_token_hash as "refreshTokenHash",
+              s.expires_at as "expiresAt",
+              s.revoked_at as "revokedAt",
+              s.created_at as "createdAt",
+              p.id, p.phone, p.nickname, p.avatar_url as "avatarUrl"
+       from auth_sessions s
+       join profiles p on p.id = s.user_id
+       where s.refresh_token_hash = $1
+         and s.revoked_at is null
+         and s.expires_at > now()
+         and p.deleted_at is null
+       limit 1`,
+      [refreshTokenHash],
+    );
+    const row = result.rows[0];
+    if (!row) {
+      return null;
+    }
+    return {
+      accessTokenHash: row.accessTokenHash,
+      refreshTokenHash: row.refreshTokenHash,
+      expiresAt: new Date(row.expiresAt).toISOString(),
+      revokedAt: row.revokedAt ? new Date(row.revokedAt).toISOString() : null,
+      createdAt: new Date(row.createdAt).toISOString(),
+      user: {
+        id: row.id,
+        phone: row.phone,
+        nickname: row.nickname,
+        avatarUrl: row.avatarUrl,
+      },
+    };
+  },
+
   async revokeSession(accessTokenHash) {
     await pool.query(
       `update auth_sessions

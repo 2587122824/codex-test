@@ -59,6 +59,7 @@ const run = async () => {
   assert.equal(verify.status, 200, `verify-code failed: ${JSON.stringify(verify.data)}`);
   assert.equal(verify.data.session.user.phone, phone);
   assert.ok(verify.data.session.accessToken, 'verify-code should return accessToken');
+  assert.ok(verify.data.session.refreshToken, 'verify-code should return refreshToken');
   const token = verify.data.session.accessToken;
   console.log(`Cloud verify-code passed: userId=${verify.data.session.user.id}`);
 
@@ -67,9 +68,29 @@ const run = async () => {
   assert.equal(session.data.session.user.phone, phone);
   console.log('Cloud session passed.');
 
+  const refresh = await request('/auth/refresh', {
+    method: 'POST',
+    body: { refreshToken: verify.data.session.refreshToken },
+  });
+  assert.equal(refresh.status, 200, `refresh failed: ${JSON.stringify(refresh.data)}`);
+  assert.equal(refresh.data.session.user.phone, phone);
+  assert.ok(refresh.data.session.accessToken, 'refresh should return accessToken');
+  assert.ok(refresh.data.session.refreshToken, 'refresh should return refreshToken');
+  assert.notEqual(refresh.data.session.accessToken, token, 'refresh should rotate accessToken');
+  assert.notEqual(
+    refresh.data.session.refreshToken,
+    verify.data.session.refreshToken,
+    'refresh should rotate refreshToken',
+  );
+  console.log('Cloud refresh passed.');
+
+  const oldSession = await request('/auth/session', { token });
+  assert.equal(oldSession.status, 401, 'old access token should return 401 after refresh');
+  const activeToken = refresh.data.session.accessToken;
+
   const sync = await request('/sync/merge', {
     method: 'POST',
-    token,
+    token: activeToken,
     body: {
       local: {
         favoriteIds: ['rain-window'],
@@ -96,11 +117,11 @@ const run = async () => {
   assert.ok(sync.data.data.syncedAt, 'sync should return syncedAt');
   console.log(`Cloud sync passed: syncedAt=${sync.data.data.syncedAt}`);
 
-  const logout = await request('/auth/logout', { method: 'POST', token });
+  const logout = await request('/auth/logout', { method: 'POST', token: activeToken });
   assert.equal(logout.status, 204, `logout failed: ${JSON.stringify(logout.data)}`);
   console.log('Cloud logout passed.');
 
-  const afterLogout = await request('/auth/session', { token });
+  const afterLogout = await request('/auth/session', { token: activeToken });
   assert.equal(afterLogout.status, 401, 'session should return 401 after logout');
   console.log('Cloud post-logout 401 passed.');
 };

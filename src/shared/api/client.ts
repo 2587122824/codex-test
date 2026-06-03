@@ -75,32 +75,73 @@ export const clearApiSession = async () => {
 
 export const getAccessToken = () => tokenStorage.getItem(accessTokenKey);
 
+const getRefreshToken = () => tokenStorage.getItem(refreshTokenKey);
+
+const refreshApiSession = async () => {
+  const refreshToken = await getRefreshToken();
+  if (!refreshToken) {
+    return null;
+  }
+
+  const response = await fetch(buildUrl('/auth/refresh'), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+
+  if (!response.ok || !data || typeof data !== 'object' || !('session' in data)) {
+    await clearApiSession();
+    return null;
+  }
+
+  const session = (data as { session: ApiSession }).session;
+  await saveApiSession(session);
+  return session.accessToken;
+};
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   if (!isApiConfigured) {
     throw new Error('Aliyun API is not configured.');
   }
 
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
+  const send = async (accessToken?: string | null) => {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    };
+
+    if (options.body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    if (options.auth) {
+      if (!accessToken) {
+        throw new Error('Please sign in before syncing.');
+      }
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    return fetch(buildUrl(path), {
+      method: options.method ?? 'GET',
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
   };
 
-  if (options.body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-  }
+  const accessToken = options.auth ? await getAccessToken() : null;
+  let response = await send(accessToken);
 
-  if (options.auth) {
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      throw new Error('Please sign in before syncing.');
+  if (options.auth && response.status === 401) {
+    const refreshedAccessToken = await refreshApiSession();
+    if (refreshedAccessToken) {
+      response = await send(refreshedAccessToken);
     }
-    headers.Authorization = `Bearer ${accessToken}`;
   }
-
-  const response = await fetch(buildUrl(path), {
-    method: options.method ?? 'GET',
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
 
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;

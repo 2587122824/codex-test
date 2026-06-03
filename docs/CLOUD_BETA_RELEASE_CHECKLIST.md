@@ -47,6 +47,8 @@ Expected result:
 - `/auth/send-code` returns `requestId`.
 - `/auth/verify-code` returns `session`.
 - `/auth/session` succeeds with the bearer token.
+- `/auth/refresh` rotates access and refresh tokens, and the old access token
+  returns 401.
 - `/sync/merge` returns favorites, history, settings, and `syncedAt`.
 - `/auth/logout` returns 204.
 - `/auth/session` returns 401 after logout.

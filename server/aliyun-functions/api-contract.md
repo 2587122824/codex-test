@@ -73,6 +73,30 @@ Response:
 }
 ```
 
+### POST /auth/refresh
+
+Exchanges a valid refresh token for a new app session. The server should revoke
+the previous access session when issuing the new one.
+
+Request:
+
+```json
+{ "refreshToken": "opaque-refresh-token" }
+```
+
+Response:
+
+```json
+{
+  "session": {
+    "user": { "id": "uuid", "phone": "+8613800000000" },
+    "accessToken": "new-opaque-access-token",
+    "refreshToken": "new-opaque-refresh-token",
+    "expiresAt": "2026-06-09T12:00:00.000Z"
+  }
+}
+```
+
 ### POST /auth/logout
 
 Revokes the current server session. Return `204 No Content` or `{ "ok": true }`.

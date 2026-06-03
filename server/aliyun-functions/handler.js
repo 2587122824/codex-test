@@ -192,6 +192,15 @@ const createMemoryAdapter = () => {
       }
       return session;
     },
+    async findSessionByRefreshToken(refreshTokenHash) {
+      const session = [...sessionsByAccessTokenHash.values()].find(
+        (item) =>
+          item.refreshTokenHash === refreshTokenHash &&
+          !item.revokedAt &&
+          new Date(item.expiresAt).getTime() > Date.now(),
+      );
+      return session || null;
+    },
     async revokeSession(accessTokenHash) {
       const session = sessionsByAccessTokenHash.get(accessTokenHash);
       if (session) {
@@ -326,6 +335,22 @@ const createApp = ({ adapter = createMemoryAdapter(), sms = createMockSmsAdapter
     return response(200, { session });
   };
 
+  const refreshSession = async (body) => {
+    const refreshToken = typeof body.refreshToken === 'string' ? body.refreshToken.trim() : '';
+    if (!refreshToken) {
+      return errorResponse(400, 'Refresh token is required.', 'REFRESH_TOKEN_REQUIRED');
+    }
+
+    const currentSession = await adapter.findSessionByRefreshToken(hashValue(refreshToken));
+    if (!currentSession) {
+      return errorResponse(401, 'Please sign in again.', 'INVALID_REFRESH_TOKEN');
+    }
+
+    await adapter.revokeSession(currentSession.accessTokenHash);
+    const nextSession = await createSessionPayload(adapter, currentSession.user);
+    return response(200, { session: nextSession });
+  };
+
   const getSession = async (headers) => {
     const session = await requireSession(adapter, headers);
     if (!session) {
@@ -378,6 +403,9 @@ const createApp = ({ adapter = createMemoryAdapter(), sms = createMockSmsAdapter
     }
     if (method === 'POST' && path === '/auth/verify-code') {
       return verifyCode(body);
+    }
+    if (method === 'POST' && path === '/auth/refresh') {
+      return refreshSession(body);
     }
     if (method === 'GET' && path === '/auth/session') {
       return getSession(headers);

@@ -96,6 +96,9 @@ Local handler smoke:
 npm.cmd run smoke:aliyun-handler
 ```
 
+The local smoke covers SMS code verification, refresh-token rotation, session
+lookup, sync merge, logout, and post-logout rejection.
+
 Cloud HTTP smoke after deployment:
 
 ```bash
@@ -107,4 +110,4 @@ npm.cmd run smoke:aliyun-cloud
 ```
 
 The first command sends a real SMS code. The second command completes
-verify/session/sync/logout after the code is available.
+verify/refresh/session/sync/logout after the code is available.
