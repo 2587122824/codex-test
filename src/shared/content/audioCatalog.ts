@@ -352,7 +352,7 @@ export const audioCatalog: AudioItem[] = [
     description: '来自 PDSounds 的真实雨声录音，默认循环播放，适合屏蔽夜间干扰。',
     duration: 45,
     category: '雨声',
-    asset: require('../../../assets/audio/noise/rain-pdsounds-ezwa.ogg'),
+    asset: require('../../../assets/audio/noise/rain-window.wav'),
     cover: '#1F9D86',
     captions: rainCaptions,
     source: rainSource,

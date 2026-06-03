@@ -14,6 +14,15 @@ const itemPattern = /\{\s*id:\s*'([^']+)'([\s\S]*?)source:\s*([a-zA-Z0-9_]+),\s*
 const requiredFields = ['type', 'title', 'description', 'duration', 'category', 'asset', 'cover'];
 let match;
 
+const hasOggSkeleton = (assetPath) => {
+  if (!assetPath.toLowerCase().endsWith('.ogg')) {
+    return false;
+  }
+
+  const bytes = fs.readFileSync(assetPath);
+  return bytes.includes(Buffer.from('fishead'));
+};
+
 while ((match = itemPattern.exec(catalog)) !== null) {
   const [, id, body, sourceName] = match;
 
@@ -48,6 +57,8 @@ while ((match = itemPattern.exec(catalog)) !== null) {
     const assetPath = path.resolve(path.dirname(catalogPath), assetMatch[1]);
     if (!fs.existsSync(assetPath)) {
       errors.push(`${id} asset does not exist: ${assetMatch[1]}`);
+    } else if (hasOggSkeleton(assetPath)) {
+      errors.push(`${id} asset uses Ogg Skeleton metadata, which can stall Android playback: ${assetMatch[1]}`);
     }
   }
 
