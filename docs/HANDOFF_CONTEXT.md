@@ -524,3 +524,5 @@ The UI is much better than the MVP, but can still be polished:
 - `git status -sb`, `git diff --stat`, and `rg` for removed navigation/sleep-log terms: changed files are `SleepApp.tsx`, beta/privacy/store docs, and handoff; no visible sleep-record UI terms remain, aside from a deliberate beta feedback question about whether anything feels missing after removing the manual sleep log.
 - Final pre-commit `git diff --check`: passed with only normal Windows LF-to-CRLF warnings for touched files.
 - `git add docs/HANDOFF_CONTEXT.md docs/INTERNAL_BETA_CHECKLIST.md docs/PLAY_STORE_CHECKLIST.md docs/PRIVACY_POLICY_DRAFT.md src/application/SleepApp.tsx`: staged AI Sleep/navigation and docs changes; Git reported normal Windows LF-to-CRLF warnings.
+- `git add docs/HANDOFF_CONTEXT.md`: restaged the handoff after adding the staging log entry; Git reported the normal Windows LF-to-CRLF warning.
+- `git commit -m "Add local AI sleep module"`: created commit `a38b3cc` with the AI Sleep module, simplified navigation, sleep-record UI removal, MuMu verification notes, and current beta doc updates.
