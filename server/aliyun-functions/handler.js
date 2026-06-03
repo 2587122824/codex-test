@@ -21,7 +21,7 @@ const randomToken = (prefix) => `${prefix}-${crypto.randomBytes(32).toString('ba
 
 const hashValue = (value) =>
   crypto
-    .createHmac('sha256', process.env.SESSION_SECRET || 'codex-sleep-local-dev-secret')
+    .createHmac('sha256', process.env.SESSION_SECRET || 'gudemian-local-dev-secret')
     .update(String(value))
     .digest('hex');
 

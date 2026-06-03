@@ -305,7 +305,7 @@ const server = http.createServer((request, response) => {
 });
 
 server.listen(port, () => {
-  console.log(`[mock-api] Codex Sleep mock Aliyun API listening on http://localhost:${port}`);
+  console.log(`[mock-api] 古德眠 mock Aliyun API listening on http://localhost:${port}`);
   console.log(`[mock-api] Fixed phone verification code: ${mockOtp}`);
   console.log('[mock-api] Data is in-memory only and resets when this process exits.');
 });

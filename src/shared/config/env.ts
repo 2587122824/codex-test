@@ -7,7 +7,7 @@ const truthy = (value: string | undefined, fallback = true) => {
 };
 
 export const appConfig = {
-  appName: process.env.EXPO_PUBLIC_APP_NAME || 'Codex Sleep',
+  appName: process.env.EXPO_PUBLIC_APP_NAME || '古德眠',
   appEnv: process.env.EXPO_PUBLIC_APP_ENV || 'development',
   audioSource: process.env.EXPO_PUBLIC_AUDIO_SOURCE || 'local',
   audioCdnBaseUrl: process.env.EXPO_PUBLIC_AUDIO_CDN_BASE_URL || '',

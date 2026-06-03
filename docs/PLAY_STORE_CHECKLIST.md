@@ -2,7 +2,7 @@
 
 ## Build
 
-- Android package: `com.codexsleep.app`
+- Android package: `com.gudemian.app`
 - Version: `1.0.0`
 - Version code: `1`
 - Preview build: `npx eas build --platform android --profile preview`
@@ -16,7 +16,7 @@ Short description:
 
 Full description draft:
 
-> Codex Sleep 是一个本地优先的助眠 App，提供舒缓音乐、睡前故事、白噪音和本地 AI 助眠推荐。你可以按快速入睡、焦虑放松、半夜醒来、自然白噪音或睡前故事选择目标，让 App 自动组合播放队列和定时关闭时长。
+> 古德眠是一个本地优先的助眠 App，提供舒缓音乐、睡前故事、白噪音和本地 AI 助眠推荐。你可以按快速入睡、焦虑放松、半夜醒来、自然白噪音或睡前故事选择目标，让 App 自动组合播放队列和定时关闭时长。
 >
 > 当前版本不需要登录即可使用，也不接入广告或追踪 SDK。收藏、最近播放和设置会优先保存在本机；配置账号 API 后，可选择使用手机号登录，把收藏、最近播放和设置同步到云端用于多设备恢复。
 

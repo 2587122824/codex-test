@@ -1,7 +1,7 @@
 const assert = require('assert/strict');
 
 process.env.LOCAL_SMS_FIXED_CODE = '123456';
-process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'codex-sleep-smoke-secret';
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'gudemian-smoke-secret';
 
 const { createApp } = require('../server/aliyun-functions/handler');
 

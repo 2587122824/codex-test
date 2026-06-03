@@ -1,4 +1,4 @@
--- Alibaba Cloud RDS PostgreSQL schema for Codex Sleep account sync.
+-- Alibaba Cloud RDS PostgreSQL schema for 古德眠 account sync.
 -- Run this in the app database before deploying Function Compute handlers.
 
 create extension if not exists pgcrypto;

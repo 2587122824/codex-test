@@ -1,16 +1,16 @@
 import type { AudioItem, AudioType, ModuleDefinition } from '../types/audio';
 
 const projectOriginalSource = {
-  name: 'Codex Sleep original beta audio',
-  author: 'Codex Sleep project',
+  name: '古德眠 original beta audio',
+  author: '古德眠 project',
   license: 'Project-owned original audio',
   url: 'docs/AUDIO_ASSET_SOURCES.md',
   attributionRequired: false,
 };
 
 const projectTtsSource = {
-  name: 'Codex Sleep original Mandarin TTS',
-  author: 'Codex Sleep project',
+  name: '古德眠 original Mandarin TTS',
+  author: '古德眠 project',
   license: 'Project-owned original script and recording',
   url: 'docs/AUDIO_ASSET_SOURCES.md',
   attributionRequired: false,

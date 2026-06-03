@@ -95,7 +95,7 @@ const resolveThemeMode = (preference: UserThemePreference, systemMode: ColorSche
 
 let colors: ThemeColors = darkColors;
 
-const betaFeedbackEmail = 'codex-sleep-feedback@example.com';
+const betaFeedbackEmail = 'gudemian-feedback@example.com';
 const tabBarBottomOffset = spacing.md;
 const tabBarEstimatedHeight = 60;
 const miniPlayerEstimatedHeight = 58;
@@ -265,7 +265,7 @@ export default function SleepApp() {
       }
 
       lastHomeBackPressRef.current = now;
-      ToastAndroid.show('再按一次退出 Codex Sleep', ToastAndroid.SHORT);
+      ToastAndroid.show('再按一次退出古德眠', ToastAndroid.SHORT);
       return true;
     }
 
@@ -382,7 +382,7 @@ export default function SleepApp() {
 
   const openFeedback = () => {
     Linking.openURL(
-      `mailto:${betaFeedbackEmail}?subject=${encodeURIComponent('Codex Sleep 内测反馈')}`,
+      `mailto:${betaFeedbackEmail}?subject=${encodeURIComponent('古德眠内测反馈')}`,
     );
   };
 

@@ -29,16 +29,16 @@ function requireFile(relativePath) {
 const appConfig = JSON.parse(read('app.json'));
 const expo = appConfig.expo || {};
 
-if (expo.name !== 'Codex Sleep') {
-  errors.push(`app.json expo.name should be Codex Sleep, found ${expo.name}`);
+if (expo.name !== '古德眠') {
+  errors.push(`app.json expo.name should be 古德眠, found ${expo.name}`);
 }
 
-if (expo.slug !== 'codex-sleep') {
-  errors.push(`app.json expo.slug should be codex-sleep, found ${expo.slug}`);
+if (expo.slug !== 'gudemian') {
+  errors.push(`app.json expo.slug should be gudemian, found ${expo.slug}`);
 }
 
-if (expo.scheme !== 'codexsleep') {
-  errors.push(`app.json expo.scheme should be codexsleep, found ${expo.scheme}`);
+if (expo.scheme !== 'gudemian') {
+  errors.push(`app.json expo.scheme should be gudemian, found ${expo.scheme}`);
 }
 
 if (expo.orientation !== 'portrait') {
@@ -46,11 +46,11 @@ if (expo.orientation !== 'portrait') {
 }
 
 if (expo.userInterfaceStyle !== 'automatic') {
-  errors.push(`app.json userInterfaceStyle should stay automatic for theme testing.`);
+  errors.push('app.json userInterfaceStyle should stay automatic for theme testing.');
 }
 
-if (expo.android?.package !== 'com.codexsleep.app') {
-  errors.push(`Android package should be com.codexsleep.app, found ${expo.android?.package}`);
+if (expo.android?.package !== 'com.gudemian.app') {
+  errors.push(`Android package should be com.gudemian.app, found ${expo.android?.package}`);
 }
 
 if (expo.android?.versionCode !== 1) {
@@ -85,20 +85,20 @@ for (const assetPath of [
   requireFile(assetPath.replace(/^\.\//, ''));
 }
 
-requireText('android/app/build.gradle', "namespace 'com.codexsleep.app'", 'native namespace must match Expo package');
-requireText('android/app/build.gradle', "applicationId 'com.codexsleep.app'", 'native applicationId must match Expo package');
+requireText('android/app/build.gradle', "namespace 'com.gudemian.app'", 'native namespace must match Expo package');
+requireText('android/app/build.gradle', "applicationId 'com.gudemian.app'", 'native applicationId must match Expo package');
 requireText('android/app/build.gradle', 'versionCode 1', 'native versionCode should match app.json');
 requireText('android/app/build.gradle', 'versionName "1.0.0"', 'native versionName should match app.json');
 requireText('android/app/build.gradle', 'signingConfig signingConfigs.debug', 'internal beta release currently uses temporary debug signing');
 requireText('android/app/src/main/AndroidManifest.xml', 'android:screenOrientation="portrait"', 'Android beta should stay portrait-only');
 requireText('android/app/src/main/AndroidManifest.xml', 'android.permission.WAKE_LOCK', 'sleep timer/audio playback needs wake lock permission');
-requireText('android/app/src/main/res/values/strings.xml', '<string name="app_name">Codex Sleep</string>', 'launcher label should match product name');
+requireText('android/app/src/main/res/values/strings.xml', '<string name="app_name">古德眠</string>', 'launcher label should match product name');
 
 for (const requiredPath of [
   'android/gradlew.bat',
   'android/gradle/wrapper/gradle-wrapper.jar',
-  'android/app/src/main/java/com/codexsleep/app/MainActivity.kt',
-  'android/app/src/main/java/com/codexsleep/app/MainApplication.kt',
+  'android/app/src/main/java/com/gudemian/app/MainActivity.kt',
+  'android/app/src/main/java/com/gudemian/app/MainApplication.kt',
   'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp',
   'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp',
   'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp',

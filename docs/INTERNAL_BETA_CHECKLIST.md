@@ -1,6 +1,6 @@
 # Internal Beta Checklist
 
-Use this checklist before sharing Codex Sleep with a small test group.
+Use this checklist before sharing 古德眠 with a small test group.
 
 ## Tester Tasks
 
@@ -82,4 +82,4 @@ must pass `npm.cmd run smoke:aliyun-cloud` before inviting external testers.
 - The expanded audio catalog is authorization-first and currently has no `Internal beta placeholder` items, but project-owned generated/TTS audio still needs a final quality review before public launch.
 - The app is local-first. Account sync can be tested with the local Mock API; real beta cloud sync requires a configured Aliyun API endpoint and passing cloud smoke.
 - Android release signing is still in internal-beta mode and uses the debug keystore in the native project until a production keystore is created.
-- Codex Sleep is a relaxation tool, not a medical device or treatment.
+- 古德眠 is a relaxation tool, not a medical device or treatment.

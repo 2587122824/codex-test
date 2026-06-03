@@ -1,6 +1,6 @@
 # Audio Asset Sources
 
-Codex Sleep now uses an authorization-first beta catalog. The internal beta can
+古德眠 now uses an authorization-first beta catalog. The internal beta can
 test richer content locally, while every item still has an auditable source
 record in `src/shared/content/audioCatalog.ts`.
 
@@ -23,7 +23,7 @@ record:
 - LibriVox: public domain recordings only.
 - Pixabay Music and Sound Effects: use only when the current Pixabay Content
   License allows the intended app distribution.
-- Codex Sleep project originals: generated or recorded by this project, with
+- 古德眠 project originals: generated or recorded by this project, with
   original scripts and source notes kept here.
 
 Avoid non-commercial licenses for a commercial app:

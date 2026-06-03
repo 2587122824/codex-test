@@ -1,6 +1,6 @@
 # Alibaba Cloud Backend
 
-Codex Sleep now targets an Alibaba Cloud backend:
+古德眠 now targets an Alibaba Cloud backend:
 
 - Alibaba Cloud Function Compute: HTTP API for auth and sync.
 - Alibaba Cloud SMS: phone verification code delivery.

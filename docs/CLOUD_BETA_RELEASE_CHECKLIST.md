@@ -1,7 +1,7 @@
 # Cloud Beta Release Checklist
 
 Use this checklist after the beta UI/backend checkpoint is merged and before
-sharing Codex Sleep with real testers.
+sharing 古德眠 with real testers.
 
 ## Cloud Resources
 

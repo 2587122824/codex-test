@@ -1,8 +1,8 @@
-# Codex Sleep Privacy Policy Draft
+# 古德眠 Privacy Policy Draft
 
 Last updated: 2026-06-01
 
-Codex Sleep is a local-first sleep companion app. Guest mode does not require login and keeps user data on the device. If the user signs in, selected app data is synchronized through the Alibaba Cloud backend for backup and multi-device recovery. The app does not include advertising, analytics, or tracking SDKs.
+古德眠 is a local-first sleep companion app. Guest mode does not require login and keeps user data on the device. If the user signs in, selected app data is synchronized through the Alibaba Cloud backend for backup and multi-device recovery. The app does not include advertising, analytics, or tracking SDKs.
 
 ## Data Stored On Device
 
@@ -28,10 +28,10 @@ Audio files are not uploaded by account sync. Users should be offered account de
 
 ## Health Disclaimer
 
-Codex Sleep provides relaxation audio and sleep guidance. It is not a medical device and does not diagnose, treat, cure, or prevent any condition. Users should consult a qualified professional for medical concerns.
+古德眠 provides relaxation audio and sleep guidance. It is not a medical device and does not diagnose, treat, cure, or prevent any condition. Users should consult a qualified professional for medical concerns.
 
 ## Contact
 
-For internal beta feedback, contact `codex-sleep-feedback@example.com`.
+For internal beta feedback, contact `gudemian-feedback@example.com`.
 
 Replace this address with the final developer support email before public launch.

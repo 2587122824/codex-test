@@ -4,8 +4,8 @@ import { Platform } from 'react-native';
 import { appConfig } from '../config/env';
 import { storage } from '../storage/storage';
 
-const accessTokenKey = 'codex-sleep:aliyun-access-token';
-const refreshTokenKey = 'codex-sleep:aliyun-refresh-token';
+const accessTokenKey = 'gudemian:aliyun-access-token';
+const refreshTokenKey = 'gudemian:aliyun-refresh-token';
 
 export type ApiSession = {
   user: ApiUser;

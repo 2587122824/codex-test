@@ -1,9 +1,9 @@
 export const storageKeys = {
-  favorites: 'codex-sleep:favorites',
-  history: 'codex-sleep:history',
-  sleepLogs: 'codex-sleep:sleep-logs',
-  settings: 'codex-sleep:settings',
-  deletedFavorites: 'codex-sleep:deleted-favorites',
-  deletedSleepLogs: 'codex-sleep:deleted-sleep-logs',
-  syncMeta: 'codex-sleep:sync-meta',
+  favorites: 'gudemian:favorites',
+  history: 'gudemian:history',
+  sleepLogs: 'gudemian:sleep-logs',
+  settings: 'gudemian:settings',
+  deletedFavorites: 'gudemian:deleted-favorites',
+  deletedSleepLogs: 'gudemian:deleted-sleep-logs',
+  syncMeta: 'gudemian:sync-meta',
 };
