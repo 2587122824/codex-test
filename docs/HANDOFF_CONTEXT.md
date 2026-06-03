@@ -638,3 +638,17 @@ Validation:
 - `npx.cmd expo install --check` passed.
 - `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
 - Local preview at `http://localhost:8081/` returned `200 OK`.
+
+## 2026-06-03 AI Sleep Collapsible Controls
+
+- Reworked the AI Sleep recommendation queue into a collapsed-by-default card: the closed state shows the lead track and total count, and tapping expands the remaining queue.
+- Reworked the sleep duration picker into the same collapsed control style: the closed state shows the selected duration, and expanding reveals the 5/10/20/30 minute choices.
+- Selecting a duration now closes the duration selector, and changing the companion intent collapses the queue again so the page stays calm by default.
+- No new dependencies, playback logic, catalog data, or sync contracts were changed.
+
+Validation:
+
+- `npm.cmd run check` passed.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`.

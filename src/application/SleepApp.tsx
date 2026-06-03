@@ -1,6 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
 import {
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Cloud,
   Heart,
   Home,
@@ -892,6 +894,13 @@ const AiSleepPanel = ({
 }) => {
   const selectedIntent =
     intents.find((intent) => intent.id === selectedIntentId) ?? intents[0];
+  const [queueExpanded, setQueueExpanded] = useState(false);
+  const [durationExpanded, setDurationExpanded] = useState(false);
+  const leadTrack = selectedTracks[0];
+
+  useEffect(() => {
+    setQueueExpanded(false);
+  }, [selectedIntentId]);
 
   return (
     <View style={styles.stack}>
@@ -942,36 +951,96 @@ const AiSleepPanel = ({
         </View>
       </View>
 
-      <View style={styles.settingRow}>
-        <Text style={styles.settingTitle}>助眠时长</Text>
-        <View style={styles.pillWrap}>
-          {durations.map((minutes) => (
-            <PillButton
-              key={minutes}
-              label={`${minutes} 分钟`}
-              active={selectedDuration === minutes}
-              onPress={() => onSelectDuration(minutes)}
-            />
-          ))}
-        </View>
+      <View style={styles.aiControlCard}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={durationExpanded ? '收起助眠时长选择' : '展开助眠时长选择'}
+          style={styles.aiQueueHeader}
+          onPress={() => setDurationExpanded((value) => !value)}
+        >
+          <View style={styles.settingCopy}>
+            <Text style={styles.settingTitle}>助眠时长</Text>
+            <Text style={styles.settingMeta}>默认会同步设置播放器定时关闭</Text>
+          </View>
+          <View style={styles.aiQueueToggle}>
+            <Text style={styles.aiQueueToggleText}>
+              {durationExpanded ? '收起' : `${selectedDuration} 分钟`}
+            </Text>
+            {durationExpanded ? (
+              <ChevronUp color={colors.muted} size={18} />
+            ) : (
+              <ChevronDown color={colors.muted} size={18} />
+            )}
+          </View>
+        </Pressable>
+
+        {durationExpanded ? (
+          <View style={styles.pillWrap}>
+            {durations.map((minutes) => (
+              <PillButton
+                key={minutes}
+                label={`${minutes} 分钟`}
+                active={selectedDuration === minutes}
+                onPress={() => {
+                  onSelectDuration(minutes);
+                  setDurationExpanded(false);
+                }}
+              />
+            ))}
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.aiRecommendation}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.settingTitle}>正在陪你听</Text>
-          <Text style={styles.settingMeta}>{selectedIntent.title}</Text>
-        </View>
-        <View style={styles.aiTrackList}>
-          {selectedTracks.map((track, index) => (
-            <View key={track.id} style={styles.aiTrackChip}>
-              <Text style={styles.aiTrackIndex}>{index + 1}</Text>
-              <View style={styles.settingCopy}>
-                <Text style={styles.aiTrackTitle} numberOfLines={1}>{track.title}</Text>
-                <Text style={styles.settingMeta} numberOfLines={1}>{track.category}</Text>
-              </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={queueExpanded ? '收起助眠播放队列' : '展开助眠播放队列'}
+          style={styles.aiQueueHeader}
+          onPress={() => setQueueExpanded((value) => !value)}
+        >
+          <View style={styles.settingCopy}>
+            <Text style={styles.settingTitle}>正在陪你听</Text>
+            <Text style={styles.settingMeta}>{selectedIntent.title}</Text>
+          </View>
+          <View style={styles.aiQueueToggle}>
+            <Text style={styles.aiQueueToggleText}>
+              {queueExpanded ? '收起' : `${selectedTracks.length} 首`}
+            </Text>
+            {queueExpanded ? (
+              <ChevronUp color={colors.muted} size={18} />
+            ) : (
+              <ChevronDown color={colors.muted} size={18} />
+            )}
+          </View>
+        </Pressable>
+
+        {leadTrack ? (
+          <View style={styles.aiQueueSummary}>
+            <View style={styles.aiQueueBadge}>
+              <Text style={styles.aiQueueBadgeText}>1</Text>
             </View>
-          ))}
-        </View>
+            <View style={styles.settingCopy}>
+              <Text style={styles.aiTrackTitle} numberOfLines={1}>{leadTrack.title}</Text>
+              <Text style={styles.settingMeta} numberOfLines={1}>
+                先从 {leadTrack.category} 开始，后面还有 {Math.max(selectedTracks.length - 1, 0)} 首
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {queueExpanded ? (
+          <View style={styles.aiTrackList}>
+            {selectedTracks.slice(1).map((track, index) => (
+              <View key={track.id} style={styles.aiTrackChip}>
+                <Text style={styles.aiTrackIndex}>{index + 2}</Text>
+                <View style={styles.settingCopy}>
+                  <Text style={styles.aiTrackTitle} numberOfLines={1}>{track.title}</Text>
+                  <Text style={styles.settingMeta} numberOfLines={1}>{track.category}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
         <Text style={styles.aiDisclaimer}>
           内测阶段先用输入模拟随时说话，并按本地规则切换音频。真实语音监听会在确认麦克风权限、隐私策略和供应商后单独接入。
         </Text>
@@ -1732,6 +1801,14 @@ const styles = StyleSheet.create({
   companionChipTextActive: {
     color: colors.green,
   },
+  aiControlCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
   aiRecommendation: {
     backgroundColor: colors.surface,
     borderRadius: 8,
@@ -1739,6 +1816,54 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     padding: spacing.md,
     gap: spacing.md,
+  },
+  aiQueueHeader: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    minWidth: 0,
+  },
+  aiQueueToggle: {
+    minHeight: 32,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
+    paddingHorizontal: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  aiQueueToggleText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  aiQueueSummary: {
+    minHeight: 58,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minWidth: 0,
+  },
+  aiQueueBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiQueueBadgeText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '900',
   },
   aiTrackList: {
     gap: spacing.sm,
