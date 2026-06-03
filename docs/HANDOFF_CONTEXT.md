@@ -1185,3 +1185,11 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - 2026-06-04 00:59 CST: APK static verification passed with JAVA_HOME set: apksigner verified dist/gudemian-cloud-internal-beta.apk; aapt badging shows com.gudemian.app, label 古德眠, minSdk 24, targetSdk 36.
 
 - 2026-06-04 01:00 CST: Pre-commit review for legal/feedback patch: git status shows only docs/HANDOFF_CONTEXT.md and src/application/SleepApp.tsx modified; git diff --check has no whitespace errors beyond expected CRLF warnings.
+
+- 2026-06-04 01:01 CST: Committed legal/feedback patch as 1d2dbcb (Improve beta legal feedback flow).
+
+- 2026-06-04 01:02 CST: Pushed 1d2dbcb to origin/codex/playback-modes after legal/feedback fallback verification.
+
+- 2026-06-04 01:03 CST: Final status after legal/feedback push: origin/codex/playback-modes is at 1d2dbcb; only this post-push handoff log remains modified locally.
+
+- 2026-06-04 01:04 CST: Continuation start: read handoff tail, git status, and recent commits; current branch is codex/playback-modes at origin 1d2dbcb with only post-push handoff log modified.
