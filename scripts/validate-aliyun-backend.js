@@ -10,7 +10,10 @@ const indexPath = path.join(root, 'server', 'aliyun-functions', 'index.js');
 const handlerPath = path.join(root, 'server', 'aliyun-functions', 'handler.js');
 const postgresAdapterPath = path.join(root, 'server', 'aliyun-functions', 'postgres-adapter.js');
 const smsAdapterPath = path.join(root, 'server', 'aliyun-functions', 'aliyun-sms-adapter.js');
+const envExamplePath = path.join(root, 'server', 'aliyun-functions', '.env.example');
 const smokePath = path.join(root, 'scripts', 'smoke-aliyun-handler.js');
+const cloudSmokePath = path.join(root, 'scripts', 'smoke-aliyun-cloud.js');
+const cloudChecklistPath = path.join(root, 'docs', 'CLOUD_BETA_RELEASE_CHECKLIST.md');
 
 const requiredTables = [
   'profiles',
@@ -124,6 +127,39 @@ if (!fs.existsSync(packagePath)) {
 
 if (!fs.existsSync(smokePath)) {
   missing.push('scripts/smoke-aliyun-handler.js');
+}
+
+if (!fs.existsSync(cloudSmokePath)) {
+  missing.push('scripts/smoke-aliyun-cloud.js');
+} else {
+  const cloudSmoke = fs.readFileSync(cloudSmokePath, 'utf8');
+  for (const phrase of ['ALIYUN_FUNCTION_BASE_URL', 'ALIYUN_SMOKE_PHONE', 'ALIYUN_SMOKE_CODE', '/sync/merge']) {
+    if (!cloudSmoke.includes(phrase)) {
+      missing.push(`cloud smoke missing: ${phrase}`);
+    }
+  }
+}
+
+if (!fs.existsSync(envExamplePath)) {
+  missing.push('server/aliyun-functions/.env.example');
+} else {
+  const envExample = fs.readFileSync(envExamplePath, 'utf8');
+  for (const phrase of ['DB_HOST', 'ALIYUN_SMS_SIGN_NAME', 'ALIYUN_SMS_TEMPLATE_CODE', 'SESSION_SECRET']) {
+    if (!envExample.includes(phrase)) {
+      missing.push(`env example missing: ${phrase}`);
+    }
+  }
+}
+
+if (!fs.existsSync(cloudChecklistPath)) {
+  missing.push('docs/CLOUD_BETA_RELEASE_CHECKLIST.md');
+} else {
+  const checklist = fs.readFileSync(cloudChecklistPath, 'utf8');
+  for (const phrase of ['Cloud HTTP Smoke', 'App End-To-End', 'npm.cmd run smoke:aliyun-cloud']) {
+    if (!checklist.includes(phrase)) {
+      missing.push(`cloud checklist missing: ${phrase}`);
+    }
+  }
 }
 
 if (!fs.existsSync(postgresAdapterPath)) {

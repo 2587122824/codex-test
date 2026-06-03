@@ -10,7 +10,7 @@ The app stores the following data locally on the user's device:
 
 - Favorites
 - Recently played audio
-- Current playback timer and app settings
+- Current playback timer state and app settings
 - AI Sleep choices such as selected goal and timer are used only during the current app session
 
 This data is used only to provide app functionality. In guest mode it remains on the user's device.
@@ -22,7 +22,7 @@ When account sync is enabled and the user signs in, the app may upload the follo
 - Account identifiers such as phone number or social login user ID
 - Favorites
 - Recently played audio IDs
-- Current playback timer and app settings
+- App settings such as appearance theme preference
 
 Audio files are not uploaded by account sync. Users should be offered account deletion and cloud data deletion controls before public launch.
 

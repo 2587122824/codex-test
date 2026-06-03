@@ -33,6 +33,9 @@ the server.
 6. Set the Expo app variable:
    - `EXPO_PUBLIC_API_BASE_URL=https://your-function-domain.example.com`
 
+Use `.env.example` as the source checklist for Function Compute environment
+variables. Do not commit real secrets.
+
 ## Implementation Direction
 
 Use `IMPLEMENTATION_PLAN.md` as the build order for the first real beta
@@ -92,3 +95,16 @@ Local handler smoke:
 ```bash
 npm.cmd run smoke:aliyun-handler
 ```
+
+Cloud HTTP smoke after deployment:
+
+```bash
+$env:ALIYUN_FUNCTION_BASE_URL="https://your-function-domain.example.com"
+$env:ALIYUN_SMOKE_PHONE="+8613800000000"
+npm.cmd run smoke:aliyun-cloud
+$env:ALIYUN_SMOKE_CODE="123456"
+npm.cmd run smoke:aliyun-cloud
+```
+
+The first command sends a real SMS code. The second command completes
+verify/session/sync/logout after the code is available.

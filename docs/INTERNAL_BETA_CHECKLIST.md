@@ -18,6 +18,7 @@ Use this checklist before sharing Codex Sleep with a small test group.
 12. Open Account & Sync from Settings:
    - With no `EXPO_PUBLIC_API_BASE_URL`, confirm guest mode explains that data is saved locally.
    - With the local Mock API configured, send a phone code, enter `123456`, sign in, and confirm favorites, recent plays, and settings merge after login.
+   - With the deployed Aliyun API configured, use a real SMS code, sign in, and confirm favorites, recent plays, and settings restore after clearing local app data.
    - Sign out and confirm local playback and favorites remain usable.
 
 ## Local Mock Account API
@@ -39,6 +40,12 @@ The Mock API uses fixed SMS code `123456`, stores users/sessions/sync data in
 memory, supports CORS for Expo Web, and resets when the process exits. It is
 only for local/internal flow testing; it does not send real SMS, persist to RDS,
 hash tokens, or implement real cloud revocation policy.
+
+## Cloud Account API
+
+After deploying Function Compute, use `docs/CLOUD_BETA_RELEASE_CHECKLIST.md` for
+RDS setup, SMS smoke, and app end-to-end sync recovery checks. The cloud API
+must pass `npm.cmd run smoke:aliyun-cloud` before inviting external testers.
 
 ## Device Checks
 
@@ -71,5 +78,5 @@ hash tokens, or implement real cloud revocation policy.
 ## Known Beta Limitations
 
 - The expanded audio catalog is authorization-first and currently has no `Internal beta placeholder` items, but project-owned generated/TTS audio still needs a final quality review before public launch.
-- The app is local-first. Account sync can be tested with the local Mock API; real beta cloud sync still requires a configured Aliyun API endpoint and real Function Compute handlers.
+- The app is local-first. Account sync can be tested with the local Mock API; real beta cloud sync requires a configured Aliyun API endpoint and passing cloud smoke.
 - Codex Sleep is a relaxation tool, not a medical device or treatment.
