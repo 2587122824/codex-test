@@ -284,6 +284,10 @@ The UI is much better than the MVP, but can still be polished:
 
 ## 2026-06-03 Command Log
 
+- Implementing cloud pre-deploy package plan: first reread `docs/HANDOFF_CONTEXT.md`; next actions are committing current handoff-only diff, removing the interrupted 0-byte deploy zip, regenerating `dist\aliyun-functions-deploy.zip`, and running local gates. Real Aliyun cloud deploy/smoke still needs external Function/RDS/SMS resources.
+- `git status -sb` and `git diff --stat -- docs/HANDOFF_CONTEXT.md`: confirmed the only tracked diff is a 3-line handoff update before creating the handoff cleanup commit.
+- Post-clean continuation: `git status -sb` showed branch `codex/playback-modes` ahead 5 with a clean worktree; latest commits are `d6b61d7`, `36b1843`, `5e00217`, `226c175`, and `c8388ba`; Aliyun Function URL, smoke phone/code, DB, and SMS env vars are still missing, so real cloud deploy/smoke remains externally blocked.
+- `Get-Content .gitignore` and `Get-Content server/aliyun-functions/.env.example`: confirmed `dist/` and `node_modules/` are ignored build/dependency outputs, and the backend env example contains only placeholders; next local step is creating an ignored Function Compute deployment zip.
 - Continue request after backend refresh checkpoint: checking whether only post-commit handoff logs remain before deciding the next local action.
 - `Get-Content docs/HANDOFF_CONTEXT.md -Tail 40`, `git status -sb`, and `git diff --stat`: current branch is ahead 4 and only `docs/HANDOFF_CONTEXT.md` has a tiny post-commit log diff; preparing a handoff-only cleanup commit.
 - Implementation request for next plan: proceeding to close the current Aliyun session refresh support into a stable local checkpoint before any real cloud deployment; external Aliyun RDS/SMS/Function resources are still required for cloud smoke.
