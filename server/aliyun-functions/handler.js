@@ -246,6 +246,22 @@ const parseBody = (event) => {
   return JSON.parse(raw);
 };
 
+const normalizeEvent = (event) => {
+  if (Buffer.isBuffer(event)) {
+    return normalizeEvent(event.toString('utf8'));
+  }
+
+  if (typeof event === 'string') {
+    try {
+      return JSON.parse(event);
+    } catch {
+      return {};
+    }
+  }
+
+  return event && typeof event === 'object' ? event : {};
+};
+
 const response = (statusCode, body) => ({
   statusCode,
   headers: jsonHeaders,
@@ -383,7 +399,8 @@ const createApp = ({ adapter = createMemoryAdapter(), sms = createMockSmsAdapter
     return response(200, { data });
   };
 
-  const handle = async (event = {}) => {
+  const handle = async (rawEvent = {}) => {
+    const event = normalizeEvent(rawEvent);
     const method = event.httpMethod || event.requestContext?.http?.method || 'GET';
     const path = event.path || event.rawPath || event.requestContext?.http?.path || '/';
     const headers = event.headers || {};

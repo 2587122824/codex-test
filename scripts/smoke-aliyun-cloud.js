@@ -19,9 +19,23 @@ const request = async (path, { method = 'GET', body, token } = {}) => {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
-  return { status: response.status, ok: response.ok, data };
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+  }
+  return { status: response.status, ok: response.ok, data, text };
 };
+
+const describeResponse = (result) =>
+  JSON.stringify({
+    status: result.status,
+    data: result.data,
+    text: result.text ? result.text.slice(0, 500) : '',
+  });
 
 const requireEnv = () => {
   const missing = [];
@@ -43,7 +57,7 @@ const run = async () => {
     method: 'POST',
     body: { phone },
   });
-  assert.equal(send.status, 200, `send-code failed: ${JSON.stringify(send.data)}`);
+  assert.equal(send.status, 200, `send-code failed: ${describeResponse(send)}`);
   assert.ok(send.data.requestId, 'send-code should return requestId');
   console.log(`Cloud send-code passed: requestId=${send.data.requestId}`);
 
@@ -56,7 +70,7 @@ const run = async () => {
     method: 'POST',
     body: { phone, code },
   });
-  assert.equal(verify.status, 200, `verify-code failed: ${JSON.stringify(verify.data)}`);
+  assert.equal(verify.status, 200, `verify-code failed: ${describeResponse(verify)}`);
   assert.equal(verify.data.session.user.phone, phone);
   assert.ok(verify.data.session.accessToken, 'verify-code should return accessToken');
   assert.ok(verify.data.session.refreshToken, 'verify-code should return refreshToken');
@@ -64,7 +78,7 @@ const run = async () => {
   console.log(`Cloud verify-code passed: userId=${verify.data.session.user.id}`);
 
   const session = await request('/auth/session', { token });
-  assert.equal(session.status, 200, `session failed: ${JSON.stringify(session.data)}`);
+  assert.equal(session.status, 200, `session failed: ${describeResponse(session)}`);
   assert.equal(session.data.session.user.phone, phone);
   console.log('Cloud session passed.');
 
@@ -72,7 +86,7 @@ const run = async () => {
     method: 'POST',
     body: { refreshToken: verify.data.session.refreshToken },
   });
-  assert.equal(refresh.status, 200, `refresh failed: ${JSON.stringify(refresh.data)}`);
+  assert.equal(refresh.status, 200, `refresh failed: ${describeResponse(refresh)}`);
   assert.equal(refresh.data.session.user.phone, phone);
   assert.ok(refresh.data.session.accessToken, 'refresh should return accessToken');
   assert.ok(refresh.data.session.refreshToken, 'refresh should return refreshToken');
@@ -111,14 +125,14 @@ const run = async () => {
       clientSyncedAt: new Date().toISOString(),
     },
   });
-  assert.equal(sync.status, 200, `sync failed: ${JSON.stringify(sync.data)}`);
+  assert.equal(sync.status, 200, `sync failed: ${describeResponse(sync)}`);
   assert.ok(sync.data.data.favoriteIds.includes('rain-window'));
   assert.equal(sync.data.data.settings.themeMode, 'light');
   assert.ok(sync.data.data.syncedAt, 'sync should return syncedAt');
   console.log(`Cloud sync passed: syncedAt=${sync.data.data.syncedAt}`);
 
   const logout = await request('/auth/logout', { method: 'POST', token: activeToken });
-  assert.equal(logout.status, 204, `logout failed: ${JSON.stringify(logout.data)}`);
+  assert.equal(logout.status, 204, `logout failed: ${describeResponse(logout)}`);
   console.log('Cloud logout passed.');
 
   const afterLogout = await request('/auth/session', { token: activeToken });

@@ -97,6 +97,8 @@ if (!fs.existsSync(handlerPath)) {
     "path === '/auth/logout'",
     "path === '/sync/merge'",
     'findSessionByRefreshToken',
+    'normalizeEvent',
+    'Buffer.isBuffer(event)',
     'exports.handler',
     'createMemoryAdapter',
   ]) {
