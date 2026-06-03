@@ -284,6 +284,10 @@ The UI is much better than the MVP, but can still be polished:
 
 ## 2026-06-03 Command Log
 
+- Goal continuation status check: `git status -sb`, `git log -7 --oneline`, deploy zip `Get-Item`, and Aliyun env-var probe show branch `codex/playback-modes` ahead 7, deploy zip exists at `dist\aliyun-functions-deploy.zip` with size `4727515` bytes, and required Aliyun Function/RDS/SMS/smoke environment variables are still missing.
+- Deploy zip integrity check: inspected `dist\aliyun-functions-deploy.zip` via .NET ZipFile and confirmed `index.js`, `handler.js`, Postgres/SMS adapters, `rds-schema.sql`, package manifests, `node_modules\pg`, and Alibaba SMS SDK files are present; no real `.env` files are included; `dist/` and `server/aliyun-functions/node_modules/` remain ignored.
+- Local gates during goal continuation: root `npm.cmd run check` passed with auth/refresh/session/sync/logout handler smoke; `npm.cmd run check` in `server/aliyun-functions` passed syntax checks for Function Compute entrypoint and adapters.
+- Additional local gates during goal continuation: `npx.cmd expo install --check` passed with dependencies up to date; `git diff --check` passed with only normal Windows LF-to-CRLF warnings for handoff.
 - Implementing cloud pre-deploy package plan: first reread `docs/HANDOFF_CONTEXT.md`; next actions are committing current handoff-only diff, removing the interrupted 0-byte deploy zip, regenerating `dist\aliyun-functions-deploy.zip`, and running local gates. Real Aliyun cloud deploy/smoke still needs external Function/RDS/SMS resources.
 - `git status -sb` and `git diff --stat -- docs/HANDOFF_CONTEXT.md`: confirmed the only tracked diff is a 3-line handoff update before creating the handoff cleanup commit.
 - `git add docs/HANDOFF_CONTEXT.md` and `git commit -m "Record deployment package planning handoff"`: committed the handoff-only planning cleanup as `050ff28`.
