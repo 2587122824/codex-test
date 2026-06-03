@@ -23,9 +23,21 @@ type SyncResponse = {
   data: RemoteSyncData;
 };
 
+type SyncMeta = {
+  lastSyncedAt?: string;
+  settingsUpdatedAt?: string;
+};
+
 const nowIso = () => new Date().toISOString();
+const epochIso = new Date(0).toISOString();
 
 const readDeleted = (key: string) => storage.getJson(key, [] as DeletedEntity[]);
+const readSyncMeta = () => storage.getJson<SyncMeta>(storageKeys.syncMeta, {});
+
+export const markSettingsUpdated = async (updatedAt = nowIso()) => {
+  const syncMeta = await readSyncMeta();
+  await storage.setJson(storageKeys.syncMeta, { ...syncMeta, settingsUpdatedAt: updatedAt });
+};
 
 export const markFavoriteDeleted = async (trackId: string) => {
   const deleted = await readDeleted(storageKeys.deletedFavorites);
@@ -54,10 +66,12 @@ export const markSleepLogDeleted = async (logId: string) => {
 };
 
 export const syncUserData = async (local: LocalSyncSnapshot): Promise<RemoteSyncData> => {
-  const [deletedFavorites, deletedSleepLogs] = await Promise.all([
+  const [deletedFavorites, deletedSleepLogs, syncMeta] = await Promise.all([
     readDeleted(storageKeys.deletedFavorites),
     readDeleted(storageKeys.deletedSleepLogs),
+    readSyncMeta(),
   ]);
+  const settingsUpdatedAt = syncMeta.settingsUpdatedAt || epochIso;
 
   const response = await apiRequest<SyncResponse>('/sync/merge', {
     method: 'POST',
@@ -66,14 +80,20 @@ export const syncUserData = async (local: LocalSyncSnapshot): Promise<RemoteSync
       local,
       deletedFavorites,
       deletedSleepLogs,
-      clientSyncedAt: nowIso(),
+      clientSyncedAt: settingsUpdatedAt,
     },
   });
+
+  const nextSyncMeta = {
+    ...syncMeta,
+    lastSyncedAt: response.data.syncedAt,
+    settingsUpdatedAt: response.data.syncedAt,
+  };
 
   await Promise.all([
     storage.setJson(storageKeys.deletedFavorites, [] as DeletedEntity[]),
     storage.setJson(storageKeys.deletedSleepLogs, [] as DeletedEntity[]),
-    storage.setJson(storageKeys.syncMeta, { lastSyncedAt: response.data.syncedAt }),
+    storage.setJson(storageKeys.syncMeta, nextSyncMeta),
   ]);
 
   return response.data;

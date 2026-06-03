@@ -45,7 +45,7 @@ import {
 
 import { useAudioPlayer } from '../features/player/useAudioPlayer';
 import { useAccountSync, type AccountSyncController } from '../features/account/useAccountSync';
-import type { RemoteSyncData } from '../features/account/syncService';
+import { markSettingsUpdated, type RemoteSyncData } from '../features/account/syncService';
 import { appConfig } from '../shared/config/env';
 import { audioCatalog, getItemsByType, getModule, modules } from '../shared/content/audioCatalog';
 import { storageKeys } from '../shared/storage/keys';
@@ -311,6 +311,10 @@ export default function SleepApp() {
   );
   const activeModuleInfo = getModule(activeModule);
   const favoriteTracks = audioCatalog.filter((item) => player.favoriteIds.includes(item.id));
+  const recentTracks = player.historyIds
+    .map((id) => audioCatalog.find((item) => item.id === id))
+    .filter(Boolean)
+    .slice(0, 6) as AudioItem[];
   const selectedAiIntent =
     aiSleepIntents.find((intent) => intent.id === selectedAiIntentId) ?? aiSleepIntents[0];
   const selectedAiTracks = selectedAiIntent.trackIds
@@ -346,6 +350,11 @@ export default function SleepApp() {
     getSnapshot: getSyncSnapshot,
     applyRemoteData,
   });
+  const accountSyncNowRef = useRef(account.syncNow);
+
+  useEffect(() => {
+    accountSyncNowRef.current = account.syncNow;
+  }, [account.syncNow]);
 
   const requestSyncIfSignedIn = useCallback(() => {
     if (account.user) {
@@ -359,11 +368,11 @@ export default function SleepApp() {
     }
 
     const syncTimer = setTimeout(() => {
-      void account.syncNow();
+      void accountSyncNowRef.current();
     }, 0);
 
     return () => clearTimeout(syncTimer);
-  }, [account.syncNow, account.user, syncRequestId]);
+  }, [account.user, syncRequestId]);
 
   const saveSettingsAndSync = (nextSettings: UserSettings) => {
     const normalizedSettings = normalizeSettings(nextSettings);
@@ -371,7 +380,9 @@ export default function SleepApp() {
     settingsRef.current = normalizedSettings;
     setSettings(normalizedSettings);
     storage.setJson(storageKeys.settings, normalizedSettings);
-    requestSyncIfSignedIn();
+    markSettingsUpdated()
+      .then(requestSyncIfSignedIn)
+      .catch(requestSyncIfSignedIn);
   };
 
   const toggleFavoriteAndSync = (trackId: string) => {
@@ -603,6 +614,26 @@ export default function SleepApp() {
                     colors={colors}
                     isFavorite={player.isFavorite(item.id)}
                     onPress={() => openTrack(item, favoriteTracks)}
+                    onFavorite={() => toggleFavoriteAndSync(item.id)}
+                  />
+                ))
+              )}
+              <View style={styles.sectionHeader}>
+                <View>
+                  <Text style={styles.sectionTitle}>最近播放</Text>
+                  <Text style={styles.sectionMeta}>重新登录后可用来确认播放记录是否恢复。</Text>
+                </View>
+              </View>
+              {recentTracks.length === 0 ? (
+                <EmptyState text="还没有最近播放，播放一段音频后会出现在这里。" />
+              ) : (
+                recentTracks.map((item) => (
+                  <TrackRow
+                    key={item.id}
+                    item={item}
+                    colors={colors}
+                    isFavorite={player.isFavorite(item.id)}
+                    onPress={() => openTrack(item, recentTracks)}
                     onFavorite={() => toggleFavoriteAndSync(item.id)}
                   />
                 ))

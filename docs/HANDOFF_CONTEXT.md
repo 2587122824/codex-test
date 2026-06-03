@@ -1303,3 +1303,97 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - 2026-06-04 01:58 CST: Final status after deployed-cloud/email APK push: origin/codex/playback-modes is at 305271b; only this post-push handoff log remains modified locally; .env is ignored; dist\\gudemian-cloud-internal-beta.apk is the email-configured cloud APK, 67,260,335 bytes, timestamp 2026-06-04 07:13:39.
 
 - 2026-06-04 01:59 CST: Continuation start: read handoff, git status, INTERNAL_BETA_CHECKLIST, and CLOUD_BETA_RELEASE_CHECKLIST; next local no-confirmation target is cloud app end-to-end restore smoke after the deployed backend passed cloud HTTP smoke.
+
+- 2026-06-04 02:00 CST: Committed previous post-push deployed-cloud APK handoff log as 8bb76c7 (Record deployed cloud APK validation).
+
+- 2026-06-04 02:01 CST: Pushed handoff commit 8bb76c7 to origin/codex/playback-modes; starting cloud app end-to-end restore smoke on MuMu next.
+
+- 2026-06-04 02:02 CST: Cloud restore smoke prep: uiautomator dump shows current MuMu state is Account screen logged in as +8613900000624, and dist APK remains the email-configured 67,260,335-byte build.
+
+- 2026-06-04 02:03 CST: Cloud restore smoke data setup: navigated from Account screen to Home on MuMu and captured tmp-gudemian-restore-home.png to locate module controls.
+
+- 2026-06-04 02:04 CST: Opened Music module and dumped UI hierarchy; first two tracks are visible as Soporific and 暖色低鸣, with Soporific favorite button bounds around [794,477][848,531].
+
+- 2026-06-04 02:05 CST: Cloud restore smoke data setup: tapped Soporific favorite, played Soporific, returned from player, played 暖色低鸣, returned, and captured tmp-gudemian-restore-seeded-music.png.
+
+- 2026-06-04 02:06 CST: Cloud restore smoke correction: previous second-track tap landed back on Home, so reopened Music module and tapped 暖色低鸣 explicitly, then captured tmp-gudemian-restore-second-track.png.
+
+- 2026-06-04 02:07 CST: Cloud restore smoke data setup: from player returned Home, opened Settings, tapped 浅色 theme, waited, and captured tmp-gudemian-restore-light-theme.png.
+
+- 2026-06-04 02:08 CST: Cloud restore smoke seed sync: opened Account from Settings, tapped 立即同步 after seeding favorite/history/theme, waited, and captured tmp-gudemian-restore-seed-synced.png.
+
+- 2026-06-04 02:09 CST: Waited 6 seconds after manual sync and captured tmp-gudemian-restore-seed-synced-final.png to verify seed data sync completion before clearing local storage.
+
+- 2026-06-04 02:10 CST: Waited another 15 seconds for seed manual sync completion; uiautomator dump failed with 'could not get idle state' while media was playing, so sync completion evidence is still inconclusive and needs screenshot/source investigation.
+
+- 2026-06-04 02:11 CST: Paused mini player to reduce UI activity, waited, and captured tmp-gudemian-restore-sync-status.png to inspect whether Account sync status leaves '正在同步本机数据'.
+
+- 2026-06-04 02:12 CST: Source inspection found likely sync-state loop: SleepApp post-render sync effect depends on account.syncNow, whose identity changes across renders; once syncRequestId > 0, sync completion re-renders can retrigger sync repeatedly and keep Account UI at '正在同步本机数据'.
+
+- 2026-06-04 02:13 CST: Read SleepApp sync-request block before patch; effect currently calls account.syncNow via a dependency that can change every render, so patch will store syncNow in a ref and trigger only on user/syncRequestId changes.
+
+- 2026-06-04 02:14 CST: Patched SleepApp post-render sync scheduling: account.syncNow is now stored in a ref, and the sync effect depends only on account.user and syncRequestId so renders from sync completion do not retrigger the same request forever.
+
+- 2026-06-04 02:15 CST: Validation after sync-loop patch passed: npm run check and npx expo install --check both succeeded with the email-configured .env loaded.
+
+- 2026-06-04 02:16 CST: Gradle :app:assembleRelease succeeded after sync-loop patch; build used email/cloud .env and printed only normal Expo NODE_ENV/Gradle deprecation warnings.
+
+- 2026-06-04 02:17 CST: Copied rebuilt sync-loop-fix APK to dist (67,260,451 bytes, timestamp 2026-06-04 07:28:45); parallel apksigner hit a file lock while Copy-Item/aapt were reading/writing the APK, so signature verification will be rerun sequentially. aapt already showed com.gudemian.app / 古德眠 / minSdk24 / targetSdk36.
+
+- 2026-06-04 02:18 CST: Sequential apksigner verification passed for the rebuilt sync-loop-fix dist APK.
+
+- 2026-06-04 02:19 CST: Installed rebuilt sync-loop-fix APK on MuMu 127.0.0.1:7555 successfully; next step is clearing local app data and re-signing into +8613900000624 to verify cloud restore.
+
+- 2026-06-04 02:20 CST: Cloud restore smoke after sync-loop fix: cleared local app data, relaunched rebuilt APK, opened Account login screen, and captured tmp-gudemian-restore-login-start.png.
+
+- 2026-06-04 02:21 CST: Cloud restore smoke after sync-loop fix: entered local phone 13900000624, tapped 发送验证码, waited, and captured tmp-gudemian-restore-login-code.png.
+
+- 2026-06-04 02:22 CST: Cloud restore smoke after sync-loop fix: entered fixed code 123456 for 13900000624, tapped 登录并同步, waited 5 seconds, and captured tmp-gudemian-restore-login-success.png.
+
+- 2026-06-04 02:23 CST: Sync-loop fix smoke succeeded for login state: after clearing local data and re-login as 13900000624, Account returned to last-synced text within 5 seconds instead of staying at '正在同步本机数据'. Restore content evidence is inconclusive because the seed data was created under the old looping build and theme restored as dark, so a fresh seed/restore will be rerun with the fixed APK and a new phone.
+
+- 2026-06-04 02:24 CST: Fresh restore test setup with fixed APK: cleared local data, signed in as new phone 13900000625 using fixed local SMS code 123456, waited 5 seconds, and captured tmp-gudemian-fresh-seed-login.png.
+
+- 2026-06-04 02:25 CST: Fresh restore test seed with fixed APK: favorited Soporific, played Soporific and 暖色低鸣, switched Settings to 浅色, opened Account, tapped 立即同步, waited 6 seconds, and captured tmp-gudemian-fresh-seed-synced.png.
+
+- 2026-06-04 02:26 CST: Fresh cloud restore test: cleared local data after seed sync, re-signed into the same phone 13900000625 with fixed code 123456, waited 6 seconds, and captured tmp-gudemian-fresh-restore-login.png.
+
+- 2026-06-04 02:27 CST: Fresh restore test exposed a second sync bug: after seeding light theme for 13900000625 and clearing local data, re-login restored account state but UI stayed dark. Likely cause is first post-login sync sending default local settings with a fresh clientSyncedAt, overwriting remote settings instead of restoring them.
+
+- 2026-06-04 02:28 CST: Inspected storage keys; settings updatedAt can live in existing syncMeta rather than adding a new key. Client sync should use syncMeta.settingsUpdatedAt when present and epoch when a fresh device has only default settings.
+
+- 2026-06-04 02:29 CST: Patched settings sync timestamps: syncService now stores syncMeta.settingsUpdatedAt, sends epoch for fresh devices with only default settings, and SleepApp marks settings updated before requesting sync so cloud settings can restore after local data is cleared.
+
+- 2026-06-04 02:30 CST: Validation after settingsUpdatedAt restore patch passed: npm run check and npx expo install --check both succeeded.
+
+- 2026-06-04 02:31 CST: Gradle :app:assembleRelease succeeded after settingsUpdatedAt restore patch; build used email/cloud .env and printed only normal Expo NODE_ENV/Gradle deprecation warnings.
+
+- 2026-06-04 02:32 CST: Copied settingsUpdatedAt-restore APK to dist\\gudemian-cloud-internal-beta.apk; artifact size is 67,261,591 bytes, timestamp 2026-06-04 07:38:43.
+
+- 2026-06-04 02:33 CST: Static verification passed for settingsUpdatedAt-restore APK: apksigner verified and aapt shows com.gudemian.app / 古德眠 / minSdk24 / targetSdk36.
+
+- 2026-06-04 02:34 CST: Installed settingsUpdatedAt-restore APK on MuMu 127.0.0.1:7555 successfully; final clean cloud restore smoke will use new phone 13900000626 to avoid old polluted remote data.
+
+- 2026-06-04 02:35 CST: Final clean restore seed: with settingsUpdatedAt APK, signed in as 13900000626, favorited Soporific, played Soporific and 暖色低鸣, switched theme to 浅色, tapped 立即同步, waited 6 seconds, and captured tmp-gudemian-final-seed-synced.png.
+
+- 2026-06-04 02:36 CST: Final clean restore: cleared local data after seed sync, re-signed into 13900000626 using fixed code 123456, waited 6 seconds, and captured tmp-gudemian-final-restore-account.png.
+
+- 2026-06-04 02:37 CST: Final clean restore verified favorites: after re-login, Favorites screen shows Soporific and uiautomator reports its favorite button as 取消收藏.
+
+- 2026-06-04 02:38 CST: Attempted to inspect restored AsyncStorage via adb run-as for historyIds, but release package is not debuggable, so direct local storage read is unavailable; history restore will be verified through cloud merge/API evidence instead while UI verifies theme/favorites.
+
+- 2026-06-04 02:39 CST: Added a visible 最近播放 section to the Favorites screen, using player.historyIds to show up to six recent tracks so internal testers can verify restored playback history directly in the UI.
+
+- 2026-06-04 02:40 CST: Validation after adding visible 最近播放 section passed: npm run check and npx expo install --check both succeeded.
+
+- 2026-06-04 02:41 CST: Gradle :app:assembleRelease succeeded after adding visible 最近播放 UI; build used email/cloud .env and printed only normal Expo NODE_ENV/Gradle deprecation warnings.
+
+- 2026-06-04 02:42 CST: Final APK with visible 最近播放 copied to dist, apksigner verified, aapt confirmed com.gudemian.app / 古德眠 / minSdk24 / targetSdk36, and artifact size is 67,262,371 bytes with timestamp 2026-06-04 07:47:04.
+
+- 2026-06-04 02:43 CST: Installed final APK with visible 最近播放 UI on MuMu 127.0.0.1:7555; install -r preserved the restored local session for UI verification.
+
+- 2026-06-04 02:44 CST: Final UI verification passed on MuMu after installing final APK: Favorites screen shows Soporific restored in 我的收藏, and new 最近播放 section shows 暖色低鸣 then Soporific from restored historyIds.
+
+- 2026-06-04 02:45 CST: Removed temporary cloud restore smoke screenshots and UI hierarchy files after final verification.
+
+- 2026-06-04 02:46 CST: Pre-commit review for cloud restore fixes: git status/diff show only docs/HANDOFF_CONTEXT.md, SleepApp, and syncService modified; git diff --check has no whitespace errors beyond normal CRLF warnings.
