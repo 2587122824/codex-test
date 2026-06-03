@@ -36,6 +36,17 @@ the server.
 Use `.env.example` as the source checklist for Function Compute environment
 variables. Do not commit real secrets.
 
+Build the Function Compute upload package from the repository root:
+
+```bash
+npm.cmd run package:aliyun-functions
+```
+
+Upload `dist/aliyun-functions-deploy.zip`. Do not use a folder upload or
+manually selected source files; the bundle must include `node_modules/pg`, and
+the archive entries must use forward-slash paths such as
+`node_modules/pg/package.json`.
+
 ## Implementation Direction
 
 Use `IMPLEMENTATION_PLAN.md` as the build order for the first real beta
