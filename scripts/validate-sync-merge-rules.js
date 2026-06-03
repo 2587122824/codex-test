@@ -150,14 +150,14 @@ const run = () => {
     mergeSettings({
       local: {
         updatedAt: '2026-06-02T08:00:00.000Z',
-        value: { defaultSleepTimerMinutes: 30 },
+        value: { defaultSleepTimerMinutes: 0, themeMode: 'dark' },
       },
       remote: {
         updatedAt: '2026-06-02T09:00:00.000Z',
-        value: { defaultSleepTimerMinutes: 45 },
+        value: { defaultSleepTimerMinutes: 0, themeMode: 'light' },
       },
     }),
-    { defaultSleepTimerMinutes: 45 },
+    { defaultSleepTimerMinutes: 0, themeMode: 'light' },
     'settings should use the newest updatedAt value after first sign-in',
   );
 };

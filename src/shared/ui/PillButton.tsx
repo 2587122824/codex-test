@@ -1,24 +1,28 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, spacing } from './theme';
+import { colors as defaultColors, spacing, type ThemeColors } from './theme';
 
 type Props = {
   label: string;
   active?: boolean;
   onPress: () => void;
+  colors?: ThemeColors;
 };
 
-export const PillButton = ({ label, active, onPress }: Props) => (
+export const PillButton = ({ label, active, onPress, colors = defaultColors }: Props) => (
   <Pressable
     accessibilityRole="button"
     onPress={onPress}
     style={({ pressed }) => [
       styles.button,
-      active && styles.active,
+      {
+        backgroundColor: active ? colors.coral : colors.surface,
+        borderColor: active ? colors.coral : colors.line,
+      },
       { opacity: pressed ? 0.78 : 1 },
     ]}
   >
-    <Text style={[styles.label, active && styles.activeLabel]}>{label}</Text>
+    <Text style={[styles.label, { color: active ? colors.white : colors.ink }]}>{label}</Text>
   </Pressable>
 );
 
@@ -27,22 +31,12 @@ const styles = StyleSheet.create({
     minHeight: 38,
     borderRadius: 19,
     borderWidth: 1,
-    borderColor: colors.line,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  active: {
-    backgroundColor: colors.coral,
-    borderColor: colors.coral,
   },
   label: {
-    color: colors.ink,
     fontSize: 13,
     fontWeight: '700',
-  },
-  activeLabel: {
-    color: '#FFFFFF',
   },
 });

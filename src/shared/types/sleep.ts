@@ -1,3 +1,5 @@
+import type { UserThemePreference } from '../ui/theme';
+
 export type SleepLogEntry = {
   id: string;
   sleepAt: string;
@@ -9,4 +11,5 @@ export type SleepLogEntry = {
 
 export type UserSettings = {
   defaultSleepTimerMinutes: number;
+  themeMode: UserThemePreference;
 };

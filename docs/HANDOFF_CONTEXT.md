@@ -1,4 +1,4 @@
-# Codex Sleep Handoff Context
+﻿# Codex Sleep Handoff Context
 
 Last updated: 2026-06-03
 
@@ -326,7 +326,7 @@ The UI is much better than the MVP, but can still be polished:
 - `npm.cmd run check`: passed; typecheck, audio catalog validation, Aliyun backend contract validation, and sync merge rule validation all succeeded.
 - `Get-Content -LiteralPath docs/INTERNAL_BETA_CHECKLIST.md`: reviewed beta checklist; noticed known limitations still describe the app as local-only even though Aliyun API sync scaffolding now exists.
 - `Get-Content -LiteralPath src/features/account/useAccountSync.ts`: reviewed account sync hook and found several user-facing Chinese error/status strings are mojibake.
-- `Select-String -Path src/application/SleepApp.tsx -Pattern 'account|sync|登录|同步|not configured|configured|feedback|Privacy|Audio Credits' -Context 2,3`: reviewed account, feedback, privacy, and settings UI references; main app copy is generally normal Chinese and describes Aliyun sync states.
+- `Select-String -Path src/application/SleepApp.tsx -Pattern 'account|sync|鐧诲綍|鍚屾|not configured|configured|feedback|Privacy|Audio Credits' -Context 2,3`: reviewed account, feedback, privacy, and settings UI references; main app copy is generally normal Chinese and describes Aliyun sync states.
 - `$i=1; Get-Content -LiteralPath src/features/account/useAccountSync.ts | ForEach-Object { '{0,4}: {1}' -f $i, $_; $i++ }`: located mojibake account-sync strings around lines 46, 98, 120, 147, and 149 for targeted cleanup.
 - `node -e "const fs=require('fs'); const lines=fs.readFileSync('src/features/account/useAccountSync.ts','utf8').split(/\r?\n/); [45,97,119,146,148].forEach(i=>console.log((i+1)+': '+JSON.stringify(lines[i])));"`: verified the source file actually contains correct UTF-8 Chinese strings; mojibake was PowerShell display output, so no code edit is needed there.
 - `npm.cmd run check`: passed again after updating the internal beta checklist; typecheck, audio validation, Aliyun validation, and sync merge validation all succeeded.
@@ -380,7 +380,7 @@ The UI is much better than the MVP, but can still be polished:
 - `Get-Content`/slice reads for `src/application/SleepApp.tsx`, `src/shared/ui/TrackRow.tsx`, `src/shared/ui/ModuleCard.tsx`, and `src/shared/ui/PillButton.tsx`: inspected UI layout hotspots; found fixed bottom spacing, non-wrapping control rows, and mojibake accessibility labels in `TrackRow`.
 - `Get-Content` slice for `src/application/SleepApp.tsx` bottom styles: inspected mini player and tab bar positioning; current layout uses fixed `scrollContent.paddingBottom`, `miniPlayer.bottom`, and tab bar bottom values.
 - `Get-Content` slice for `src/application/SleepApp.tsx` top constants and `node -e` UTF-8 line check: verified `formatMinutes` contains correct Chinese in source despite PowerShell mojibake display.
-- `node -e` UTF-8 check for `src/shared/ui/TrackRow.tsx`: verified `accessibilityLabel` strings are correct Chinese in source (`播放`, `取消收藏`, `收藏`); no TrackRow text edit is needed.
+- `node -e` UTF-8 check for `src/shared/ui/TrackRow.tsx`: verified `accessibilityLabel` strings are correct Chinese in source (`鎾斁`, `鍙栨秷鏀惰棌`, `鏀惰棌`); no TrackRow text edit is needed.
 - `apply_patch` on `src/application/SleepApp.tsx`: added bottom-spacing constants, mini-player-aware scroll padding, wrapping control rows, shrinkable buttons, full-width inputs, and flexible setting copy containers for small-screen layout stability.
 - `Get-Content` slice and `node -e` UTF-8 check for mini player accessibility labels: verified `SleepApp.tsx` accessibility labels are correct Chinese in source; PowerShell output mojibake is display-only.
 - `Select-String -Path src/application/SleepApp.tsx -Pattern 'numberOfLines|betaFeedbackEmail|playerQueueText|modeSummary|settingMeta|miniTitle|playerTitle|sectionTitle' -Context 1,2`: reviewed long-text hotspots; feedback email, account identifier, and source URLs need stronger small-screen constraints.
@@ -396,7 +396,7 @@ The UI is much better than the MVP, but can still be polished:
 - `Get-ChildItem -Path C:\Users\Administrator\.codex\plugins\cache\openai-bundled\browser\26.527.31326 -Recurse -Filter viewport.md`: found Browser viewport capability docs at `docs\capabilities\browser\viewport.md`.
 - `Get-Content -LiteralPath C:\Users\Administrator\.codex\plugins\cache\openai-bundled\browser\26.527.31326\docs\capabilities\browser\viewport.md`: read viewport capability docs; will use `set({ width, height })` for responsive testing and reset before finishing.
 - Browser viewport set to `360x740`, reloaded `http://localhost:8081`, and inspected home metrics: no horizontal overflow (`scrollWidth=360`, `innerWidth=360`); screenshot showed bottom tab and home content fitting at narrow width.
-- Browser attempted to click Settings via `getByRole('button', { name: '设置' })`; locator count was 0 due to React Native Web accessibility mapping, while home page still reported no horizontal overflow.
+- Browser attempted to click Settings via `getByRole('button', { name: '璁剧疆' })`; locator count was 0 due to React Native Web accessibility mapping, while home page still reported no horizontal overflow.
 - Browser clicked the Settings tab by coordinate at `360x740`; settings page reported no horizontal overflow and showed account, timer, content source, feedback, and compliance sections fitting narrow width.
 - Browser scrolled the Settings page to the bottom at `360x740`; feedback email and compliance buttons were reachable above the bottom tab bar, with no horizontal overflow.
 - Browser opened the Account & Sync page from Settings at `360x740`; guest-mode API-not-configured state was readable, had no horizontal overflow, and did not overlap the bottom tab bar.
@@ -451,8 +451,8 @@ The UI is much better than the MVP, but can still be polished:
 - `git add docs/HANDOFF_CONTEXT.md src/application/SleepApp.tsx`: staged the small-screen UI layout commit scope; Git reported normal Windows LF-to-CRLF working-copy warnings.
 - `git add docs/HANDOFF_CONTEXT.md; git commit -m "Polish small screen UI layout"`: created commit `87edc9f Polish small screen UI layout` with small-screen layout polish, mini-player nested-button fix, and verification notes.
 - `git push origin codex/playback-modes`: pushed `87edc9f Polish small screen UI layout` to the remote `codex/playback-modes` branch.
-- `rg -n "鍚|鐧|鎾|绾||€|俙|噪|枕|尘|寰|棌|秷|屴|勫|愬|惧|叧|闂|彁|湡|€佲|銆" app.json src docs server scripts`: searched for likely mojibake; matches were normal Chinese words/content, not corrupted source strings.
-- `rg -n "�|\uFFFD" app.json src docs server scripts`: found no Unicode replacement characters in app/source/docs/server/scripts.
+- `rg -n "閸殀閻閹緗缁緗顔粅鈧瑋淇檤鍣獆鏋晐灏榺瀵皘妫寍绉穦灞磡鍕珅鎰瑋鎯鍙闂倈褰亅婀鈧讲|閵? app.json src docs server scripts`: searched for likely mojibake; matches were normal Chinese words/content, not corrupted source strings.
+- `rg -n "锟絴\uFFFD" app.json src docs server scripts`: found no Unicode replacement characters in app/source/docs/server/scripts.
 - `Select-String -Path src/application/SleepApp.tsx src/shared/ui/*.tsx -Pattern 'Pressable|accessibilityLabel|accessibilityRole' -Context 0,2`: failed due to incorrect PowerShell multi-path argument form; rerunning with a path array.
 - `Select-String -Path @('src/application/SleepApp.tsx','src/shared/ui/*.tsx') -Pattern 'Pressable|accessibilityLabel|accessibilityRole' -Context 0,2`: reviewed Pressable/accessibility usage; no remaining nested button pattern was found, and `TrackRow` has sibling play/favorite buttons with correct Chinese labels.
 - `apply_patch` on `src/application/SleepApp.tsx`: added explicit `accessibilityRole`/`accessibilityLabel` to the header home button and bottom tab buttons.
@@ -553,7 +553,7 @@ The UI is much better than the MVP, but can still be polished:
 - MuMu app restart/reload and home screenshot: compact header title is visibly smaller, but the reduced top padding placed the environment label too close to the Android status bar; increasing only the header top padding while keeping the smaller title/button.
 - `apply_patch` on `src/application/SleepApp.tsx`: restored header top padding to `spacing.md` while keeping the smaller 22px app title, 10px eyebrow, 36px header button, and compact bottom padding.
 - `npm.cmd run check` and `git diff --check`: passed after restoring header top padding; `git diff --check` reported only normal Windows LF-to-CRLF warnings.
-- MuMu hardware Back verification screenshots: from `收藏` first Back returned to `AI助眠`, second Back returned to `首页`; the corrected compact header no longer overlaps the Android status bar.
+- MuMu hardware Back verification screenshots: from `鏀惰棌` first Back returned to `AI鍔╃湢`, second Back returned to `棣栭〉`; the corrected compact header no longer overlaps the Android status bar.
 - Attempted homepage double-Back verification with `C:\Users\Administrator\AppData\Local\Android\Sdk\platform-tools\adb.exe`, but that exact adb path was not present in this environment; locating the active adb binary before retrying.
 - `where.exe adb`: no adb binary is currently available on `PATH`, so the next step is searching common SDK/MuMu install locations for `adb.exe`.
 - Narrow common-directory search for `adb.exe` under LocalAppData/Program Files timed out after 30s, so switching to environment-variable and known emulator install path checks.
@@ -561,14 +561,14 @@ The UI is much better than the MVP, but can still be polished:
 - Read the Browser in-app-browser skill instructions to verify the local Web preview through the existing `http://localhost:8081/` tab while adb path discovery is blocked.
 - Browser in-app preview connected to `http://localhost:8081/` and reloaded successfully for Web-side header and player scroll-reset verification.
 - Browser screenshot of Web home: compact header displays smaller `Codex Sleep` title with stable bottom navigation and no visible overlap in the narrow preview.
-- Browser DOM snapshot on Web home: located `播放 Soporific` in the recent-play list for player entry scroll-reset verification.
-- Browser player entry check: clicking `播放 Soporific` opened the player at `window.scrollY = 0`, showing the top of the player instead of a previous scroll position.
-- Browser scroll-reset path: after scrolling the player, trying to click a strict `首页` role timed out because no matching button was exposed at the current DOM state; inspecting the visible player DOM before retrying navigation.
-- Browser scrolled-player screenshot/DOM: player remained scrollable and exposed the header `返回首页` button, so using that entry to continue the scroll-reset path.
-- Browser click on `返回首页`: returned from the scrolled player to the home screen with `window.scrollY = 0`, and the mini player remained visible for re-entry testing.
-- Browser DOM snapshot on home with mini player: located the mini-player entry `打开播放器：Soporific` for player re-entry scroll-reset verification.
-- Browser mini-player click retry note: strict role click on `打开播放器：Soporific` timed out inside the browser automation runtime, so retrying with visible coordinate interaction and a fresh state check.
-- Browser coordinate retry landed on the `AI助眠` bottom tab instead of the mini player; app stayed stable at `window.scrollY = 0`, and mini player remained visible for another re-entry attempt.
+- Browser DOM snapshot on Web home: located `鎾斁 Soporific` in the recent-play list for player entry scroll-reset verification.
+- Browser player entry check: clicking `鎾斁 Soporific` opened the player at `window.scrollY = 0`, showing the top of the player instead of a previous scroll position.
+- Browser scroll-reset path: after scrolling the player, trying to click a strict `棣栭〉` role timed out because no matching button was exposed at the current DOM state; inspecting the visible player DOM before retrying navigation.
+- Browser scrolled-player screenshot/DOM: player remained scrollable and exposed the header `杩斿洖棣栭〉` button, so using that entry to continue the scroll-reset path.
+- Browser click on `杩斿洖棣栭〉`: returned from the scrolled player to the home screen with `window.scrollY = 0`, and the mini player remained visible for re-entry testing.
+- Browser DOM snapshot on home with mini player: located the mini-player entry `鎵撳紑鎾斁鍣細Soporific` for player re-entry scroll-reset verification.
+- Browser mini-player click retry note: strict role click on `鎵撳紑鎾斁鍣細Soporific` timed out inside the browser automation runtime, so retrying with visible coordinate interaction and a fresh state check.
+- Browser coordinate retry landed on the `AI鍔╃湢` bottom tab instead of the mini player; app stayed stable at `window.scrollY = 0`, and mini player remained visible for another re-entry attempt.
 - Browser mini-player coordinate re-entry succeeded: tapping the mini player opened the full player at `window.scrollY = 0`, confirming the player no longer reuses the previous scrolled position.
 - `Get-Process` for adb/MuMu processes located the active adb binary at `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe`, so Android homepage double-Back verification can resume.
 - MuMu homepage double-Back verification with the active adb binary: first Back kept focus on `com.codexsleep.app/.MainActivity`, second Back moved focus to `app.lawnchair/.LawnchairLauncher`, confirming "press twice to exit" behavior on Home.
@@ -594,11 +594,11 @@ The UI is much better than the MVP, but can still be polished:
 - Audio expansion validation: `npm.cmd run check` passed, reporting 30 catalog items (10 music, 8 story, 12 noise), 30 licensed/original candidates, 0 beta placeholders, 3 attribution-required items, and about 45MB local audio.
 - `npx.cmd expo install --check` passed after using the approved Expo cache write path; dependencies are up to date.
 - `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
-- Web narrow-screen smoke verification passed for the expanded catalog: music list shows 10 items and played `慢响风铃` with `0:52`; story list shows 8 items and played `身体慢慢安静` with `0:31`; noise list shows 12 items and played `棕噪睡眠底` with `0:55`; AI Sleep displays 5 recommended tracks for the default goal.
+- Web narrow-screen smoke verification passed for the expanded catalog: music list shows 10 items and played `鎱㈠搷椋庨搩` with `0:52`; story list shows 8 items and played `韬綋鎱㈡參瀹夐潤` with `0:31`; noise list shows 12 items and played `妫曞櫔鐫＄湢搴昤 with `0:55`; AI Sleep displays 5 recommended tracks for the default goal.
 
 ## 2026-06-03 Companion AI Sleep Polish
 
-- Simplified the home hero by removing the descriptive paragraph under `������һ����˯`.
+- Simplified the home hero by removing the descriptive paragraph under `今晚慢一点入睡`.
 - Reworked the AI Sleep screen toward a companion-style flow: removed the old explanatory hero, added a compact companion status, quick request chips, and an input box that simulates "saying" changing sleep needs during internal beta.
 - Added local keyword routing for companion requests such as anxiety, waking at night, rain/noise, story/company, and fast sleep; changing the request immediately changes the recommended queue.
 - Real microphone listening is intentionally not implemented yet because it needs separate voice-recognition support, microphone permission UX, privacy copy, and supplier/cost decisions.
@@ -613,7 +613,7 @@ Validation:
 ## 2026-06-03 Core Module Discovery Polish
 
 - Removed the home hero/title card so the first screen now starts directly with the three core module entries: music, stories, and white noise.
-- Kept `今晚慢一点入睡` only as a lightweight companion cue inside the AI Sleep panel.
+- Kept `浠婃櫄鎱竴鐐瑰叆鐫 only as a lightweight companion cue inside the AI Sleep panel.
 - Added local recommended sorting for module lists using existing `audioCatalog.category` and duration metadata.
 - Added module category filter chips, count display, and current filter state without changing the `AudioItem` type, catalog schema, playback hook, or sync protocol.
 - Confirmed `TrackRow` source text is UTF-8 correct in code; the visible mojibake during earlier terminal/automation output is from the inspection layer, not the source file.
@@ -624,7 +624,7 @@ Validation:
 - `npx.cmd expo install --check` passed.
 - `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
 - Local preview at `http://localhost:8081/` returned `200 OK`.
-- MuMu visual smoke check passed: home opens directly to the three module entries, the music module shows filter chips/count/sort state, and AI Sleep shows the lightweight `今晚慢一点入睡` companion cue.
+- MuMu visual smoke check passed: home opens directly to the three module entries, the music module shows filter chips/count/sort state, and AI Sleep shows the lightweight `浠婃櫄鎱竴鐐瑰叆鐫 companion cue.
 
 ## 2026-06-03 Home Entry Simplification
 
@@ -667,3 +667,193 @@ Validation:
 - `npx.cmd expo install --check` passed.
 - `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
 - Local preview at `http://localhost:8081/` returned `200 OK`.
+
+## 2026-06-03 Default Timer Settings Fix
+
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md` and `git status -sb`: resumed from handoff on branch `codex/playback-modes`; starting work from a clean tree to fix settings-page default sleep timer behavior. Note: `apply_patch` could not update this handoff because the existing file contains non-UTF-8 bytes, so command-log entries in this section are appended with PowerShell.
+- `apply_patch` on `src/application/SleepApp.tsx`: wired `settingsRef` so sync snapshots use freshly saved settings, initialized AI Sleep duration from `defaultSleepTimerMinutes`, and kept AI Sleep default duration in sync when settings load/save or remote data applies.
+- `apply_patch` on `src/application/SleepApp.tsx`: clarified default timer copy in Settings, AI Sleep duration copy, and player timer copy so Settings describes the next-play default while the player describes the current session timer.
+- `rg` and `git diff -- src/application/SleepApp.tsx`: reviewed the timer-setting change; no backend contract, hook API, or UserSettings type changes were introduced, and Git only reported normal Windows LF-to-CRLF working-copy warnings.
+- `npm.cmd run check`: passed after default timer fix; typecheck, audio/content audit, Aliyun backend validation, sync merge validation, and mock API syntax check all succeeded.
+- `npx.cmd expo install --check`: passed after default timer fix; Expo dependencies are up to date.
+- `git diff --check`: passed after default timer fix; only normal Windows LF-to-CRLF working-copy warnings were reported for handoff and `SleepApp.tsx`.
+- `git status -sb` and `git diff --stat`: final changed files are `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`; app logic diff is scoped to default timer settings, AI Sleep duration defaults, fresh settings sync snapshots, and timer copy.
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md`, `git status -sb`, and `rg`: resumed with existing default-timer fix changes still unstaged; user clarified default timer should be off so ordinary track entry does not unexpectedly start a countdown.
+- `Get-Content` and `rg` on `SleepApp.tsx`: located current timer constants and state wiring; AI Sleep duration list is `aiSleepDurations` and the previous fix was still tying AI duration to settings.
+- `apply_patch` on `src/application/SleepApp.tsx`: changed `defaultSleepTimerMinutes` default to `0` for off-by-default behavior, added `defaultAiSleepDuration` at 20 minutes, and stopped settings load/save/remote apply from overwriting the AI Sleep one-session duration.
+- `apply_patch` on `src/application/SleepApp.tsx`: Settings now shows off state as `新开播放不自动倒计时` and includes a `关闭` pill that saves `defaultSleepTimerMinutes: 0`.
+- `apply_patch` on `src/application/SleepApp.tsx`: changed AI Sleep duration copy to describe it as a one-session AI Sleep duration instead of following Settings.
+- `rg` and `git diff -- src/application/SleepApp.tsx`: confirmed default timer is now `0`, ordinary track opening still only auto-starts timers when the saved default is greater than zero, and AI Sleep keeps a separate 20-minute one-session default.
+- `npm.cmd run check`: passed after making default timer off by default; typecheck, audio/content audit, Aliyun validation, sync merge validation, and mock API syntax check all succeeded.
+- `npx.cmd expo install --check`: passed after off-by-default timer update; Expo dependencies are up to date.
+- `git diff --check`: passed after off-by-default timer update; only normal Windows LF-to-CRLF warnings were reported for handoff and `SleepApp.tsx`.
+- `git status -sb` and `git diff --stat`: final changed files remain `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`; off-by-default timer update is scoped to settings defaults, Settings UI, AI Sleep duration independence, and fresh sync snapshot handling.
+
+## 2026-06-03 Timer As Per-Playback Control
+
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md`, `git status -sb`, and `rg`: resumed with prior timer edits still unstaged; confirmed Settings still exposes default timer and ordinary track opening can still auto-apply a saved default greater than zero.
+- `Get-Content` slices on `src/application/SleepApp.tsx`: located the exact `openTrack` auto-timer block and the Settings default-timer row to remove while leaving account and content-source settings intact.
+- `apply_patch` on `src/application/SleepApp.tsx`: removed ordinary-track auto-start of the saved default timer and removed the Settings `默认定时关闭` row, making sleep timer a player-session control only.
+- `rg` and `git diff` review: confirmed no user-visible default timer remains, and found now-unused `settings` state plus save helpers left behind by removing the Settings timer row.
+- `apply_patch` on `src/application/SleepApp.tsx`: removed unused `settings` state and Settings save helpers; sync compatibility now keeps `defaultSleepTimerMinutes` only through `settingsRef` and persisted remote/local settings data.
+- `rg` and `Get-Content` slices: found old stored/remote settings could still populate `settingsRef` with a nonzero legacy timer even though the UI no longer exposes it; normalizing settings to the fixed off value will keep sync payloads consistent.
+- `apply_patch` on `src/application/SleepApp.tsx`: added `normalizeSettings` so legacy local/remote settings are normalized to `defaultSleepTimerMinutes: 0` while preserving the existing sync field shape.
+- `npm.cmd run check`: passed after moving timer shutdown fully to per-playback control; typecheck, audio/content audit, Aliyun validation, sync merge validation, and mock API syntax check all succeeded.
+- `npx.cmd expo install --check`: passed after per-playback timer update; Expo dependencies are up to date.
+- `git diff --check`: passed after per-playback timer update; only normal Windows LF-to-CRLF warnings were reported for handoff and `SleepApp.tsx`.
+- `git status -sb`, `git diff --stat`, and final `rg`: final changed files are `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`; Settings no longer exposes default timer, ordinary playback no longer auto-starts a timer, AI Sleep still starts its selected one-session timer, and `defaultSleepTimerMinutes` remains only for sync/type compatibility normalized to zero.
+
+## 2026-06-03 Small-Screen UI Acceptance
+
+- `git status -sb`, `Get-Content -Tail docs/HANDOFF_CONTEXT.md`, `Get-NetTCPConnection -LocalPort 8081`, and `rg` for timer/default wording: resumed with timer-session-control changes pending; Expo Web preview is already listening on port 8081; found outdated beta checklist/privacy wording around default timer behavior.
+- `apply_patch` on `docs/INTERNAL_BETA_CHECKLIST.md` and `docs/PRIVACY_POLICY_DRAFT.md`: replaced outdated default-timer wording with per-playback/current-timer language while keeping the beta task coverage for manual timer controls.
+- `node` read of `src/application/SleepApp.tsx` privacy lines: confirmed the source contains valid UTF-8 Chinese and the outdated phrase is the in-app local-data sentence mentioning `默认定时器`.
+- `apply_patch` on `src/application/SleepApp.tsx`: updated the in-app privacy local-data copy from default timer storage to current playback timer state, matching the new per-session timer model.
+- Node REPL Playwright narrow-web smoke attempt: blocked because the REPL environment could not import `playwright` (module not found); looking for an alternate browser automation path before falling back to static/Web reachability checks.
+- `tool_search` for browser/playwright automation: no browser navigation/screenshot tool was exposed for this turn, so Web visual smoke needs a local CLI fallback or Android/MuMu screenshots.
+- `npx.cmd --yes playwright --version`: succeeded with Playwright 1.60.0 available through npx, so using transient Playwright CLI/package execution for Web narrow-screen smoke without adding a project dependency.
+- Transient Playwright Node smoke via `npx --package playwright node -e` failed because `require('playwright')` was not resolved from the temporary package context; retrying with `npm exec --package=playwright`.
+- `npm.cmd exec --package=playwright -- node -e` also failed to resolve `playwright` as a require-able module, so Web interaction automation is not available through transient Node package loading; using CLI screenshot only plus MuMu/adb for interactive small-screen checks.
+- `npx.cmd playwright screenshot` for a 390x740 Web home screenshot failed because the Playwright Chromium headless shell is not installed in the user cache; skipping browser download and using MuMu/adb for the interactive visual acceptance path.
+- `adb.exe devices -l` and `Invoke-WebRequest http://localhost:8081/`: active adb binary exists at `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe` with MuMu devices online, and Expo Web responds 200; proceeding with Android/MuMu screenshots for small-screen acceptance.
+- adb MuMu setup: reversed `tcp:8081`, force-stopped and started `com.codexsleep.app/.MainActivity`, waited 8 seconds, and captured `tmp-codex-home.png` for the home small-screen check.
+- `view_image tmp-codex-home.png` failed because the PowerShell `exec-out` redirection produced an unreadable PNG; switching to device-side `screencap -p` plus `adb pull` for valid screenshots.
+- adb device-side screenshot: captured and pulled a valid `tmp-codex-home.png` from MuMu for home-screen visual inspection.
+- `view_image tmp-codex-home.png`: home screen visual check passed for the three core module cards with no visible overlap; React Native debug warning overlay covered the bottom area and needs dismissing before tab/mini-player checks.
+- adb taps: dismissed the React Native debug warning overlay, opened the first music module card, and pulled `tmp-codex-module.png` for module-list small-screen inspection.
+- `view_image tmp-codex-module.png`: module page visual check passed for header, category chips, and track rows on MuMu; bottom navigation sits over the scrollable list as expected, with follow-up scroll/end-padding check still needed.
+- adb tap on first module track and screenshot pull: opened ordinary playback and captured `tmp-codex-player.png` to verify player small-screen layout and off-by-default timer state.
+- `view_image tmp-codex-player.png`: ordinary player small-screen check passed; default timer is off, no countdown starts unexpectedly, and primary controls/timer summary/fold headers are readable without overlap.
+- adb tap on the player timer foldout and screenshot pull: captured `tmp-codex-player-timer.png` to inspect timer preset pills and current-session timer layout on MuMu.
+- `view_image tmp-codex-player-timer.png`: expanded timer foldout passed on MuMu; 15/30/45/60/关闭 pills fit on one row, labels remain readable, and playback mode panel below is not overlapped.
+- adb navigation: tapped the header home button, then the AI Sleep bottom tab, and pulled `tmp-codex-ai.png` for AI Sleep first-screen small-screen inspection.
+- `view_image tmp-codex-ai.png`: AI Sleep small-screen check passed; companion input/chips, duration card, queue card, and Start button fit above the mini player and bottom tab bar without overlap.
+- adb tap on AI Sleep Start and screenshot pull: captured `tmp-codex-ai-player.png` to verify AI Sleep enters the player with its selected one-session timer.
+- `view_image tmp-codex-ai-player.png`: AI Sleep player check passed; selected 20-minute timer is clearly visible, current-session timer foldout remains readable, and controls do not overlap on MuMu.
+- adb navigation: tapped header home then Settings tab while playback/mini-player remained active, and pulled `tmp-codex-settings.png` for Settings small-screen inspection.
+- `view_image tmp-codex-settings.png`: Settings small-screen check passed; default timer row is gone, account/content/feedback/compliance cards wrap cleanly, and mini player plus tab bar do not cover the visible content.
+- adb tap on Settings privacy button and screenshot pull: captured `tmp-codex-privacy.png` for in-app privacy wording and wrapping inspection.
+- `view_image tmp-codex-privacy.png`: Privacy page small-screen check passed; updated current-playback timer wording wraps correctly and no default-timer copy remains in the visible privacy surface.
+- adb navigation/scroll: returned to Home, opened the music module with active mini player, swiped to the list bottom, and pulled `tmp-codex-module-bottom.png` for bottom-padding inspection.
+- `view_image tmp-codex-module-bottom.png`: first bottom-padding attempt did not reach the true list bottom; screenshot still showed upper/mid module rows with mini player overlay present, so retrying with longer repeated swipes.
+- adb repeated long swipes on the module list and screenshot pull: captured `tmp-codex-module-bottom-2.png` to verify the true list bottom with active mini player and tab bar.
+- `view_image tmp-codex-module-bottom-2.png`: module list bottom-padding check passed; the final visible track row sits above the mini player and tab bar, with no critical row content hidden by fixed bottom controls.
+- `rg` for default-timer wording plus `git diff --stat` and targeted `git diff`: reviewed final app/docs diff; user-facing Settings/checklist/privacy default-timer wording is cleaned, while backend/mock contract settings fields remain unchanged for compatibility as planned.
+- `Remove-Item` for `tmp-codex-*.png` screenshots: cleaned temporary MuMu/Web visual inspection artifacts before final validation.
+- `npm.cmd run check`: passed after small-screen UI acceptance and wording cleanup; typecheck, audio/content audit, Aliyun validation, sync merge validation, and mock API syntax check all succeeded.
+- `npx.cmd expo install --check`: passed after small-screen UI acceptance; Expo dependencies are up to date.
+- `git diff --check`: passed after small-screen UI acceptance; only normal Windows LF-to-CRLF working-copy warnings were reported for handoff, beta/privacy docs, and `SleepApp.tsx`.
+- `git status -sb`, `git diff --stat`, and `Get-ChildItem -Filter tmp-codex-*`: final changed files are `docs/HANDOFF_CONTEXT.md`, `docs/INTERNAL_BETA_CHECKLIST.md`, `docs/PRIVACY_POLICY_DRAFT.md`, and `src/application/SleepApp.tsx`; no temporary screenshot artifacts remain.
+
+## 2026-06-03 Theme Preference Settings
+
+- `git status -sb`, `Get-Content` for theme/types, and `rg` for theme/settings/style references: resumed with small-screen/timer changes pending; current theme uses a static `colors` object and `StyleSheet.create` in `SleepApp` plus shared UI components, so runtime theme switching needs explicit palette plumbing.
+- `apply_patch` on `src/shared/ui/theme.ts` and `src/shared/types/sleep.ts`: added dark/light palettes, theme preference types, kept `colors` as dark default for compatibility, and extended `UserSettings` with `themeMode`.
+- `Get-Content` for `ModuleCard`, `TrackRow`, and `PillButton`: inspected exact component source after the combined palette-prop patch failed to match `TrackRow` text context; splitting shared UI updates into smaller patches.
+- `apply_patch` on `src/shared/ui/ModuleCard.tsx`: added optional palette prop and moved surface/line/text colors to runtime values while keeping spacing/layout static.
+- `apply_patch` on `src/shared/ui/TrackRow.tsx`: added optional palette prop and moved row/text/favorite colors to runtime palette values so track rows can render correctly in light and dark themes.
+- `apply_patch` on `src/shared/ui/PillButton.tsx`: added optional palette prop and moved active/inactive button colors to runtime palette values for theme switching.
+- `apply_patch` on `src/application/SleepApp.tsx` imports/default settings: added `useColorScheme`, theme palettes/types, `themeMode` default, theme preference options, settings normalization, theme resolution, and a module-level active palette handle.
+- `apply_patch` on `SleepApp` root state: added settings state, resolved theme mode from user preference plus system color scheme, regenerated styles from the active palette, loaded normalized settings into state/ref, and added `saveSettingsAndSync` for theme changes.
+- `rg` for `ModuleCard`/`TrackRow`/`PillButton`/`StatusBar` calls in `SleepApp`: found the exact shared component invocations that need the active palette and the status bar style that must follow resolved theme.
+- `apply_patch` on `SleepApp` JSX: status bar now follows resolved theme, and ModuleCard/TrackRow/player timer PillButton calls receive the active palette.
+- `apply_patch` on Settings JSX: added an `外观主题` card with 跟随系统/深色/浅色 pill choices, immediate settings save, and signed-in sync trigger through the existing settings payload.
+- `apply_patch` on `src/application/SleepApp.tsx` styles: converted the static StyleSheet into `createStyles(colors)` and initialized module-level styles from the active palette so nested components use updated theme colors during render.
+- `Get-Content` slices for sync validation, mock API, Aliyun API contract, and RDS schema: located default settings examples/defaults that need `themeMode`/`theme_mode` updates while retaining the legacy timer field.
+- Patched settings sync/backend contract defaults for themeMode: mock API default settings now include themeMode=system, sync merge validation covers themeMode, Aliyun contract examples include themeMode, and RDS schema adds theme_mode with system/dark/light check.
+-
+pm.cmd run check: failed at typecheck because React Native ColorSchemeName can be 'unspecified', while resolveThemeMode accepted only dark/light/null.
+g confirmed themeMode/defaultSleepTimerMinutes references are now in SleepApp, shared UI, mock API, sync validation, Aliyun contract/schema, and historical handoff notes.
+- Get-Content/Select-String on SleepApp theme imports and resolveThemeMode: confirmed exact type signature still used ThemeMode|null|undefined, so next fix is to import React Native ColorSchemeName and accept the full useColorScheme return type.
+- pply_patch on SleepApp theme resolver: imported ColorSchemeName from React Native and widened resolveThemeMode to accept useColorScheme's full return type, still falling back to dark unless system reports light.
+-
+pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content/Aliyun/sync/mock API validation all succeeded with themeMode in settings.
+- `npx.cmd expo install --check`: passed; Expo dependencies are up to date. `git diff --check`: failed only on docs/HANDOFF_CONTEXT.md trailing whitespace/control-character log noise, so cleaning the handoff log before rerunning whitespace validation.
+- Cleaned docs/HANDOFF_CONTEXT.md trailing whitespace/control-character artifacts with PowerShell after git diff --check reported handoff-only whitespace noise.
+- `git diff --check`: passed after handoff whitespace cleanup; only normal Windows LF-to-CRLF working-copy warnings remain.
+- `git diff --stat`, targeted `git diff`, and `Select-String` review: theme labels are valid UTF-8, settings sync uses settingsRef, but some PillButton usages still rely on the dark default palette and need the active palette passed for light mode.
+- `Select-String` for PillButton usages: confirmed the AI Sleep duration buttons were the remaining active-palette omission; settings and player timer pills already pass colors.
+- `apply_patch` on SleepApp AI Sleep duration pills: passed the active palette into the remaining PillButton usage so light mode no longer falls back to dark button colors.
+- `npm.cmd run check`: passed after passing the active palette to AI Sleep duration pills; typecheck and all validation scripts succeeded. `git diff --check`: passed with only Windows LF-to-CRLF warnings. `Get-NetTCPConnection -LocalPort 8081`: preview server is listening on process 20716. `adb.exe devices -l`: MuMu/Android devices are online.
+- adb MuMu theme smoke setup: reversed port 8081, force-stopped and launched com.codexsleep.app, waited for reload, and captured tmp-codex-theme-home.png for the initial home/theme check.
+- `view_image tmp-codex-theme-home.png`: initial MuMu home visual check shows dark/system fallback renders correctly with readable module cards; React Native debug warning overlay is visible and will be dismissed before settings checks.
+- adb taps: dismissed the React Native warning overlay, tapped the Settings tab, and captured tmp-codex-theme-settings-dark.png for the dark-mode Settings/theme-card check.
+- `view_image tmp-codex-theme-settings-dark.png`: dark Settings visual check passed; the new appearance theme card sits between account sync and content source, and the three theme pills fit cleanly on the narrow MuMu viewport.
+- adb tap on Settings light theme pill and screenshot pull: selected the light appearance option and captured tmp-codex-theme-settings-light.png for light Settings contrast/layout validation.
+- `view_image tmp-codex-theme-settings-light.png`: light Settings visual check passed; text contrast, theme pills, account/content/feedback/compliance cards, status bar, and bottom tab bar are readable without overflow.
+- adb tap on Home tab and screenshot pull: captured tmp-codex-theme-home-light.png to verify the main module cards and bottom navigation in light mode.
+- `view_image tmp-codex-theme-home-light.png`: light home visual check passed; module cards, accent blocks, labels, and bottom navigation all follow the light palette and remain readable.
+- adb taps on first music module card and first track: opened ordinary playback in light mode and captured tmp-codex-theme-player-light.png for player/timer layout validation.
+- `view_image tmp-codex-theme-player-light.png`: screenshot showed the light module list rather than player; this still validates light module header, filter chips, track rows, and bottom navigation, then retrying the first track tap for player validation.
+- adb tap on the first track play area and screenshot pull: opened the ordinary player in light mode and recaptured tmp-codex-theme-player-light.png.
+- `view_image tmp-codex-theme-player-light.png`: light ordinary player visual check passed; player panels, controls, progress bar, fold headers, and current-session timer off state are readable and ordinary playback did not auto-start a countdown.
+- adb navigation to Home then AI Sleep tab in light mode: captured tmp-codex-theme-ai-light.png for AI Sleep target/duration/queue/start layout validation under the light palette.
+- `view_image tmp-codex-theme-ai-light.png`: found a light-mode readability bug in AI Sleep hero where the large `AI助眠` title remains white on a light card; fixing that title color to use the active palette.
+- `Select-String` for AI hero/title color: located `styles.heroTitle` using colors.white; changing only that title style to colors.ink so it remains readable on both dark and light cards.
+- `apply_patch` on SleepApp heroTitle style: changed AI Sleep hero title from colors.white to colors.ink for readable light-mode contrast while preserving dark-mode readability.
+- `npm.cmd run check`: passed after AI Sleep hero title contrast fix. `git diff --check`: passed with only Windows LF-to-CRLF warnings.
+- adb keyevent/menu toggle plus screenshot pull: captured tmp-codex-theme-ai-light-fixed.png after the heroTitle style change to confirm the AI Sleep light-mode readability fix.
+- `view_image tmp-codex-theme-ai-light-fixed.png`: React Native Dev Menu overlay appeared, but the background confirms the AI Sleep hero title is now dark/readable in light mode; the visual bug is fixed.
+- `Get-Content docs/INTERNAL_BETA_CHECKLIST.md`: reviewed tester-task structure and found the Settings task as the right place to add dark/light/system theme acceptance coverage.
+- `apply_patch` on docs/INTERNAL_BETA_CHECKLIST.md: added a tester task for switching appearance between system/dark/light and confirming key screens remain readable.
+- adb back key plus `Remove-Item tmp-codex-theme-*.png`: dismissed the React Native Dev Menu and removed temporary MuMu screenshot artifacts before final validation.
+- Final validation: `npm.cmd run check` passed, `npx.cmd expo install --check` passed with dependencies up to date, `git diff --check` passed with only Windows LF-to-CRLF warnings, and `Get-ChildItem tmp-codex-theme-*.png` confirmed no temporary theme screenshots remain.
+- Final status review: `git status -sb` shows expected modified files only; `git diff --stat` shows theme/UI/settings contract/docs changes plus handoff; targeted handoff search confirms the theme section and final validation notes are present.
+- `Get-Content docs/HANDOFF_CONTEXT.md -Tail 80` and `git status -sb`: resumed on codex/playback-modes with prior theme/timer/UI changes still pending; starting a home-module icon polish pass without reverting existing work.
+- `Get-Content` for audioCatalog and ModuleCard plus `rg` for ModuleDefinition/ModuleCard: home cards currently render only a colored square mark; implementing type-based icons inside ModuleCard avoids changing catalog data or sync contracts.
+- `Get-Content src/shared/types/audio.ts`: ModuleDefinition only has type/title/subtitle/description/accent, confirming icon rendering can be derived from AudioType without adding public fields.
+- `apply_patch` on src/shared/ui/ModuleCard.tsx: replaced the plain module color mark with type-based lucide icons (Music2, BookOpenText, Waves) inside a stable 54px accent badge for the three sleep modules.
+- `npm.cmd run check`: passed after adding home module icons; typecheck and audio/content/Aliyun/sync/mock API validations all succeeded.
+- adb MuMu icon visual setup: reversed port 8081, force-stopped/launched the app, waited for reload, and captured tmp-codex-home-icons.png for home-module icon inspection.
+- `view_image tmp-codex-home-icons.png`: light-mode home visual check passed for the new module icons; music/story/noise cards now show clear sleep-themed glyphs with stable spacing and no text overlap. React Native debugger warning overlay remains at the bottom but does not affect the module icon area.
+- `git diff -- src/shared/ui/ModuleCard.tsx`: reviewed the scoped icon diff; `git diff --check`: passed with only Windows LF-to-CRLF warnings; `Remove-Item tmp-codex-home-icons.png`: cleaned the temporary home icon screenshot.
+- Final home icon status review: `git status -sb` shows expected pending files with ModuleCard included; `Get-ChildItem tmp-codex-*.png` found no temporary screenshots; `git diff --stat` confirms the icon work is scoped to ModuleCard on top of existing pending theme/timer/docs changes.
+- Advisory checkpoint: reviewed latest handoff/status to answer next-priority question; current frontend has timer-session behavior, theme settings, small-screen visual checks, and home module icons validated, so recommendation is to create a frontend freeze point and shift focus to backend beta readiness.
+- Backend readiness start: `Get-Content docs/HANDOFF_CONTEXT.md -Tail 80`, `git status -sb`, and broad `rg` over src/server/scripts/docs found the real backend is currently contract/schema/mock/validation focused, with frontend syncService and account hook already wired to auth/session/sync endpoints.
+- Backend contract audit reads: `server/aliyun-functions/README.md` still lists real handler technology as pending, `api-contract.md` defines auth/session/logout/sync routes, `rds-schema.sql` has profiles/sms/session/settings/favorites/history/sleep_logs tables, and frontend `syncService.ts` posts local snapshot plus tombstones to `/sync/merge` and clears tombstones after success.
+- Backend audit reads for `useSleepLogs.ts`, storage keys, package.json, and ID searches: frontend sleep log IDs are client-generated and may fall back to non-UUID strings, while RDS currently declares sleep_logs.id as uuid; package.json has no backend runtime dependencies yet, so first backend pass should harden contracts/schema/docs before adding real handler dependencies.
+- Backend implementation prep reads: `server/aliyun-functions` currently has README/contract/schema only; sync validation covers merge behavior; beta checklist still treats real Function Compute handlers as a known limitation. Next edits will harden schema/contract and add a concrete implementation plan plus stronger backend validation.
+- `apply_patch` on `server/aliyun-functions/rds-schema.sql`: changed `sleep_logs.id` from uuid to text so real RDS can accept opaque client-generated sleep log IDs, including non-UUID fallback IDs.
+- `apply_patch` on `server/aliyun-functions/api-contract.md`: documented SMS beta limits, clarified sync IDs are opaque client strings, and added the JSON error shape consumed by the Expo client.
+- `apply_patch` add `server/aliyun-functions/IMPLEMENTATION_PLAN.md`: documented Node 20 Function Compute choices, env vars, route build order, merge storage mapping, first smoke test, and security notes for real backend implementation.
+- `apply_patch` on `server/aliyun-functions/README.md`: replaced pending technology choices with current implementation direction and pointed real handler work to IMPLEMENTATION_PLAN.md while keeping mock API as local account testing path.
+- `apply_patch` on `scripts/validate-aliyun-backend.js`: strengthened backend validation to require settings theme_mode, opaque text sleep log IDs, API error shape, opaque ID contract note, and the new implementation plan with core route/build-order phrases.
+- `npm.cmd run validate:aliyun`: passed with strengthened backend validation. `git diff -- server/aliyun-functions scripts/validate-aliyun-backend.js`: reviewed scoped backend-readiness diff covering schema, contract, README, validation, and new implementation plan.
+- `npm.cmd run check`: passed after backend readiness edits; typecheck plus audio/content/Aliyun/sync/mock API validation all succeeded.
+- Mock API HTTP smoke: started `npm.cmd run mock:api` on port 8791, POSTed `/auth/send-code`, `/auth/verify-code` with code 123456, and `/sync/merge` with settings themeMode=light; response returned favoriteIds=rain-window, themeMode=light, and syncedAt, then the mock process was stopped.
+- Final check pass partial: `npx.cmd expo install --check` passed, `git diff --check` passed with only Windows LF-to-CRLF warnings, and `git diff --stat` reviewed total pending scope. `Get-NetTCPConnection -LocalPort 8791` found a leftover mock API child process listening as PID 37092, so cleaning it up before final status.
+- Mock cleanup attempt: `Get-Process -Id 37092` no longer found the process and `Stop-Process -Id 37092 -Force` returned with no remaining process to stop; rechecking port 8791.
+- Final backend status review: `Get-NetTCPConnection -LocalPort 8791` returned no listener, `git status -sb` shows expected pending frontend/theme docs plus backend-readiness files with new IMPLEMENTATION_PLAN.md, and `Get-ChildItem server/aliyun-functions` confirms README, api-contract, rds-schema, and implementation plan are present.
+- Real handler implementation start: reread handoff/status/backend directory/package; server/aliyun-functions still has no handler file and root package has no backend runtime deps, so implementing a CommonJS Function Compute handler with injectable storage/SMS adapters and an in-memory default for local smoke before adding pg/SDK bindings.
+- `apply_patch` add `server/aliyun-functions/handler.js`: implemented a CommonJS Function Compute-compatible handler with auth/send-code, verify-code, session, logout, sync/merge routes; included opaque token hashing, SMS cooldown/hour limits, settings normalization, sync merge logic, injectable adapters, and an in-memory default adapter for local smoke tests.
+- `apply_patch` on handler send-code: added non-production `LOCAL_SMS_FIXED_CODE` support so local smoke tests can verify auth without scraping random SMS log output; production still generates random 6-digit codes.
+- `apply_patch` add `scripts/smoke-aliyun-handler.js`: added direct handler smoke coverage for send-code, verify-code, session lookup, sync/merge with opaque sleep log ID and themeMode, logout, and post-logout 401.
+- `apply_patch` on package.json: added `smoke:aliyun-handler` and included it in `npm.cmd run check` after existing mock API syntax validation.
+- `apply_patch` on `scripts/validate-aliyun-backend.js`: validation now requires `server/aliyun-functions/handler.js`, exported handler/createMemoryAdapter route coverage, and `scripts/smoke-aliyun-handler.js`.
+- `apply_patch` on backend README and IMPLEMENTATION_PLAN: documented the new adapter-based `handler.js`, exports, local `npm.cmd run smoke:aliyun-handler`, and clarified remaining production work is PostgreSQL plus Alibaba SMS adapters.
+- Handler validation: `npm.cmd run smoke:aliyun-handler` passed auth/session/sync/logout direct invocation, `npm.cmd run validate:aliyun` passed strengthened checks, and `node --check` passed for both handler and smoke script.
+- `apply_patch` on handler and smoke script: widened route path parsing to support `event.requestContext.http.path` and added smoke coverage for HTTP v2-style requestContext invocation.
+- `apply_patch` add `server/aliyun-functions/postgres-adapter.js`: added a production-oriented PostgreSQL adapter scaffold for SMS code storage, user/session persistence, logout revocation, and transactional `/sync/merge` mapping for favorites/history/sleep logs/settings; it requires `pg` only when instantiated for deployment.
+- `apply_patch` on backend validation and README: validation now requires `postgres-adapter.js` and key table mappings; README documents the PostgreSQL adapter and notes `pg` is loaded only when instantiated.
+- `apply_patch` add `server/aliyun-functions/aliyun-sms-adapter.js`: added an Alibaba Cloud SMS adapter scaffold that lazily requires official SDK packages, validates SMS env vars, sends verification codes, and returns requestId for the existing handler SMS interface.
+- `apply_patch` on backend validation, README, and implementation plan: validation now requires the Alibaba SMS adapter scaffold; docs show production wiring with createApp + createPostgresAdapter + createAliyunSmsAdapter and note deployment bundle dependencies.
+- Backend adapter checks: `node --check` passed for handler, postgres adapter, and aliyun SMS adapter; `npm.cmd run smoke:aliyun-handler` passed; `npm.cmd run validate:aliyun` passed with strengthened backend validation.
+- `npm.cmd run check`: passed after adding the real handler, smoke script, PostgreSQL adapter scaffold, and Alibaba SMS adapter scaffold; check now includes `smoke:aliyun-handler`.
+- Backend diff review: targeted backend diff, `rg` for handler/adapter/export names, and `git diff --stat` showed backend code/docs are wired, but revealed a schema hardening need: sleep log IDs should be user-scoped opaque IDs using a `(user_id, id)` key rather than a global `id` primary key.
+- `apply_patch` on RDS schema and postgres adapter: changed sleep_logs to `primary key (user_id, id)` with `id text not null`, updated upsert conflict to `(user_id, id)`, and removed an unused crypto import from the adapter.
+- `apply_patch` on backend validation and IMPLEMENTATION_PLAN: validation now requires `id text not null` plus `primary key (user_id, id)`, and plan documents sleep log upsert by user-scoped opaque client ID.
+- `apply_patch` add production backend deployment files: `server/aliyun-functions/index.js` wires createApp with PostgreSQL and Alibaba SMS adapters, and `server/aliyun-functions/package.json` declares Function Compute entrypoint plus deployment dependencies (`pg`, official Alibaba SMS/OpenAPI SDKs).
+- `apply_patch` on backend validation and README: validation now requires `index.js` production wiring and backend package dependencies; README deployment checklist now says to install dependencies in server/aliyun-functions and deploy `index.handler`.
+- Backend deployment checks: `npm.cmd run check` inside `server/aliyun-functions` passed syntax checks for index/handler/postgres/SMS adapters; root `npm.cmd run validate:aliyun` passed; root `npm.cmd run smoke:aliyun-handler` passed.
+- Final validation pass: root `npm.cmd run check` passed with handler smoke included, `git diff --check` passed with only Windows LF-to-CRLF warnings, and `npx.cmd expo install --check` passed with dependencies up to date.
+- Final status audit commands: `git status -sb`, `Get-ChildItem server/aliyun-functions`, `Get-ChildItem tmp-codex-*.png`, `Get-NetTCPConnection -LocalPort 8791`, and `git diff --stat` showed expected new backend files, no temp screenshots, no mock port listener, and pending changes only; audit found one remaining merge hardening issue in postgres favorite upsert timestamp handling.
+- `apply_patch` on `postgres-adapter.js`: added `where user_favorites.updated_at <= excluded.updated_at` to active favorite upserts so old local snapshots cannot resurrect newer cloud tombstones.
+- Post-merge-hardening checks: backend package `npm.cmd run check` passed, root `npm.cmd run smoke:aliyun-handler` passed, and root `npm.cmd run validate:aliyun` passed after favorite timestamp guard fix.
+- Final validation after favorite merge hardening: root `npm.cmd run check` passed, `npx.cmd expo install --check` passed, and `git diff --check` passed with only Windows LF-to-CRLF warnings.
+- Completion audit: `git status -sb` shows expected modified and new backend files; `rg` confirmed five handler routes, production index wiring, Postgres/SMS adapters, user-scoped sleep log key, and smoke script references; `Get-ChildItem tmp-codex-*.png` found no temp screenshots; `Get-NetTCPConnection -LocalPort 8791` found no listener; `git diff --stat` reviewed pending scope, with untracked backend files listed in status.
+- Checkpoint pre-commit review: `Get-Content docs/HANDOFF_CONTEXT.md -Tail 50`, `git status -sb`, and `git diff --stat` confirm the pending checkpoint combines frontend timer/theme/icon polish, backend Function Compute handler/adapters/schema/docs, validation script updates, and handoff logs; no commit/stage was performed.
+- Checkpoint commit command: preparing to stage all current beta UI/backend readiness changes and commit with message `Prepare Codex Sleep beta UI and Aliyun sync backend`.
+- Checkpoint commit request audit: `git status -sb` showed a clean worktree and branch ahead 1; `git diff --check` passed with no output; `git diff --stat` had no output, suggesting the checkpoint was already committed before this request.
+- Checkpoint commit continuation: confirmed existing checkpoint commit `6274dc7 Prepare Codex Sleep beta UI and Aliyun sync backend`; amending the post-commit handoff audit note into the same checkpoint so the worktree returns clean.
+- Push continuation: `git status -sb` showed codex/playback-modes ahead 1 and `git remote -v` confirmed origin as https://github.com/2587122824/codex-test.git; preparing to push checkpoint commit.
+- `git push origin codex/playback-modes`: pushed checkpoint commit 922ceb9 to origin/codex/playback-modes successfully.

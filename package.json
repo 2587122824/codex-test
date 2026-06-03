@@ -32,8 +32,9 @@
     "validate:aliyun": "node scripts/validate-aliyun-backend.js",
     "validate:sync": "node scripts/validate-sync-merge-rules.js",
     "validate:mock-api": "node --check scripts/mock-aliyun-api.js",
+    "smoke:aliyun-handler": "node scripts/smoke-aliyun-handler.js",
     "mock:api": "node scripts/mock-aliyun-api.js",
-    "check": "npm run typecheck && npm run validate:audio && npm run validate:content && npm run validate:aliyun && npm run validate:sync && npm run validate:mock-api"
+    "check": "npm run typecheck && npm run validate:audio && npm run validate:content && npm run validate:aliyun && npm run validate:sync && npm run validate:mock-api && npm run smoke:aliyun-handler"
   },
   "private": true
 }

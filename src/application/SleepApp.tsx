@@ -38,7 +38,9 @@ import {
   Text,
   TextInput,
   ToastAndroid,
+  useColorScheme,
   View,
+  type ColorSchemeName,
 } from 'react-native';
 
 import { useAudioPlayer } from '../features/player/useAudioPlayer';
@@ -53,13 +55,45 @@ import type { UserSettings } from '../shared/types/sleep';
 import { ModuleCard } from '../shared/ui/ModuleCard';
 import { PillButton } from '../shared/ui/PillButton';
 import { TrackRow } from '../shared/ui/TrackRow';
-import { colors, spacing } from '../shared/ui/theme';
+import {
+  darkColors,
+  lightColors,
+  spacing,
+  type ThemeColors,
+  type ThemeMode,
+  type UserThemePreference,
+} from '../shared/ui/theme';
 
 type Screen = 'home' | 'module' | 'ai' | 'player' | 'favorites' | 'credits' | 'privacy' | 'settings' | 'account';
 
 const defaultSettings: UserSettings = {
-  defaultSleepTimerMinutes: 30,
+  defaultSleepTimerMinutes: 0,
+  themeMode: 'system',
 };
+
+const themePreferenceOptions: { value: UserThemePreference; label: string }[] = [
+  { value: 'system', label: '跟随系统' },
+  { value: 'dark', label: '深色' },
+  { value: 'light', label: '浅色' },
+];
+
+const isThemePreference = (value: unknown): value is UserThemePreference =>
+  value === 'system' || value === 'dark' || value === 'light';
+
+const normalizeSettings = (settings: Partial<UserSettings> | null | undefined): UserSettings => ({
+  defaultSleepTimerMinutes: 0,
+  themeMode: isThemePreference(settings?.themeMode) ? settings.themeMode : defaultSettings.themeMode,
+});
+
+const resolveThemeMode = (preference: UserThemePreference, systemMode: ColorSchemeName): ThemeMode => {
+  if (preference === 'dark' || preference === 'light') {
+    return preference;
+  }
+
+  return systemMode === 'light' ? 'light' : 'dark';
+};
+
+let colors: ThemeColors = darkColors;
 
 const betaFeedbackEmail = 'codex-sleep-feedback@example.com';
 const tabBarBottomOffset = spacing.md;
@@ -80,6 +114,7 @@ type AiSleepIntent = {
 };
 
 const aiSleepDurations = [5, 10, 20, 30];
+const defaultAiSleepDuration = 20;
 
 const companionSuggestions = [
   { label: '我有点焦虑', text: '我有点焦虑，想先跟着呼吸放松。', intentId: 'calm-anxiety' },
@@ -173,6 +208,7 @@ const formatDateTime = (isoDate: string) =>
 
 export default function SleepApp() {
   const player = useAudioPlayer();
+  const systemColorScheme = useColorScheme();
   const scrollViewRef = useRef<ScrollView>(null);
   const currentScreenRef = useRef<Screen>('home');
   const screenHistoryRef = useRef<Screen[]>([]);
@@ -183,11 +219,21 @@ export default function SleepApp() {
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [customTimer, setCustomTimer] = useState('25');
   const [selectedAiIntentId, setSelectedAiIntentId] = useState(aiSleepIntents[0].id);
-  const [selectedAiDuration, setSelectedAiDuration] = useState(20);
+  const [selectedAiDuration, setSelectedAiDuration] = useState(defaultAiSleepDuration);
   const [aiCompanionInput, setAiCompanionInput] = useState('');
+  const settingsRef = useRef<UserSettings>(defaultSettings);
+  const resolvedThemeMode = resolveThemeMode(settings.themeMode, systemColorScheme);
+  const themeColors = resolvedThemeMode === 'light' ? lightColors : darkColors;
+  const themedStyles = useMemo(() => createStyles(themeColors), [themeColors]);
+  colors = themeColors;
+  styles = themedStyles;
 
   useEffect(() => {
-    storage.getJson(storageKeys.settings, defaultSettings).then(setSettings);
+    storage.getJson(storageKeys.settings, defaultSettings).then((storedSettings) => {
+      const nextSettings = normalizeSettings(storedSettings);
+      settingsRef.current = nextSettings;
+      setSettings(nextSettings);
+    });
   }, []);
 
   useEffect(() => {
@@ -242,11 +288,6 @@ export default function SleepApp() {
     return () => subscription.remove();
   }, [navigateBack]);
 
-  const saveSettings = (next: UserSettings) => {
-    setSettings(next);
-    storage.setJson(storageKeys.settings, next);
-  };
-
   const moduleItems = useMemo(() => getItemsByType(activeModule), [activeModule]);
   const sortedModuleItems = useMemo(
     () => getSortedModuleItems(moduleItems, activeModule),
@@ -275,15 +316,17 @@ export default function SleepApp() {
       favoriteIds: player.favoriteIds,
       historyIds: player.historyIds,
       sleepLogs: [],
-      settings,
+      settings: settingsRef.current,
     }),
-    [player.favoriteIds, player.historyIds, settings],
+    [player.favoriteIds, player.historyIds],
   );
   const applyRemoteData = useCallback(
     (data: RemoteSyncData) => {
       player.replaceLibraryData(data.favoriteIds, data.historyIds);
-      setSettings(data.settings);
-      storage.setJson(storageKeys.settings, data.settings);
+      const nextSettings = normalizeSettings(data.settings);
+      settingsRef.current = nextSettings;
+      setSettings(nextSettings);
+      storage.setJson(storageKeys.settings, nextSettings);
     },
     [player.replaceLibraryData],
   );
@@ -300,8 +343,11 @@ export default function SleepApp() {
     }
   }, [account.syncNow, account.user]);
 
-  const saveSettingsAndSync = (next: UserSettings) => {
-    saveSettings(next);
+  const saveSettingsAndSync = (nextSettings: UserSettings) => {
+    const normalizedSettings = normalizeSettings(nextSettings);
+    settingsRef.current = normalizedSettings;
+    setSettings(normalizedSettings);
+    storage.setJson(storageKeys.settings, normalizedSettings);
     syncIfSignedIn();
   };
 
@@ -312,9 +358,6 @@ export default function SleepApp() {
 
   const openTrack = async (track: AudioItem, sourceQueue?: AudioItem[]) => {
     await player.playTrack(track, sourceQueue);
-    if (!player.timerEndsAt && settings.defaultSleepTimerMinutes > 0) {
-      player.setSleepTimer(settings.defaultSleepTimerMinutes);
-    }
     navigateTo('player');
     syncIfSignedIn();
   };
@@ -354,7 +397,7 @@ export default function SleepApp() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style={resolvedThemeMode === 'light' ? 'dark' : 'light'} />
       <View style={styles.app}>
         <View style={styles.header}>
           <View>
@@ -395,6 +438,7 @@ export default function SleepApp() {
                     <ModuleCard
                       key={module.type}
                       module={module}
+                      colors={colors}
                       onPress={() => {
                         setActiveModule(module.type);
                         setSelectedModuleCategory(allCategoryLabel);
@@ -444,6 +488,7 @@ export default function SleepApp() {
                 <TrackRow
                   key={item.id}
                   item={item}
+                  colors={colors}
                   isFavorite={player.isFavorite(item.id)}
                   onPress={() => openTrack(item, visibleModuleItems)}
                   onFavorite={() => toggleFavoriteAndSync(item.id)}
@@ -517,6 +562,7 @@ export default function SleepApp() {
                   <TrackRow
                     key={item.id}
                     item={item}
+                    colors={colors}
                     isFavorite={player.isFavorite(item.id)}
                     onPress={() => openTrack(item, favoriteTracks)}
                     onFavorite={() => toggleFavoriteAndSync(item.id)}
@@ -551,16 +597,23 @@ export default function SleepApp() {
               </View>
               <View style={styles.settingRow}>
                 <View style={styles.settingCopy}>
-                  <Text style={styles.settingTitle}>默认定时关闭</Text>
-                  <Text style={styles.settingMeta}>{settings.defaultSleepTimerMinutes} 分钟</Text>
+                  <Text style={styles.settingTitle}>外观主题</Text>
+                  <Text style={styles.settingMeta}>
+                    {settings.themeMode === 'system'
+                      ? `跟随系统 · 当前为${resolvedThemeMode === 'light' ? '浅色' : '深色'}`
+                      : settings.themeMode === 'light'
+                        ? '使用低刺激浅色界面'
+                        : '使用睡前深色界面'}
+                  </Text>
                 </View>
                 <View style={styles.pillWrap}>
-                  {[15, 30, 45, 60].map((minutes) => (
+                  {themePreferenceOptions.map((option) => (
                     <PillButton
-                      key={minutes}
-                      label={`${minutes}`}
-                      active={settings.defaultSleepTimerMinutes === minutes}
-                      onPress={() => saveSettingsAndSync({ defaultSleepTimerMinutes: minutes })}
+                      key={option.value}
+                      label={option.label}
+                      colors={colors}
+                      active={settings.themeMode === option.value}
+                      onPress={() => saveSettingsAndSync({ ...settingsRef.current, themeMode: option.value })}
                     />
                   ))}
                 </View>
@@ -636,7 +689,7 @@ export default function SleepApp() {
               <View style={styles.legalRow}>
                 <Text style={styles.settingTitle}>本地数据</Text>
                 <Text style={styles.settingMeta}>
-                  游客模式不上传数据。收藏、最近播放、设置和默认定时器会先保存在本机，离线时仍可使用。
+                  游客模式不上传数据。收藏、最近播放、设置和本次播放定时状态会先保存在本机，离线时仍可使用。
                 </Text>
               </View>
               <View style={styles.legalRow}>
@@ -960,7 +1013,7 @@ const AiSleepPanel = ({
         >
           <View style={styles.settingCopy}>
             <Text style={styles.settingTitle}>助眠时长</Text>
-            <Text style={styles.settingMeta}>默认会同步设置播放器定时关闭</Text>
+            <Text style={styles.settingMeta}>本次 AI 助眠会使用这个时长</Text>
           </View>
           <View style={styles.aiQueueToggle}>
             <Text style={styles.aiQueueToggleText}>
@@ -980,6 +1033,7 @@ const AiSleepPanel = ({
               <PillButton
                 key={minutes}
                 label={`${minutes} 分钟`}
+                colors={colors}
                 active={selectedDuration === minutes}
                 onPress={() => {
                   onSelectDuration(minutes);
@@ -1231,8 +1285,10 @@ const PlayerPanel = ({
           onPress={() => setTimerExpanded((value) => !value)}
         >
           <View style={styles.settingCopy}>
-            <Text style={styles.sectionTitle}>定时关闭</Text>
-            <Text style={styles.sectionMeta}>{activeTimerMinutes ? `约 ${activeTimerMinutes} 分钟后关闭` : '未开启'}</Text>
+            <Text style={styles.sectionTitle}>本次定时关闭</Text>
+            <Text style={styles.sectionMeta}>
+              {activeTimerMinutes ? `当前播放约 ${activeTimerMinutes} 分钟后关闭` : '当前播放未开启'}
+            </Text>
           </View>
           <View style={styles.playerFoldToggle}>
             <Text style={styles.modeSummary}>{timerExpanded ? '收起' : timerSummary}</Text>
@@ -1250,11 +1306,12 @@ const PlayerPanel = ({
                 <PillButton
                   key={minutes}
                   label={`${minutes} 分`}
+                  colors={colors}
                   active={activeTimerMinutes === minutes}
                   onPress={() => onTimer(minutes)}
                 />
               ))}
-              <PillButton label="关闭" active={!activeTimerMinutes} onPress={() => onTimer(null)} />
+              <PillButton label="关闭" colors={colors} active={!activeTimerMinutes} onPress={() => onTimer(null)} />
             </View>
             {activeTimerMinutes ? (
               <Text style={styles.sectionMeta}>剩余 {Math.ceil(remainingSeconds / 60)} 分钟，最后 30 秒会逐步淡出。</Text>
@@ -1603,7 +1660,7 @@ const TabButton = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -1688,7 +1745,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroTitle: {
-    color: colors.white,
+    color: colors.ink,
     fontSize: 26,
     fontWeight: '900',
   },
@@ -2574,3 +2631,5 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
 });
+
+let styles = createStyles(colors);

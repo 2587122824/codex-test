@@ -2,13 +2,14 @@ import { Heart, Play } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AudioItem } from '../types/audio';
-import { colors, spacing } from './theme';
+import { colors as defaultColors, spacing, type ThemeColors } from './theme';
 
 type Props = {
   item: AudioItem;
   isFavorite: boolean;
   onPress: () => void;
   onFavorite: () => void;
+  colors?: ThemeColors;
 };
 
 const formatDuration = (duration: number) => {
@@ -17,8 +18,8 @@ const formatDuration = (duration: number) => {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
-export const TrackRow = ({ item, isFavorite, onPress, onFavorite }: Props) => (
-  <View style={styles.row}>
+export const TrackRow = ({ item, isFavorite, onPress, onFavorite, colors = defaultColors }: Props) => (
+  <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.line }]}>
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`播放 ${item.title}`}
@@ -29,11 +30,11 @@ export const TrackRow = ({ item, isFavorite, onPress, onFavorite }: Props) => (
         <Play color={colors.white} fill={colors.white} size={20} />
       </View>
       <View style={styles.body}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.meta}>
+        <Text style={[styles.title, { color: colors.ink }]}>{item.title}</Text>
+        <Text style={[styles.meta, { color: colors.muted }]}>
           {item.category} · {formatDuration(item.duration)}
         </Text>
-        <Text style={styles.source} numberOfLines={1}>
+        <Text style={[styles.source, { color: colors.subtle }]} numberOfLines={1}>
           {item.source.license}
         </Text>
       </View>
@@ -57,9 +58,7 @@ export const TrackRow = ({ item, isFavorite, onPress, onFavorite }: Props) => (
 const styles = StyleSheet.create({
   row: {
     minHeight: 86,
-    backgroundColor: colors.surface,
     borderRadius: 8,
-    borderColor: colors.line,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -86,16 +85,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    color: colors.ink,
     fontSize: 16,
     fontWeight: '800',
   },
   meta: {
-    color: colors.muted,
     fontSize: 12,
   },
   source: {
-    color: colors.subtle,
     fontSize: 11,
     fontWeight: '700',
   },

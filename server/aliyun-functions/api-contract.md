@@ -28,6 +28,12 @@ Response:
 { "requestId": "aliyun-sms-request-id" }
 ```
 
+Recommended beta limits:
+
+- Normalize phone numbers before storing or sending SMS.
+- Allow at most 1 code per phone per minute and 5 codes per phone per hour.
+- Store only a hash of the code and expire codes after 5 minutes.
+
 ### POST /auth/verify-code
 
 Verifies the SMS code, creates the profile if needed, and returns an app session.
@@ -74,7 +80,7 @@ Revokes the current server session. Return `204 No Content` or `{ "ok": true }`.
 ### POST /sync/merge
 
 Merges local guest data into the signed-in account and returns the canonical
-cloud snapshot.
+cloud snapshot. Treat all track IDs and sleep log IDs as opaque client strings.
 
 Request:
 
@@ -84,7 +90,7 @@ Request:
     "favoriteIds": ["rain-window"],
     "historyIds": ["rain-window"],
     "sleepLogs": [],
-    "settings": { "defaultSleepTimerMinutes": 30 }
+    "settings": { "defaultSleepTimerMinutes": 0, "themeMode": "system" }
   },
   "deletedFavorites": [{ "id": "ocean-waves", "deletedAt": "2026-06-02T08:00:00.000Z" }],
   "deletedSleepLogs": [],
@@ -100,7 +106,7 @@ Response:
     "favoriteIds": ["rain-window"],
     "historyIds": ["rain-window"],
     "sleepLogs": [],
-    "settings": { "defaultSleepTimerMinutes": 30 },
+    "settings": { "defaultSleepTimerMinutes": 0, "themeMode": "system" },
     "syncedAt": "2026-06-02T08:05:01.000Z"
   }
 }
@@ -113,3 +119,13 @@ Response:
 - Sleep logs: client-generated IDs, newest `updated_at` wins, tombstones win
   over older active rows.
 - Settings: after first sign-in, use newest `updated_at`.
+
+## Error Shape
+
+Return JSON for non-204 errors:
+
+```json
+{ "message": "Human-readable error message.", "code": "OPTIONAL_MACHINE_CODE" }
+```
+
+The Expo client currently reads `message` and shows it in the account/sync UI.

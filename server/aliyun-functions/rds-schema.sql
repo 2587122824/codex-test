@@ -41,7 +41,8 @@ create index if not exists auth_sessions_user_idx
 
 create table if not exists user_settings (
   user_id uuid primary key references profiles(id) on delete cascade,
-  default_sleep_timer_minutes integer not null default 30,
+  default_sleep_timer_minutes integer not null default 0,
+  theme_mode text not null default 'system' check (theme_mode in ('system', 'dark', 'light')),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
@@ -71,7 +72,7 @@ create index if not exists play_history_user_last_played_idx
   on play_history (user_id, last_played_at desc);
 
 create table if not exists sleep_logs (
-  id uuid primary key,
+  id text not null,
   user_id uuid not null references profiles(id) on delete cascade,
   sleep_at timestamptz,
   wake_at timestamptz,
@@ -79,7 +80,8 @@ create table if not exists sleep_logs (
   rating integer check (rating between 1 and 5),
   note text,
   updated_at timestamptz not null default now(),
-  deleted_at timestamptz
+  deleted_at timestamptz,
+  primary key (user_id, id)
 );
 
 create index if not exists sleep_logs_user_wake_idx

@@ -5,16 +5,17 @@ Use this checklist before sharing Codex Sleep with a small test group.
 ## Tester Tasks
 
 1. Open each module from the home screen: music, stories, and white noise.
-2. Play one music track for at least 10 minutes with the default timer enabled.
+2. Play one music track for at least 10 minutes with no timer enabled by default.
 3. Switch playback mode between single repeat, sequential, repeat all, and shuffle.
 4. Favorite one track, restart the app, and confirm it remains in favorites.
 5. Play two different tracks and confirm they appear in recently played.
 6. Open AI Sleep, select each sleep goal, switch between 5/10/20/30 minute durations, and start one recommendation.
 7. Confirm AI Sleep opens the player, starts the recommended queue, and applies the selected timer.
-8. Set a custom sleep timer and confirm the timer state appears on the player screen.
-9. Open Settings, Privacy, Audio Credits, and the beta feedback link.
-10. Play at least 3 music tracks, 3 story/guidance tracks, and 3 white-noise tracks from the expanded 30-item catalog.
-11. Open Account & Sync from Settings:
+8. Open the player timer controls, set a preset or custom sleep timer, and confirm the timer state appears only for the current playback session.
+9. Open Settings, switch appearance between system, dark, and light, and confirm key screens remain readable.
+10. Open Privacy, Audio Credits, and the beta feedback link.
+11. Play at least 3 music tracks, 3 story/guidance tracks, and 3 white-noise tracks from the expanded 30-item catalog.
+12. Open Account & Sync from Settings:
    - With no `EXPO_PUBLIC_API_BASE_URL`, confirm guest mode explains that data is saved locally.
    - With the local Mock API configured, send a phone code, enter `123456`, sign in, and confirm favorites, recent plays, and settings merge after login.
    - Sign out and confirm local playback and favorites remain usable.

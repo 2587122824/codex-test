@@ -17,7 +17,8 @@ the server.
 2. Run `rds-schema.sql`.
 3. Enable Alibaba Cloud SMS and create a signature/template for verification
    codes.
-4. Create Function Compute HTTP routes from `api-contract.md`.
+4. Install dependencies in this folder and deploy `index.handler` as the
+   Function Compute HTTP entrypoint.
 5. Store these values as Function Compute environment variables:
    - `DB_HOST`
    - `DB_PORT`
@@ -32,13 +33,62 @@ the server.
 6. Set the Expo app variable:
    - `EXPO_PUBLIC_API_BASE_URL=https://your-function-domain.example.com`
 
-## Pending Implementation Choices
+## Implementation Direction
 
-The real Function Compute handler will need database, token, and input
-validation libraries. Before adding those technologies to this repo, confirm the
-vendors and packages:
+Use `IMPLEMENTATION_PLAN.md` as the build order for the first real beta
+handler. Current decisions:
 
 - PostgreSQL driver: `pg`, maintained by the open-source node-postgres project.
-- Token library: `jose` or `jsonwebtoken`, open-source JWT tooling.
+- Tokens: opaque random tokens stored as server-side hashes, not JWTs for the
+  first beta.
 - Alibaba SMS SDK: Alibaba Cloud official SDK.
-- Validation: `zod` or hand-written validation.
+- Validation: hand-written validators until the route surface grows.
+
+The repo still uses `scripts/mock-aliyun-api.js` for local account testing until
+the Function Compute handler is added.
+
+## Current Handler
+
+`handler.js` now contains the first real HTTP route implementation with an
+in-memory adapter for local smoke tests. The handler exports:
+
+- `handler(event)`: Function Compute-compatible entrypoint.
+- `createApp({ adapter, sms })`: test/deployment factory for injecting RDS and
+  SMS adapters.
+- `createMemoryAdapter()`: local-only storage used by
+  `npm.cmd run smoke:aliyun-handler`.
+
+Before production deployment, replace the memory adapter with a PostgreSQL
+adapter that implements the same methods and wire `sms.sendCode` to Alibaba
+Cloud SMS.
+
+`postgres-adapter.js` contains the first PostgreSQL implementation of that
+adapter contract. It loads `pg` only when instantiated, so local app checks do
+not need backend dependencies installed in the Expo project.
+
+`aliyun-sms-adapter.js` contains the Alibaba Cloud SMS adapter scaffold. It
+loads the official Alibaba SDK packages only when instantiated by the deployment
+bundle.
+
+Production wiring should create the app like this:
+
+```js
+const { createApp } = require('./handler');
+const { createPostgresAdapter } = require('./postgres-adapter');
+const { createAliyunSmsAdapter } = require('./aliyun-sms-adapter');
+
+const app = createApp({
+  adapter: createPostgresAdapter(),
+  sms: createAliyunSmsAdapter(),
+});
+
+exports.handler = (event) => app.handle(event);
+```
+
+`index.js` already contains this production wiring for the deployment bundle.
+
+Local handler smoke:
+
+```bash
+npm.cmd run smoke:aliyun-handler
+```

@@ -9,7 +9,7 @@ const usersByPhone = new Map();
 const sessionsByAccessToken = new Map();
 const syncStoreByUserId = new Map();
 
-const defaultSettings = { defaultSleepTimerMinutes: 30 };
+const defaultSettings = { defaultSleepTimerMinutes: 0, themeMode: 'system' };
 
 const jsonHeaders = {
   'Access-Control-Allow-Origin': '*',
