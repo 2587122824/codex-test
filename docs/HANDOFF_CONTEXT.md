@@ -1295,3 +1295,11 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - 2026-06-04 01:54 CST: Removed temporary feedback email and fresh login smoke screenshots after MuMu verification.
 
 - 2026-06-04 01:55 CST: Pre-commit review after deployed-cloud/email APK validation: git status/diff show only docs/HANDOFF_CONTEXT.md and scripts/smoke-aliyun-cloud.js modified; git diff --check has no whitespace errors beyond normal CRLF warnings.
+
+- 2026-06-04 01:56 CST: Committed cloud smoke normalization and deployed-cloud verification log as 305271b (Accept normalized phone in cloud smoke).
+
+- 2026-06-04 01:57 CST: Pushed 305271b to origin/codex/playback-modes after confirming deployed Function Compute and rebuilding email-configured APK.
+
+- 2026-06-04 01:58 CST: Final status after deployed-cloud/email APK push: origin/codex/playback-modes is at 305271b; only this post-push handoff log remains modified locally; .env is ignored; dist\\gudemian-cloud-internal-beta.apk is the email-configured cloud APK, 67,260,335 bytes, timestamp 2026-06-04 07:13:39.
+
+- 2026-06-04 01:59 CST: Continuation start: read handoff, git status, INTERNAL_BETA_CHECKLIST, and CLOUD_BETA_RELEASE_CHECKLIST; next local no-confirmation target is cloud app end-to-end restore smoke after the deployed backend passed cloud HTTP smoke.
