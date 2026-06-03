@@ -403,10 +403,20 @@ export default function SleepApp() {
     setSelectedAiIntentId((currentIntentId) => getCompanionIntentId(text, currentIntentId));
   };
 
-  const openFeedback = () => {
-    Linking.openURL(
-      `mailto:${betaFeedbackEmail}?subject=${encodeURIComponent('古德眠内测反馈')}`,
-    );
+  const openFeedback = async () => {
+    const feedbackUrl = `mailto:${betaFeedbackEmail}?subject=${encodeURIComponent('古德眠内测反馈')}`;
+
+    try {
+      const canOpenFeedback = await Linking.canOpenURL(feedbackUrl);
+      if (canOpenFeedback) {
+        await Linking.openURL(feedbackUrl);
+        return;
+      }
+    } catch {
+      // Fall through to the visible email fallback below.
+    }
+
+    Alert.alert('无法打开邮件应用', `请把复现步骤发送到 ${betaFeedbackEmail}`);
   };
 
   const setCustomSleepTimer = () => {
@@ -687,7 +697,7 @@ export default function SleepApp() {
             <View style={styles.stack}>
               <Text style={styles.sectionTitle}>音频来源与版权</Text>
               <Text style={styles.sectionMeta}>
-                当前 MVP 使用项目本地生成样例音频。替换正式素材时，需要保留作者、授权和来源链接。
+                当前内测目录包含授权素材和项目原创音频。替换正式素材时，需要保留作者、授权和来源链接。
               </Text>
               {audioCatalog.map((item) => (
                 <View key={item.id} style={styles.legalRow}>

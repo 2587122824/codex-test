@@ -1162,3 +1162,26 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - Theme sync patch pre-commit review: inspected git status, diff stat, and SleepApp diff; source change is limited to pending local settings protection while handoff contains verification notes.
 - Theme sync patch commit/push: committed and pushed 0879dfb (Preserve local settings during sync); MuMu verified signed-in theme switching to 浅色, 深色, and 跟随系统, plus AI Sleep playback/timer smoke.
 - Final status after theme sync push: inspected git status and latest commits; only this post-push handoff log remains modified locally.
+- Theme handoff cleanup: committed and pushed the previous post-push log as 8b0f8b3 (Record theme sync push); continuing Settings legal/feedback smoke next.
+- Settings legal smoke start: checked adb devices, launched current APK on MuMu 127.0.0.1:7555, opened Settings, and captured tmp-gudemian-settings-legal-start.png.
+- Settings legal smoke: tapped 音频版权 and captured tmp-gudemian-audio-credits.png to verify the credits page opens and renders.
+- Settings legal inspection: opened audio credits page in MuMu and inspected SleepApp legal section; page works, but credits intro still says 当前 MVP 使用项目本地生成样例音频 and should be updated for the current internal beta catalog.
+- Credits copy patch: updated the audio credits intro from MVP sample wording to current internal-beta catalog wording covering licensed and project-owned audio.
+- Settings legal smoke: returned to Settings, tapped 隐私说明, and captured tmp-gudemian-privacy.png to verify the privacy page opens and renders.
+- Settings feedback smoke: returned to Settings, tapped 发送反馈, waited, captured tmp-gudemian-feedback-aftertap.png, and inspected focused window after the mailto action.
+- Feedback handler inspection: printed openFeedback implementation after MuMu mailto tap stayed in app without visible feedback on missing mail clients.
+- Feedback handler patch: openFeedback now checks Linking.canOpenURL, opens mailto when available, and otherwise shows an Alert with gudemian-feedback@example.com so beta testers are not left without visible feedback.
+- Legal/feedback patch validation: ran npm.cmd run check after credits copy and mailto fallback changes.
+- Legal/feedback patch APK build: rebuilt release APK after credits copy and feedback mailto fallback changes.
+- Legal/feedback patch APK artifact: copied rebuilt APK with credits copy and feedback fallback to dist\\gudemian-cloud-internal-beta.apk.
+- Legal/feedback patch MuMu smoke: reinstalled rebuilt APK, opened Settings, tapped 发送反馈, waited, and captured tmp-gudemian-feedback-fallback.png to verify visible fallback behavior.
+
+- 2026-06-04 00:56 CST: Verified feedback fallback screenshot tmp-gudemian-feedback-fallback.png: Settings shows visible Alert '无法打开邮件应用' with beta feedback email when no mail app is available.
+
+- 2026-06-04 00:57 CST: Removed temporary Settings/legal/feedback smoke screenshots after verifying fallback behavior.
+
+- 2026-06-04 00:58 CST: Final gates: npm run check passed; npx expo install --check passed; first apksigner verify failed because JAVA_HOME was not set in that shell, so rerunning with bundled JDK env.
+
+- 2026-06-04 00:59 CST: APK static verification passed with JAVA_HOME set: apksigner verified dist/gudemian-cloud-internal-beta.apk; aapt badging shows com.gudemian.app, label 古德眠, minSdk 24, targetSdk 36.
+
+- 2026-06-04 01:00 CST: Pre-commit review for legal/feedback patch: git status shows only docs/HANDOFF_CONTEXT.md and src/application/SleepApp.tsx modified; git diff --check has no whitespace errors beyond expected CRLF warnings.
