@@ -98,7 +98,7 @@ const resolveThemeMode = (preference: UserThemePreference, systemMode: ColorSche
 
 let colors: ThemeColors = darkColors;
 
-const betaFeedbackEmail = 'gudemian-feedback@example.com';
+const betaFeedbackEmail = appConfig.betaFeedbackEmail.trim();
 const tabBarBottomOffset = spacing.md;
 const tabBarEstimatedHeight = 60;
 const miniPlayerEstimatedHeight = 58;
@@ -404,6 +404,11 @@ export default function SleepApp() {
   };
 
   const openFeedback = async () => {
+    if (!betaFeedbackEmail) {
+      Alert.alert('反馈邮箱未配置', '请联系内测负责人提交复现步骤。');
+      return;
+    }
+
     const feedbackUrl = `mailto:${betaFeedbackEmail}?subject=${encodeURIComponent('古德眠内测反馈')}`;
 
     try {
@@ -668,7 +673,7 @@ export default function SleepApp() {
                   </Pressable>
                 </View>
                 <Text style={styles.settingMeta} numberOfLines={1}>
-                  {betaFeedbackEmail}
+                  {betaFeedbackEmail || '未配置反馈邮箱，请联系内测负责人'}
                 </Text>
               </View>
               <View style={styles.settingRow}>

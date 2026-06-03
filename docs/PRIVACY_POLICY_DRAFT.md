@@ -32,6 +32,6 @@ Audio files are not uploaded by account sync. Users should be offered account de
 
 ## Contact
 
-For internal beta feedback, contact `gudemian-feedback@example.com`.
+For internal beta feedback, use the configured contact channel in the app.
 
-Replace this address with the final developer support email before public launch.
+Set `EXPO_PUBLIC_BETA_FEEDBACK_EMAIL` before distributing an internal beta APK, then replace it with the final developer support email before public launch.

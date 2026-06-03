@@ -1193,3 +1193,57 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - 2026-06-04 01:03 CST: Final status after legal/feedback push: origin/codex/playback-modes is at 1d2dbcb; only this post-push handoff log remains modified locally.
 
 - 2026-06-04 01:04 CST: Continuation start: read handoff tail, git status, and recent commits; current branch is codex/playback-modes at origin 1d2dbcb with only post-push handoff log modified.
+
+- 2026-06-04 01:05 CST: Committed post-push handoff log as ae436a2 (Record legal feedback push).
+
+- 2026-06-04 01:06 CST: Pushed ae436a2 to origin/codex/playback-modes; continuing beta readiness scan for remaining local app issues.
+
+- 2026-06-04 01:07 CST: Beta readiness scan found user-visible placeholder feedback email gudemian-feedback@example.com in SleepApp and privacy draft; next patch will replace it with non-example beta contact config.
+
+- 2026-06-04 01:08 CST: Inspected env config and feedback email usage; EXPO_PUBLIC_BETA_FEEDBACK_EMAIL does not exist yet, so next patch will make beta feedback contact configurable instead of hardcoding an example.com address.
+
+- 2026-06-04 01:09 CST: Inspected validate-android-beta.js, .env.example, and privacy draft before feedback contact patch; beta validation can enforce a non-example configured feedback email.
+
+- 2026-06-04 01:10 CST: Inspected ignored local .env before patch; found EXPO_PUBLIC_APP_NAME and EXPO_PUBLIC_APP_ENV are accidentally joined on one line, and no beta feedback email config exists.
+
+- 2026-06-04 01:11 CST: First combined feedback-email patch failed because the ignored .env corrupted line did not match the visible UTF-8 text; no tracked changes were applied, retrying tracked files separately.
+
+- 2026-06-04 01:12 CST: Patched tracked feedback contact flow: appConfig now reads EXPO_PUBLIC_BETA_FEEDBACK_EMAIL, Settings feedback hides example.com, privacy draft documents configured contact channel, and android-beta validation rejects @example.com feedback copy.
+
+- 2026-06-04 01:13 CST: Attempted Format-Hex -Count for .env inspection, but this PowerShell version lacks -Count; retrying with available byte-read approach.
+
+- 2026-06-04 01:14 CST: Byte inspection showed ignored .env already has separate APP_NAME and APP_ENV lines; only beta feedback email config needs to be added locally.
+
+- 2026-06-04 01:15 CST: Added ignored local EXPO_PUBLIC_BETA_FEEDBACK_EMAIL= slot to .env for future beta APK builds without committing a guessed contact address.
+
+- 2026-06-04 01:16 CST: Feedback contact config validation passed: npm run check passed; rg found old example.com feedback email only in historical handoff notes, with app/privacy now using EXPO_PUBLIC_BETA_FEEDBACK_EMAIL or no-email fallback.
+
+- 2026-06-04 01:17 CST: Rebuild gates passed after feedback contact config patch: npx expo install --check passed and Gradle :app:assembleRelease succeeded with EXPO_PUBLIC_BETA_FEEDBACK_EMAIL included in Expo env export.
+
+- 2026-06-04 01:18 CST: APK artifact copy attempt failed because Copy-Item ran in parallel with apksigner/aapt reading the same dist APK, causing a user-mapped section lock; static checks in that batch read the previous dist APK, so copying/verification will be rerun sequentially.
+
+- 2026-06-04 01:19 CST: Copied rebuilt APK sequentially to dist\\gudemian-cloud-internal-beta.apk; new artifact size is 67,260,299 bytes and timestamp is 2026-06-04 01:03:15.
+
+- 2026-06-04 01:20 CST: Sequential APK static verification passed: apksigner verified rebuilt dist APK and aapt shows com.gudemian.app / 古德眠 / minSdk 24 / targetSdk 36; direct rg over release bundle did not find feedback strings, so Node bundle inspection follows.
+
+- 2026-06-04 01:21 CST: Node inspection of release JS bundle confirmed no gudemian-feedback@example.com, feedback@example.com, or raw EXPO_PUBLIC_BETA_FEEDBACK_EMAIL key remains in the built bundle; bundle size is 3,302,592 bytes.
+
+- 2026-06-04 01:22 CST: MuMu smoke prep: adb devices shows 127.0.0.1:7555/16384/5555 online; git status shows expected feedback config patch files only.
+
+- 2026-06-04 01:23 CST: Installed rebuilt feedback-contact APK on MuMu 127.0.0.1:7555 successfully.
+
+- 2026-06-04 01:24 CST: Launched rebuilt APK on MuMu, tapped Settings tab, and captured tmp-gudemian-feedback-config-settings.png for feedback-contact UI inspection.
+
+- 2026-06-04 01:25 CST: Local view_image could not decode tmp-gudemian-feedback-config-settings.png after exec-out redirection, likely due PNG byte corruption; recapturing via device-side screencap and adb pull.
+
+- 2026-06-04 01:26 CST: Recaptured Settings screenshot through device-side screencap/pull; tmp-gudemian-feedback-config-settings.png is 130,460 bytes.
+
+- 2026-06-04 01:27 CST: Settings screenshot verified feedback section now shows no example.com address; it displays the no-email fallback text '未配置反馈邮箱，请联系内测负责人'.
+
+- 2026-06-04 01:28 CST: Tapped Settings feedback button with empty EXPO_PUBLIC_BETA_FEEDBACK_EMAIL and captured tmp-gudemian-feedback-config-alert.png for no-email Alert verification.
+
+- 2026-06-04 01:29 CST: MuMu no-email feedback Alert verified: tapping 发送反馈 shows '反馈邮箱未配置' and tells tester to contact the internal beta owner, with no example.com address visible.
+
+- 2026-06-04 01:30 CST: Removed temporary feedback-contact Settings/Alert smoke screenshots after verification.
+
+- 2026-06-04 01:31 CST: Pre-commit review for feedback contact config patch: git status/diff show only .env.example, privacy draft, android beta validator, SleepApp, env config, and handoff; git diff --check has no whitespace errors beyond normal CRLF warnings.

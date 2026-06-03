@@ -94,6 +94,17 @@ requireText('android/app/src/main/AndroidManifest.xml', 'android:screenOrientati
 requireText('android/app/src/main/AndroidManifest.xml', 'android.permission.WAKE_LOCK', 'sleep timer/audio playback needs wake lock permission');
 requireText('android/app/src/main/res/values/strings.xml', '<string name="app_name">古德眠</string>', 'launcher label should match product name');
 
+const appSource = read('src/application/SleepApp.tsx');
+const privacyDraft = read('docs/PRIVACY_POLICY_DRAFT.md');
+for (const [file, content] of [
+  ['src/application/SleepApp.tsx', appSource],
+  ['docs/PRIVACY_POLICY_DRAFT.md', privacyDraft],
+]) {
+  if (content.includes('@example.com')) {
+    errors.push(`${file} should not contain example.com contact addresses in beta-facing feedback copy.`);
+  }
+}
+
 for (const requiredPath of [
   'android/gradlew.bat',
   'android/gradle/wrapper/gradle-wrapper.jar',

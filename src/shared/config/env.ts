@@ -12,6 +12,7 @@ export const appConfig = {
   audioSource: process.env.EXPO_PUBLIC_AUDIO_SOURCE || 'local',
   audioCdnBaseUrl: process.env.EXPO_PUBLIC_AUDIO_CDN_BASE_URL || '',
   apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || '',
+  betaFeedbackEmail: process.env.EXPO_PUBLIC_BETA_FEEDBACK_EMAIL || '',
   flags: {
     musicSleep: truthy(process.env.EXPO_PUBLIC_ENABLE_MUSIC_SLEEP),
     storySleep: truthy(process.env.EXPO_PUBLIC_ENABLE_STORY_SLEEP),
