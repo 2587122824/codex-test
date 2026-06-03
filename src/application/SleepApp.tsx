@@ -79,6 +79,26 @@ type AiSleepIntent = {
 
 const aiSleepDurations = [5, 10, 20, 30];
 
+const companionSuggestions = [
+  { label: '我有点焦虑', text: '我有点焦虑，想先跟着呼吸放松。', intentId: 'calm-anxiety' },
+  { label: '半夜醒了', text: '我半夜醒了，不想听人声。', intentId: 'night-wake' },
+  { label: '只想听雨声', text: '只想听雨声和自然白噪音。', intentId: 'nature-noise' },
+  { label: '想有人陪', text: '想听一点睡前故事，有人陪我慢下来。', intentId: 'bedtime-story' },
+];
+
+const getCompanionIntentId = (text: string, fallbackIntentId: string) => {
+  const normalized = text.trim().toLowerCase();
+  if (!normalized) return fallbackIntentId;
+
+  if (/焦虑|紧张|呼吸|放松|anxious|stress/.test(normalized)) return 'calm-anxiety';
+  if (/醒|半夜|睡不回|night|wake/.test(normalized)) return 'night-wake';
+  if (/雨|海|风|白噪|自然|噪音|noise|rain|ocean/.test(normalized)) return 'nature-noise';
+  if (/故事|陪|说话|孤单|story|voice/.test(normalized)) return 'bedtime-story';
+  if (/快|马上|入睡|困|sleep/.test(normalized)) return 'fast-sleep';
+
+  return fallbackIntentId;
+};
+
 const aiSleepIntents: AiSleepIntent[] = [
   {
     id: 'fast-sleep',
@@ -142,6 +162,7 @@ export default function SleepApp() {
   const [customTimer, setCustomTimer] = useState('25');
   const [selectedAiIntentId, setSelectedAiIntentId] = useState(aiSleepIntents[0].id);
   const [selectedAiDuration, setSelectedAiDuration] = useState(20);
+  const [aiCompanionInput, setAiCompanionInput] = useState('');
 
   useEffect(() => {
     storage.getJson(storageKeys.settings, defaultSettings).then(setSettings);
@@ -277,6 +298,11 @@ export default function SleepApp() {
     syncIfSignedIn();
   };
 
+  const updateCompanionRequest = (text: string) => {
+    setAiCompanionInput(text);
+    setSelectedAiIntentId((currentIntentId) => getCompanionIntentId(text, currentIntentId));
+  };
+
   const openFeedback = () => {
     Linking.openURL(
       `mailto:${betaFeedbackEmail}?subject=${encodeURIComponent('Codex Sleep 内测反馈')}`,
@@ -326,9 +352,6 @@ export default function SleepApp() {
             <View style={styles.stack}>
               <View style={styles.hero}>
                 <Text style={styles.heroTitle}>今晚慢一点入睡</Text>
-                <Text style={styles.heroCopy}>
-                  选择音乐、故事或白噪音，也可以让本地智能推荐帮你组合一段睡前流程。
-                </Text>
               </View>
 
               <View style={styles.stack}>
@@ -385,9 +408,11 @@ export default function SleepApp() {
               durations={aiSleepDurations}
               selectedIntentId={selectedAiIntentId}
               selectedDuration={selectedAiDuration}
+              companionInput={aiCompanionInput}
               selectedTracks={selectedAiTracks}
               onSelectIntent={setSelectedAiIntentId}
               onSelectDuration={setSelectedAiDuration}
+              onCompanionInput={updateCompanionRequest}
               onStart={startAiSleep}
             />
           ) : null}
@@ -853,18 +878,22 @@ const AiSleepPanel = ({
   durations,
   selectedIntentId,
   selectedDuration,
+  companionInput,
   selectedTracks,
   onSelectIntent,
   onSelectDuration,
+  onCompanionInput,
   onStart,
 }: {
   intents: AiSleepIntent[];
   durations: number[];
   selectedIntentId: string;
   selectedDuration: number;
+  companionInput: string;
   selectedTracks: AudioItem[];
   onSelectIntent: (intentId: string) => void;
   onSelectDuration: (duration: number) => void;
+  onCompanionInput: (text: string) => void;
   onStart: () => void;
 }) => {
   const selectedIntent =
@@ -872,40 +901,49 @@ const AiSleepPanel = ({
 
   return (
     <View style={styles.stack}>
-      <View style={styles.aiHero}>
-        <View style={styles.aiHeroIcon}>
-          <Sparkles color={colors.white} size={22} />
+      <View style={styles.companionPanel}>
+        <View style={styles.companionHeader}>
+          <View style={styles.aiHeroIcon}>
+            <Sparkles color={colors.white} size={20} />
+          </View>
+          <View style={styles.settingCopy}>
+            <Text style={styles.heroTitle}>AI助眠</Text>
+            <Text style={styles.companionStatus}>{selectedIntent.guidance}</Text>
+          </View>
         </View>
-        <Text style={styles.heroTitle}>AI助眠</Text>
-        <Text style={styles.heroCopy}>
-          先用本地规则按你的入睡目标生成播放队列和定时器。内测阶段暂未接入在线 AI。
-        </Text>
-      </View>
 
-      <View style={styles.stack}>
-        <View>
-          <Text style={styles.sectionTitle}>今晚想怎么睡？</Text>
-          <Text style={styles.sectionMeta}>选择一个目标，App 会给出曲目顺序、播放模式和睡前提示。</Text>
-        </View>
-        <View style={styles.aiIntentGrid}>
-          {intents.map((intent) => {
-            const active = intent.id === selectedIntentId;
-            return (
-              <Pressable
-                key={intent.id}
-                accessibilityRole="button"
-                accessibilityLabel={`选择${intent.title}`}
-                style={[styles.aiIntentCard, active && styles.aiIntentCardActive]}
-                onPress={() => onSelectIntent(intent.id)}
+        <TextInput
+          value={companionInput}
+          onChangeText={onCompanionInput}
+          placeholder="你可以随时说：我有点焦虑、半夜醒了、想听雨声..."
+          placeholderTextColor={colors.muted}
+          style={styles.companionInput}
+          multiline
+          accessibilityLabel="输入或模拟说出助眠需求"
+        />
+
+        <View style={styles.companionChips}>
+          {companionSuggestions.map((suggestion) => (
+            <Pressable
+              key={suggestion.label}
+              accessibilityRole="button"
+              accessibilityLabel={`告诉 AI ${suggestion.label}`}
+              style={[
+                styles.companionChip,
+                selectedIntentId === suggestion.intentId && styles.companionChipActive,
+              ]}
+              onPress={() => onCompanionInput(suggestion.text)}
+            >
+              <Text
+                style={[
+                  styles.companionChipText,
+                  selectedIntentId === suggestion.intentId && styles.companionChipTextActive,
+                ]}
               >
-                <View style={styles.aiIntentHeader}>
-                  <Text style={styles.aiIntentTitle}>{intent.title}</Text>
-                  {active ? <Sparkles color={colors.green} size={16} /> : null}
-                </View>
-                <Text style={styles.aiIntentSummary}>{intent.summary}</Text>
-              </Pressable>
-            );
-          })}
+                {suggestion.label}
+              </Text>
+            </Pressable>
+          ))}
         </View>
       </View>
 
@@ -924,8 +962,10 @@ const AiSleepPanel = ({
       </View>
 
       <View style={styles.aiRecommendation}>
-        <Text style={styles.settingTitle}>本次推荐</Text>
-        <Text style={styles.settingMeta}>{selectedIntent.guidance}</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.settingTitle}>正在陪你听</Text>
+          <Text style={styles.settingMeta}>{selectedIntent.title}</Text>
+        </View>
         <View style={styles.aiTrackList}>
           {selectedTracks.map((track, index) => (
             <View key={track.id} style={styles.aiTrackChip}>
@@ -938,10 +978,10 @@ const AiSleepPanel = ({
           ))}
         </View>
         <Text style={styles.aiDisclaimer}>
-          当前为本地智能推荐，暂未接入在线 AI；正式接入大模型前会单独确认供应商、费用和隐私策略。
+          内测阶段先用输入模拟随时说话，并按本地规则切换音频。真实语音监听会在确认麦克风权限、隐私策略和供应商后单独接入。
         </Text>
         <Pressable style={styles.primaryButton} onPress={onStart}>
-          <Text style={styles.primaryButtonText}>开始助眠</Text>
+          <Text style={styles.primaryButtonText}>按这个陪我睡</Text>
         </Pressable>
       </View>
     </View>
@@ -1502,8 +1542,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.line,
-    padding: spacing.lg,
-    minHeight: 148,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 86,
     justifyContent: 'center',
   },
   aiHero: {
@@ -1515,8 +1556,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   aiHeroIcon: {
-    width: 42,
-    height: 42,
+    width: 38,
+    height: 38,
     borderRadius: 8,
     backgroundColor: colors.coral,
     alignItems: 'center',
@@ -1524,7 +1565,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.white,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
   },
   heroCopy: {
@@ -1587,6 +1628,64 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     lineHeight: 18,
+  },
+  companionPanel: {
+    backgroundColor: colors.night,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  companionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minWidth: 0,
+  },
+  companionStatus: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  companionInput: {
+    minHeight: 74,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    color: colors.ink,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlignVertical: 'top',
+  },
+  companionChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  companionChip: {
+    minHeight: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+  },
+  companionChipActive: {
+    borderColor: colors.green,
+    backgroundColor: colors.surfaceElevated,
+  },
+  companionChipText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  companionChipTextActive: {
+    color: colors.green,
   },
   aiRecommendation: {
     backgroundColor: colors.surface,

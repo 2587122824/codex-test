@@ -595,3 +595,17 @@ The UI is much better than the MVP, but can still be polished:
 - `npx.cmd expo install --check` passed after using the approved Expo cache write path; dependencies are up to date.
 - `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
 - Web narrow-screen smoke verification passed for the expanded catalog: music list shows 10 items and played `æ…¢å“é£é“ƒ` with `0:52`; story list shows 8 items and played `èº«ä½“æ…¢æ…¢å®‰é™` with `0:31`; noise list shows 12 items and played `æ£•å™ªç¡çœ åº•` with `0:55`; AI Sleep displays 5 recommended tracks for the default goal.
+
+## 2026-06-03 Companion AI Sleep Polish
+
+- Simplified the home hero by removing the descriptive paragraph under `½ñÍíÂıÒ»µãÈëË¯`.
+- Reworked the AI Sleep screen toward a companion-style flow: removed the old explanatory hero, added a compact companion status, quick request chips, and an input box that simulates "saying" changing sleep needs during internal beta.
+- Added local keyword routing for companion requests such as anxiety, waking at night, rain/noise, story/company, and fast sleep; changing the request immediately changes the recommended queue.
+- Real microphone listening is intentionally not implemented yet because it needs separate voice-recognition support, microphone permission UX, privacy copy, and supplier/cost decisions.
+
+Validation:
+
+- `npm.cmd run check` passed.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`; refresh the in-app browser to view the updated screen.
