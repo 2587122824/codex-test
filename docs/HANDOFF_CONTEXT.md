@@ -284,6 +284,7 @@ The UI is much better than the MVP, but can still be polished:
 
 ## 2026-06-03 Command Log
 
+- Cloud deploy boundary check after `fbe16bf`: `git status -sb` shows branch ahead 8 with a clean tracked worktree, `dist\aliyun-functions-deploy.zip` remains `4727515` bytes, and all required Aliyun Function URL, RDS, SMS, smoke phone/code, and session secret environment variables are missing; real cloud deploy/smoke cannot continue without user-provided Aliyun resources.
 - Goal continuation status check: `git status -sb`, `git log -7 --oneline`, deploy zip `Get-Item`, and Aliyun env-var probe show branch `codex/playback-modes` ahead 7, deploy zip exists at `dist\aliyun-functions-deploy.zip` with size `4727515` bytes, and required Aliyun Function/RDS/SMS/smoke environment variables are still missing.
 - Deploy zip integrity check: inspected `dist\aliyun-functions-deploy.zip` via .NET ZipFile and confirmed `index.js`, `handler.js`, Postgres/SMS adapters, `rds-schema.sql`, package manifests, `node_modules\pg`, and Alibaba SMS SDK files are present; no real `.env` files are included; `dist/` and `server/aliyun-functions/node_modules/` remain ignored.
 - Local gates during goal continuation: root `npm.cmd run check` passed with auth/refresh/session/sync/logout handler smoke; `npm.cmd run check` in `server/aliyun-functions` passed syntax checks for Function Compute entrypoint and adapters.
