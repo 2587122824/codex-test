@@ -1136,3 +1136,5 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - Sync race fix diff review: inspected SleepApp diff before committing the post-render signed-in sync scheduling fix.
 - Sync race fix commit: committed post-render signed-in sync timing fix as a6bfd8f (Fix signed-in library sync timing); MuMu verified favorite toggles to 取消收藏 and persists in Favorites after restart.
 - Post-sync-commit status: inspected git status and latest commits after a6bfd8f; only handoff logging remains modified.
+- Handoff cleanup commit: committed handoff-only log as abbc3c9 (Record beta login sync handoff); final status/log inspection followed.
+- Remote push: pushed codex/playback-modes to origin after commits c3d0a64, a6bfd8f, and abbc3c9; local handoff now has this post-push log entry.
