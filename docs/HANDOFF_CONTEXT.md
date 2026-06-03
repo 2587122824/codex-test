@@ -10,7 +10,7 @@ Use this document to continue development from another Codex account or machine.
 - Local workspace used for this handoff: `I:\AI_Workspace\codex-test`
 - Active branch: `codex/playback-modes`
 - Open draft PR: <https://github.com/2587122824/codex-test/pull/1>
-- Latest pushed commit at handoff: `5261003 Migrate account sync to Aliyun backend`
+- Latest pushed commit at handoff: `0829a25 Record cloud deployment blocker`
 - Current target: internal beta readiness, not public store release yet.
 
 ## Product Direction
@@ -976,3 +976,8 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - Final local gates for cloud readiness: root `npm.cmd run check` passed, `npx.cmd expo install --check` passed, `git diff --check` passed with only Windows LF-to-CRLF warnings, and backend package `npm.cmd run check` passed. Real `smoke:aliyun-cloud` not run because it requires deployed Function URL, phone, and SMS code.
 - Cloud readiness pre-commit review: `git status -sb` shows modified handoff/checklists/privacy/package/backend validation/README plus new cloud checklist, cloud smoke script, and env example; `git diff --stat` reviewed tracked diff; no tmp screenshots and no port 8791 listener.
 - `git commit -m "Prepare cloud beta release smoke checks"`: created commit 2c76f01 with cloud beta release checklist, cloud smoke script, Function Compute env template, validation updates, privacy/checklist wording, and handoff notes. `git push origin codex/playback-modes`: pushed 2c76f01 to origin successfully.
+- Push request continuation: `git status -sb` showed `codex/playback-modes` ahead 9 before push; latest queued commits included Android rain playback fix, Aliyun refresh support, Function dependency lockfile, deployment package verification handoffs, and cloud deployment blocker notes.
+- `git push origin codex/playback-modes`: pushed `7440dee..0829a25` to `origin/codex/playback-modes` successfully.
+- Post-push confirmation: `git status -sb` shows local `codex/playback-modes` aligned with `origin/codex/playback-modes`; `git rev-parse --short HEAD` returned `0829a25`, and `git log -1 --oneline` returned `0829a25 Record cloud deployment blocker`.
+- `rg -n "Command Log|2026-06-03|push|cloud deployment" docs/HANDOFF_CONTEXT.md` and `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md -Tail 80`: located the handoff sections and confirmed this push completion note should be appended after the prior cloud readiness entries.
+- Handoff push-log pre-commit check: `git diff --check` passed with only the expected Windows LF-to-CRLF warning, `git status -sb` showed only `docs/HANDOFF_CONTEXT.md` modified, and `git diff --stat` showed a scoped handoff-only update.
