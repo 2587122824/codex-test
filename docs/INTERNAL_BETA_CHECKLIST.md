@@ -49,6 +49,7 @@ must pass `npm.cmd run smoke:aliyun-cloud` before inviting external testers.
 
 ## Device Checks
 
+- Run `npm.cmd run validate:android-beta` before cutting an Android preview APK.
 - Test once in Expo Go or an Android preview build.
 - Confirm playback continues while navigating between app screens.
 - Confirm the timer stops audio when it reaches zero.
@@ -56,6 +57,7 @@ must pass `npm.cmd run smoke:aliyun-cloud` before inviting external testers.
 - Confirm bottom navigation does not cover the main player controls.
 - Confirm the bottom navigation shows Home, AI Sleep, Favorites, and Settings; the full player is opened from tracks or the mini player.
 - Confirm guest mode remains usable when the Aliyun API endpoint is empty or unreachable.
+- Internal preview APKs may use the debug keystore only for small-group testing; generate a real release keystore before any public or store-distributed build.
 
 ## Audio Quality Checks
 
@@ -79,4 +81,5 @@ must pass `npm.cmd run smoke:aliyun-cloud` before inviting external testers.
 
 - The expanded audio catalog is authorization-first and currently has no `Internal beta placeholder` items, but project-owned generated/TTS audio still needs a final quality review before public launch.
 - The app is local-first. Account sync can be tested with the local Mock API; real beta cloud sync requires a configured Aliyun API endpoint and passing cloud smoke.
+- Android release signing is still in internal-beta mode and uses the debug keystore in the native project until a production keystore is created.
 - Codex Sleep is a relaxation tool, not a medical device or treatment.

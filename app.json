@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "description": "纯本地助眠 App，提供音乐、睡前故事、白噪音、字幕、定时关闭和睡眠记录。",
+    "description": "本地优先的助眠 App，提供音乐、睡前故事、白噪音、AI 助眠推荐、字幕、定时关闭和可选账号同步。",
     "ios": {
       "supportsTablet": true
     },
