@@ -1426,3 +1426,5 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - 2026-06-04 03:11 CST: Patched China-default login input UX: account phone field now formats pasted +86/86/local inputs down to local 11 digits, keeps the visible +86 prefix as the only country-code indicator, and validation covers the formatter.
 - 2026-06-04 03:12 CST: Validation after local-phone input formatter passed: validate:playback-login, full npm run check, and git diff --check all passed; no device validation was run.
 - 2026-06-04 03:13 CST: Pre-commit status for China phone input UX patch shows only handoff, validation script, SleepApp, and phone helper modified; diff is limited to formatter import/use, maxLength 11, and formatter test cases.
+- 2026-06-04 03:14 CST: Committed and pushed China phone login input cleanup as a87c038 (Clean up China phone login input); phone field now keeps only local 11 digits while normalize still sends +86 to the API.
+- 2026-06-04 03:15 CST: Final status after a87c038 push: branch codex/playback-modes matches origin, with only this post-push handoff log modified locally.
