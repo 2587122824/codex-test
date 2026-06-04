@@ -45,7 +45,7 @@ import {
 
 import { useAudioPlayer } from '../features/player/useAudioPlayer';
 import { useAccountSync, type AccountSyncController } from '../features/account/useAccountSync';
-import { normalizeChinaPhoneInput } from '../features/account/phone';
+import { formatChinaLocalPhoneInput, normalizeChinaPhoneInput } from '../features/account/phone';
 import { markSettingsUpdated, type RemoteSyncData } from '../features/account/syncService';
 import { appConfig } from '../shared/config/env';
 import { audioCatalog, getItemsByType, getModule, modules } from '../shared/content/audioCatalog';
@@ -950,14 +950,14 @@ const AccountPanel = ({
             <TextInput
               value={phone}
               onChangeText={(value) => {
-                setPhone(value);
+                setPhone(formatChinaLocalPhoneInput(value));
                 setOtpSent(false);
               }}
               keyboardType="phone-pad"
               placeholder="请输入 11 位手机号"
               placeholderTextColor={colors.subtle}
               style={styles.phoneInput}
-              maxLength={13}
+              maxLength={11}
             />
           </View>
           {otpSent ? (

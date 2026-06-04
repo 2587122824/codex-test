@@ -10,3 +10,10 @@ export const normalizeChinaPhoneInput = (value: string) => {
 
   return /^1[3-9]\d{9}$/.test(localDigits) ? `+86${localDigits}` : null;
 };
+
+export const formatChinaLocalPhoneInput = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  const localDigits = digits.startsWith('86') && digits.length > 11 ? digits.slice(2) : digits;
+
+  return localDigits.slice(0, 11);
+};

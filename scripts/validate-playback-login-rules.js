@@ -29,7 +29,7 @@ execFileSync(
   { cwd: root, stdio: 'inherit' },
 );
 
-const { normalizeChinaPhoneInput } = require(path.join(outDir, 'features/account/phone.js'));
+const { formatChinaLocalPhoneInput, normalizeChinaPhoneInput } = require(path.join(outDir, 'features/account/phone.js'));
 const {
   addTrackToHistory,
   defaultPlaybackMode,
@@ -48,6 +48,10 @@ assert.equal(normalizeChinaPhoneInput('+8613900000626'), '+8613900000626');
 assert.equal(normalizeChinaPhoneInput('+14155552671'), '+14155552671');
 assert.equal(normalizeChinaPhoneInput('12900000626'), null);
 assert.equal(normalizeChinaPhoneInput('1390000062'), null);
+assert.equal(formatChinaLocalPhoneInput('13900000626'), '13900000626');
+assert.equal(formatChinaLocalPhoneInput('+8613900000626'), '13900000626');
+assert.equal(formatChinaLocalPhoneInput('86 139 0000 0626'), '13900000626');
+assert.equal(formatChinaLocalPhoneInput('1390000062600'), '13900000626');
 
 assert.equal(getNextPlaybackIndex({ queueLength: 3, currentIndex: 0, mode: 'repeat-one' }), 0);
 assert.equal(
