@@ -1397,3 +1397,27 @@ pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content
 - 2026-06-04 02:45 CST: Removed temporary cloud restore smoke screenshots and UI hierarchy files after final verification.
 
 - 2026-06-04 02:46 CST: Pre-commit review for cloud restore fixes: git status/diff show only docs/HANDOFF_CONTEXT.md, SleepApp, and syncService modified; git diff --check has no whitespace errors beyond normal CRLF warnings.
+
+- 2026-06-04 02:47 CST: Committed cloud restore fixes as 2886e1f (Fix cloud restore sync state).
+
+- 2026-06-04 02:48 CST: Pushed 2886e1f to origin/codex/playback-modes after cloud restore sync-state, settings restore, and visible recent-playback verification.
+
+- 2026-06-04 02:49 CST: Final status after cloud restore push: origin/codex/playback-modes is at 2886e1f; only this post-push handoff log remains modified locally; dist\\gudemian-cloud-internal-beta.apk is the latest cloud/feedback/recent-playback APK, 67,262,371 bytes, timestamp 2026-06-04 07:47:04.
+- 2026-06-04 02:50 CST: Continuation start after cloud restore push: read handoff tail, git status, internal beta checklist, and recent commits; current repo only has post-push handoff modified, latest remote commit is 2886e1f, and checklist still has device/audio/sign-out/signing items to continue.
+- 2026-06-04 02:52 CST: User clarified not to run device debugging after every small change; continue feature/code work first, then batch device validation after enough functionality accumulates.
+- 2026-06-04 02:53 CST: Non-device continuation scan: git status shows only handoff modified; rg found current beta checklist gaps around playback modes, recent plays, feedback/privacy links, account sync, and audio QA; src file inventory is small enough for targeted code review before next batch validation.
+- 2026-06-04 02:54 CST: Read useAudioPlayer, useAccountSync, package scripts, and sync merge validator; next non-device patch will extract playback-mode index decisions into pure helpers and add a Node validation script for repeat-one, sequential, repeat-all, shuffle, and history caps.
+- 2026-06-04 02:55 CST: Read tsconfig, SleepApp account/login UI, and audio types; login already shows a +86 prefix and normalizes local 11-digit phones, but the phone normalizer is embedded in SleepApp, so next patch will extract it and validate China-default login inputs without device testing.
+- 2026-06-04 02:56 CST: Added pure helper modules for China-default phone normalization and playback/history rules, plus a Node validation script that compiles those TS modules and tests local 11-digit login inputs, +86 inputs, playback-mode transitions, shuffle, and history cap behavior.
+- 2026-06-04 02:57 CST: Wired pure login/playback helpers into SleepApp and useAudioPlayer; package check now runs validate:playback-login between sync validation and mock/cloud syntax validation.
+- 2026-06-04 02:58 CST: First validate:playback-login failed because TypeScript 6 requires --ignoreConfig when compiling explicit files while tsconfig.json exists; npm run typecheck passed. Next patch will add --ignoreConfig to the validation compiler call.
+- 2026-06-04 02:59 CST: Patched validate-playback-login compiler invocation with --ignoreConfig so explicit TS helper compilation works under TypeScript 6.
+- 2026-06-04 03:00 CST: validate:playback-login and full npm run check both failed at the new script because --moduleResolution node maps to deprecated node10 under TypeScript 6; earlier check steps through validate:sync passed. Next patch will remove the unnecessary moduleResolution argument.
+- 2026-06-04 03:01 CST: Removed unnecessary --moduleResolution node from validate-playback-login so TypeScript helper compilation avoids the node10 deprecation failure.
+- 2026-06-04 03:02 CST: validate:playback-login passed, and full npm run check passed with typecheck, audio/content/Aliyun/sync/playback-login/mock/android-beta, and handler smoke all green; no device debugging was run per user preference.
+- 2026-06-04 03:03 CST: Diff/status review found expected tracked and new helper/script files, no validation temp files listed, and revealed a manual-next nuance: repeat-one should repeat on natural finish but manual next should still advance, so playback helper needs a small context flag before commit.
+- 2026-06-04 03:04 CST: Patched playback rules so repeat-one returns current on natural finish by default but manual next passes repeatOneReturnsCurrent=false and advances; validation script now covers that distinction.
+- 2026-06-04 03:05 CST: Re-ran validate:playback-login, full npm run check, and git diff --check after repeat-one manual-next fix; all passed, with only normal CRLF warnings from git diff --check.
+- 2026-06-04 03:06 CST: Read internal beta and cloud release checklists plus git status; docs still describe cloud smoke as pending even though deployed endpoint smoke and restore validation have passed, so checklist status will be updated without marking remaining device/audio tasks complete.
+- 2026-06-04 03:07 CST: Updated internal beta and cloud release checklists to record the deployed Aliyun endpoint cloud-smoke checkpoint and APK restore evidence, while keeping re-smoke requirements for future endpoint/backend changes.
+- 2026-06-04 03:08 CST: Pre-commit checks for non-device patch: git status shows expected docs/package/SleepApp/useAudioPlayer modifications plus new phone/playbackRules validation files; git diff --check passed with normal CRLF warnings; validate:playback-login passed.

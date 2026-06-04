@@ -27,6 +27,11 @@ Deploy the `server/aliyun-functions` folder as the Function Compute bundle.
 
 ## Cloud HTTP Smoke
 
+Current checkpoint: the deployed beta Function Compute endpoint has passed the
+full smoke flow, including `/auth/refresh`, `/sync/merge`, `/auth/logout`, and
+post-logout 401. Re-run this section after each backend redeploy or endpoint
+change.
+
 First send a real SMS code:
 
 ```bash

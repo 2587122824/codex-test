@@ -47,6 +47,11 @@ After deploying Function Compute, use `docs/CLOUD_BETA_RELEASE_CHECKLIST.md` for
 RDS setup, SMS smoke, and app end-to-end sync recovery checks. The cloud API
 must pass `npm.cmd run smoke:aliyun-cloud` before inviting external testers.
 
+Current checkpoint: the deployed Aliyun Function Compute endpoint has passed
+cloud smoke for send-code, verify-code, session, refresh, sync, logout, and
+post-logout 401. The current APK smoke also restored favorites, recent plays,
+and theme after clearing local app data.
+
 ## Device Checks
 
 - Run `npm.cmd run validate:android-beta` before cutting an Android preview APK.
@@ -80,6 +85,6 @@ must pass `npm.cmd run smoke:aliyun-cloud` before inviting external testers.
 ## Known Beta Limitations
 
 - The expanded audio catalog is authorization-first and currently has no `Internal beta placeholder` items, but project-owned generated/TTS audio still needs a final quality review before public launch.
-- The app is local-first. Account sync can be tested with the local Mock API; real beta cloud sync requires a configured Aliyun API endpoint and passing cloud smoke.
+- The app is local-first. Account sync can be tested with the local Mock API; the current deployed Aliyun beta endpoint has passed cloud smoke, but each newly deployed endpoint should be smoked again before tester distribution.
 - Android release signing is still in internal-beta mode and uses the debug keystore in the native project until a production keystore is created.
 - 古德眠 is a relaxation tool, not a medical device or treatment.

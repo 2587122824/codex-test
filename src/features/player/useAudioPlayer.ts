@@ -11,27 +11,19 @@ import { storageKeys } from '../../shared/storage/keys';
 import { storage } from '../../shared/storage/storage';
 import type { AudioItem, PlaybackMode } from '../../shared/types/audio';
 import { clearFavoriteDeleted, markFavoriteDeleted } from '../account/syncService';
+import {
+  addTrackToHistory,
+  defaultPlaybackMode,
+  getNextPlaybackIndex,
+  getPreviousPlaybackIndex,
+} from './playbackRules';
 
 type PlaybackState = 'idle' | 'loading' | 'playing' | 'paused';
 
 const timerOptions = [15, 30, 45, 60];
-const defaultPlaybackMode: PlaybackMode = 'repeat-all';
 const defaultPlayerVolume = 0.85;
 const fadeOutWindowSeconds = 30;
 const minimumFadeVolume = 0.08;
-
-const getRandomNextIndex = (queueLength: number, currentIndex: number) => {
-  if (queueLength <= 1) {
-    return 0;
-  }
-
-  let nextIndex = currentIndex;
-  while (nextIndex === currentIndex) {
-    nextIndex = Math.floor(Math.random() * queueLength);
-  }
-
-  return nextIndex;
-};
 
 const toAudioSource = (asset: AudioItem['asset']): AudioSource =>
   typeof asset === 'string' ? { uri: asset } : asset;
@@ -91,7 +83,7 @@ export const useAudioPlayer = () => {
 
   const addToHistory = useCallback(async (trackId: string) => {
     setHistoryIds((current) => {
-      const next = [trackId, ...current.filter((id) => id !== trackId)].slice(0, 12);
+      const next = addTrackToHistory(current, trackId);
       storage.setJson(storageKeys.history, next);
       return next;
     });
@@ -180,7 +172,13 @@ export const useAudioPlayer = () => {
       return;
     }
 
-    if (mode === 'repeat-one') {
+    const nextIndex = getNextPlaybackIndex({
+      queueLength: activeQueue.length,
+      currentIndex: activeIndex,
+      mode,
+    });
+
+    if (nextIndex === activeIndex && mode === 'repeat-one') {
       setPositionMillis(0);
       await playerRef.current?.seekTo(0);
       playerRef.current?.play();
@@ -188,15 +186,10 @@ export const useAudioPlayer = () => {
       return;
     }
 
-    if (mode === 'sequential' && activeIndex >= activeQueue.length - 1) {
+    if (nextIndex === null) {
       setPlaybackState('paused');
       return;
     }
-
-    const nextIndex =
-      mode === 'shuffle'
-        ? getRandomNextIndex(activeQueue.length, activeIndex)
-        : (activeIndex + 1) % activeQueue.length;
 
     await playTrackAtIndex(activeQueue, nextIndex);
   }, [playTrackAtIndex]);
@@ -213,14 +206,16 @@ export const useAudioPlayer = () => {
       return;
     }
 
-    if (playbackModeRef.current === 'sequential' && activeIndex >= activeQueue.length - 1) {
+    const nextIndex = getNextPlaybackIndex({
+      queueLength: activeQueue.length,
+      currentIndex: activeIndex,
+      mode: playbackModeRef.current,
+      repeatOneReturnsCurrent: false,
+    });
+
+    if (nextIndex === null) {
       return;
     }
-
-    const nextIndex =
-      playbackModeRef.current === 'shuffle'
-        ? getRandomNextIndex(activeQueue.length, activeIndex)
-        : (activeIndex + 1) % activeQueue.length;
 
     await playTrackAtIndex(activeQueue, nextIndex);
   }, [playTrackAtIndex]);
@@ -233,15 +228,16 @@ export const useAudioPlayer = () => {
       return;
     }
 
-    if (playbackModeRef.current === 'sequential' && activeIndex <= 0) {
+    const previousIndex = getPreviousPlaybackIndex({
+      queueLength: activeQueue.length,
+      currentIndex: activeIndex,
+      mode: playbackModeRef.current,
+    });
+
+    if (previousIndex === null) {
       await seekToStart();
       return;
     }
-
-    const previousIndex =
-      playbackModeRef.current === 'shuffle'
-        ? getRandomNextIndex(activeQueue.length, activeIndex)
-        : (activeIndex - 1 + activeQueue.length) % activeQueue.length;
 
     await playTrackAtIndex(activeQueue, previousIndex);
   }, [playTrackAtIndex]);
