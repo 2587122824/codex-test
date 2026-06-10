@@ -2,7 +2,7 @@
 
 ## Build
 
-- Android package: `com.codexsleep.app`
+- Android package: `com.gudemian.app`
 - Version: `1.0.0`
 - Version code: `1`
 - Preview build: `npx eas build --platform android --profile preview`
@@ -12,27 +12,30 @@
 
 Short description:
 
-> 音乐、故事和白噪音助眠，支持字幕、定时关闭和本地睡眠记录。
+> 音乐、故事、白噪音和本地 AI 推荐助眠，支持字幕与定时关闭。
 
 Full description draft:
 
-> Codex Sleep 是一个纯本地助眠 App，提供舒缓音乐、睡前故事和白噪音。你可以收藏常听内容，查看字幕，引导自己慢慢放松，并用定时关闭功能安心入睡。App 还支持本地睡眠记录，帮助你回顾睡眠时长和主观评分。
+> 古德眠是一个本地优先的助眠 App，提供舒缓音乐、睡前故事、白噪音和本地 AI 助眠推荐。你可以按快速入睡、焦虑放松、半夜醒来、自然白噪音或睡前故事选择目标，让 App 自动组合播放队列和定时关闭时长。
 >
-> 当前版本不需要登录，不上传个人数据，不接入广告或追踪 SDK。收藏、最近播放、设置和睡眠记录都保存在本机。
+> 当前版本不需要登录即可使用，也不接入广告或追踪 SDK。收藏、最近播放和设置会优先保存在本机；配置账号 API 后，可选择使用手机号登录，把收藏、最近播放和设置同步到云端用于多设备恢复。
 
 Screenshots to prepare:
 
 - Home with three sleep modules
 - Music list
 - Story list
+- AI Sleep recommendation screen
 - Player with captions and progress
-- Sleep log edit form
 - Settings with privacy and audio credits
 
 ## Content And Privacy
 
-- Replace generated MVP audio with licensed production audio before public launch.
-- Verify each audio item has author, license, source URL, and attribution flag.
+- Run `npm run check` before every beta or release candidate build.
+- Run `npm.cmd run validate:android-beta` before every Android preview APK and replace debug signing with a real release keystore before any public/store build.
+- Complete `docs/INTERNAL_BETA_CHECKLIST.md` before inviting external testers.
+- Review project-owned generated/TTS beta audio quality before public launch; replace any weak item with commissioned or licensed production audio.
+- Verify each of the 30 beta audio items has author, license, source URL, and attribution flag.
 - Publish `docs/PRIVACY_POLICY_DRAFT.md` as a real web page and replace the contact section.
-- Google Play data safety: declare local-only data storage and no server collection for this version.
+- Google Play data safety: declare local-first storage; if account sync is enabled for release, disclose phone-number login plus cloud sync of favorites, recent playback, and app settings.
 - Avoid medical claims such as treating insomnia or diagnosing sleep disorders.

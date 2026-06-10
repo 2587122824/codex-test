@@ -1,0 +1,1430 @@
+﻿# Codex Sleep Handoff Context
+
+Last updated: 2026-06-03
+
+Use this document to continue development from another Codex account or machine.
+
+## Repository State
+
+- Repository: `2587122824/codex-test`
+- Local workspace used for this handoff: `I:\AI_Workspace\codex-test`
+- Active branch: `codex/playback-modes`
+- Open draft PR: <https://github.com/2587122824/codex-test/pull/1>
+- Latest pushed commit at handoff: `0829a25 Record cloud deployment blocker`
+- Current target: internal beta readiness, not public store release yet.
+
+## Product Direction
+
+Codex Sleep is an Expo React Native sleep audio app. The current product goal is
+to reach a small internal beta:
+
+- Stable sleep audio playback.
+- A calmer, dark, sleep-first audio player UI.
+- Local-first data that keeps working without login.
+- Account login and cloud sync prepared for a China-friendly backend.
+- Clear beta feedback, privacy, and asset-source documentation.
+
+Do not prioritize large new features yet. Stability, Android testing, content
+quality, and sync reliability are more important.
+
+## Current Tech Stack
+
+- Expo / React Native / TypeScript.
+- `expo-audio` for playback.
+- `@react-native-async-storage/async-storage` for local app data.
+- `expo-secure-store` for mobile auth token storage.
+- `lucide-react-native` for icons.
+- Alibaba Cloud backend target:
+  - Function Compute for HTTP API.
+  - Alibaba Cloud SMS for phone OTP.
+  - Alibaba Cloud RDS PostgreSQL for account and sync data.
+  - OSS is reserved for future remote audio or image hosting.
+
+Important user preference: if adding any new technology stack, ask first and
+state the corresponding company/vendor. For example:
+
+- Alibaba Cloud SMS SDK: Alibaba Cloud.
+- PostgreSQL driver `pg`: node-postgres open-source project.
+- Token/JWT library `jose` or `jsonwebtoken`: open-source ecosystem.
+- Validation library `zod`: open-source ecosystem.
+
+## Completed Work
+
+### Playback
+
+The sleep timer issue has been fixed conceptually and in code. Tracks now
+continue according to playback mode after natural audio end, so a 10-minute or
+30-minute timer is not interrupted just because a short track finishes.
+
+Implemented playback modes:
+
+- `repeat-one`
+- `sequential`
+- `repeat-all`
+- `shuffle`
+
+Key file:
+
+- `src/features/player/useAudioPlayer.ts`
+
+The player has queue state, current index, next/previous controls, sleep timer
+preservation, loading failure state, and local favorite/history handling.
+
+### UI
+
+The app has been moved toward a dark, audio-product style:
+
+- Immersive player panel.
+- Simplified now-playing hierarchy.
+- Mini player outside the full player page.
+- Icon-based navigation and controls.
+- Compact content rows.
+
+Main UI file:
+
+- `src/application/SleepApp.tsx`
+
+Shared UI files:
+
+- `src/shared/ui/theme.ts`
+- `src/shared/ui/TrackRow.tsx`
+- `src/shared/ui/ModuleCard.tsx`
+- `src/shared/ui/PillButton.tsx`
+
+### Content And Beta Docs
+
+Audio catalog has 13 local beta tracks:
+
+- 5 music
+- 3 story
+- 5 noise
+
+Relevant files:
+
+- `src/shared/content/audioCatalog.ts`
+- `docs/AUDIO_ASSET_SOURCES.md`
+- `docs/INTERNAL_BETA_CHECKLIST.md`
+- `docs/PRIVACY_POLICY_DRAFT.md`
+- `docs/PLAY_STORE_CHECKLIST.md`
+
+Some audio is still beta/placeholder material. Before public release, replace
+or verify all assets and attribution.
+
+### Alibaba Cloud Account Sync Migration
+
+The previous Supabase foundation was removed. The app now uses a backend API
+boundary instead of importing a backend SDK directly.
+
+Removed:
+
+- `@supabase/supabase-js`
+- `react-native-url-polyfill`
+- `src/shared/supabase/client.ts`
+- `supabase/schema.sql`
+- `docs/SUPABASE_SETUP.md`
+
+Added:
+
+- `src/shared/api/client.ts`
+- `server/aliyun-functions/README.md`
+- `server/aliyun-functions/api-contract.md`
+- `server/aliyun-functions/rds-schema.sql`
+- `scripts/validate-aliyun-backend.js`
+
+Runtime app config now uses:
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=https://your-function-domain.example.com
+```
+
+The app calls these backend routes:
+
+- `POST /auth/send-code`
+- `POST /auth/verify-code`
+- `GET /auth/session`
+- `POST /auth/logout`
+- `POST /sync/merge`
+
+The frontend treats access and refresh tokens as opaque strings. Token signing,
+refresh, hashing, and revocation should be implemented server-side.
+
+## Important Files
+
+- App entry: `App.tsx`
+- Main app shell/UI: `src/application/SleepApp.tsx`
+- Audio player hook: `src/features/player/useAudioPlayer.ts`
+- Account hook: `src/features/account/useAccountSync.ts`
+- Sync service: `src/features/account/syncService.ts`
+- API client: `src/shared/api/client.ts`
+- Local storage keys: `src/shared/storage/keys.ts`
+- Local storage wrapper: `src/shared/storage/storage.ts`
+- Audio catalog: `src/shared/content/audioCatalog.ts`
+- Alibaba backend contract: `server/aliyun-functions/api-contract.md`
+- Alibaba RDS schema: `server/aliyun-functions/rds-schema.sql`
+
+## Validation Commands
+
+Run these after meaningful changes:
+
+```bash
+npm.cmd run check
+npx.cmd expo install --check
+git diff --check
+```
+
+`npm.cmd run check` currently runs:
+
+```bash
+npm run typecheck
+npm run validate:audio
+npm run validate:aliyun
+npm run validate:sync
+```
+
+Recent known-good validation:
+
+- `npm.cmd run check` passed.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed, with only normal Windows CRLF warnings when shown
+  by some git commands.
+
+## Local Development
+
+Install and start:
+
+```bash
+npm install
+npm run start
+```
+
+The in-app browser had previously been open at:
+
+```text
+http://localhost:8081/
+```
+
+Expo may choose another port if that one is busy.
+
+## Android Notes
+
+The user has tested APKs on a phone and also has MuMu emulator available.
+There was previous Android crash investigation. The most likely resolved cause
+was native asset/icon or package/runtime mismatch during APK builds, but the
+current handoff does not include a fresh APK build after the Alibaba migration.
+
+Before the next phone test:
+
+1. Run `npm.cmd run check`.
+2. Build a local APK if the environment supports it.
+3. Install on MuMu first if available.
+4. If it crashes, collect `adb logcat` from MuMu or the phone.
+
+## Next Recommended Work
+
+### 1. Implement Real Alibaba Cloud Functions
+
+The repo currently contains API contracts and database schema, but not the real
+Function Compute handler implementation.
+
+Before adding dependencies, ask the user for approval and state vendors. Likely
+choices:
+
+- Alibaba Cloud official SMS SDK: Alibaba Cloud.
+- `pg`: node-postgres open-source project.
+- `jose`: open-source JWT/token library.
+- `zod`: open-source validation library.
+
+Core backend tasks:
+
+- Create `POST /auth/send-code`.
+- Store hashed SMS codes in `auth_sms_codes`.
+- Create `POST /auth/verify-code`.
+- Create or fetch `profiles` row.
+- Issue access/refresh tokens and store token hashes in `auth_sessions`.
+- Implement `GET /auth/session`.
+- Implement `POST /auth/logout`.
+- Implement `POST /sync/merge` using the merge rules in
+  `server/aliyun-functions/api-contract.md`.
+
+### 2. Add End-To-End Sync Tests
+
+Add a lightweight test or script for sync merge rules:
+
+- Favorites union plus tombstones.
+- History latest-first and capped at 12.
+- Sleep logs by client-generated ID.
+- Settings by latest `updated_at`.
+
+### 3. Fresh Android APK Test
+
+Build and test after backend/API client changes:
+
+- App starts without crashing.
+- Guest mode still works with empty `EXPO_PUBLIC_API_BASE_URL`.
+- Account page shows "not configured" state cleanly.
+- Playback still works offline.
+
+### 4. UI Polish Pass
+
+The UI is much better than the MVP, but can still be polished:
+
+- Review mobile spacing on small Android screens.
+- Improve Chinese copy that may have encoding problems in older files.
+- Ensure buttons never overlap with bottom mini player/navigation.
+
+## Cautions
+
+- Do not reintroduce Supabase unless the user explicitly reverses the Alibaba
+  Cloud decision.
+- Do not commit `.env`; it is local-only and ignored.
+- Avoid adding new backend libraries without asking the user first.
+- Keep the app local-first: guest mode must remain fully usable.
+- The PR is draft and broad. Keep future commits focused and update the PR body
+  when a substantial area changes.
+
+## 2026-06-03 Command Log
+
+- Cloud deploy boundary check after `fbe16bf`: `git status -sb` shows branch ahead 8 with a clean tracked worktree, `dist\aliyun-functions-deploy.zip` remains `4727515` bytes, and all required Aliyun Function URL, RDS, SMS, smoke phone/code, and session secret environment variables are missing; real cloud deploy/smoke cannot continue without user-provided Aliyun resources.
+- Goal continuation status check: `git status -sb`, `git log -7 --oneline`, deploy zip `Get-Item`, and Aliyun env-var probe show branch `codex/playback-modes` ahead 7, deploy zip exists at `dist\aliyun-functions-deploy.zip` with size `4727515` bytes, and required Aliyun Function/RDS/SMS/smoke environment variables are still missing.
+- Deploy zip integrity check: inspected `dist\aliyun-functions-deploy.zip` via .NET ZipFile and confirmed `index.js`, `handler.js`, Postgres/SMS adapters, `rds-schema.sql`, package manifests, `node_modules\pg`, and Alibaba SMS SDK files are present; no real `.env` files are included; `dist/` and `server/aliyun-functions/node_modules/` remain ignored.
+- Local gates during goal continuation: root `npm.cmd run check` passed with auth/refresh/session/sync/logout handler smoke; `npm.cmd run check` in `server/aliyun-functions` passed syntax checks for Function Compute entrypoint and adapters.
+- Additional local gates during goal continuation: `npx.cmd expo install --check` passed with dependencies up to date; `git diff --check` passed with only normal Windows LF-to-CRLF warnings for handoff.
+- Implementing cloud pre-deploy package plan: first reread `docs/HANDOFF_CONTEXT.md`; next actions are committing current handoff-only diff, removing the interrupted 0-byte deploy zip, regenerating `dist\aliyun-functions-deploy.zip`, and running local gates. Real Aliyun cloud deploy/smoke still needs external Function/RDS/SMS resources.
+- `git status -sb` and `git diff --stat -- docs/HANDOFF_CONTEXT.md`: confirmed the only tracked diff is a 3-line handoff update before creating the handoff cleanup commit.
+- `git add docs/HANDOFF_CONTEXT.md` and `git commit -m "Record deployment package planning handoff"`: committed the handoff-only planning cleanup as `050ff28`.
+- Removed the interrupted `dist\aliyun-functions-deploy.zip`, recreated `dist`, compressed `server\aliyun-functions\*` into `dist\aliyun-functions-deploy.zip`, and verified the new deploy zip is `4727515` bytes at `2026/6/3 20:09:04`.
+- Deploy zip first inspection: zip contains `index.js` and `package-lock.json`; `dist/` and `server/aliyun-functions/node_modules/` are ignored; only `.env.example` appears as an env-like file, not a real secret. Initial dependency path match did not find `pg`/SMS SDK entries, so inspecting node_modules entry names more precisely.
+- Deploy zip dependency inspection: zip entries use Windows backslash paths and include Alibaba SMS/OpenAPI SDK files under `node_modules\@alicloud\...` plus `pg` files under `node_modules\pg\...`; deployment dependencies are present in the package.
+- `npm.cmd run check`: passed after regenerating the Function Compute deploy zip; typecheck, audio/content validation, Aliyun backend validation, sync rules, mock/cloud syntax, Android beta validation, and auth/refresh/session/sync/logout handler smoke all succeeded.
+- Final local gates after deploy zip: `npx.cmd expo install --check` passed with dependencies up to date; `git diff --check` passed with only normal Windows LF-to-CRLF warnings for handoff; `npm.cmd run check` in `server/aliyun-functions` passed syntax checks.
+- Final deploy package audit: `git status -sb` shows branch ahead 6 with only post-package handoff modified; latest commits include `050ff28`, `d6b61d7`, `36b1843`, `5e00217`, `226c175`, and `c8388ba`; `dist\aliyun-functions-deploy.zip` exists at `4727515` bytes; `dist/` and `server/aliyun-functions/node_modules/` are ignored; Aliyun Function URL, smoke phone/code, DB, and SMS env vars remain missing.
+- Post-clean continuation: `git status -sb` showed branch `codex/playback-modes` ahead 5 with a clean worktree; latest commits are `d6b61d7`, `36b1843`, `5e00217`, `226c175`, and `c8388ba`; Aliyun Function URL, smoke phone/code, DB, and SMS env vars are still missing, so real cloud deploy/smoke remains externally blocked.
+- `Get-Content .gitignore` and `Get-Content server/aliyun-functions/.env.example`: confirmed `dist/` and `node_modules/` are ignored build/dependency outputs, and the backend env example contains only placeholders; next local step is creating an ignored Function Compute deployment zip.
+- Continue request after backend refresh checkpoint: checking whether only post-commit handoff logs remain before deciding the next local action.
+- `Get-Content docs/HANDOFF_CONTEXT.md -Tail 40`, `git status -sb`, and `git diff --stat`: current branch is ahead 4 and only `docs/HANDOFF_CONTEXT.md` has a tiny post-commit log diff; preparing a handoff-only cleanup commit.
+- Implementation request for next plan: proceeding to close the current Aliyun session refresh support into a stable local checkpoint before any real cloud deployment; external Aliyun RDS/SMS/Function resources are still required for cloud smoke.
+- `Get-Content docs/HANDOFF_CONTEXT.md -Tail 80`: reread handoff before executing the backend refresh plan; current repo state has uncommitted refresh-token support and branch `codex/playback-modes` already ahead of origin.
+- `npm.cmd run check`: passed before refresh-support commit; typecheck, audio/content validation, Aliyun backend validation with 7 tables and 6 routes, sync rules, mock/cloud syntax, Android beta validation, and auth/refresh/session/sync/logout handler smoke all succeeded.
+- `npx.cmd expo install --check`: passed before refresh-support commit; Expo loaded local `.env` feature/API variables and reported dependencies are up to date.
+- `git diff --check` and `server/aliyun-functions npm.cmd run check`: both passed before refresh-support commit; whitespace check showed only normal Windows LF-to-CRLF warnings, and backend package syntax checks passed for index/handler/Postgres/SMS adapters.
+- `git status -sb` and `git diff --stat`: refresh-support commit scope confirmed as 10 modified files covering cloud checklist/handoff, smoke scripts, backend validator/docs/handler/Postgres adapter, and frontend API client; diff stat is 237 insertions and 26 deletions before final handoff logging.
+- `git add ...` and `git commit -m "Add Aliyun session refresh support"`: committed refresh-token support as `5e00217`; commit includes backend `/auth/refresh`, Postgres adapter lookup, frontend one-shot 401 refresh retry, smoke/validator/docs updates, and handoff notes.
+- Post-commit/cloud readiness probe: `git status -sb` shows branch ahead 3 with only post-commit handoff logging modified; `git log -3 --oneline` shows `5e00217`, `226c175`, and `c8388ba`; environment variables for Aliyun Function URL, smoke phone/code, DB, and SMS credentials are missing; backend package manifest declares `pg` and Alibaba Cloud SMS/OpenAPI SDK dependencies.
+- `npm.cmd install` in `server/aliyun-functions`: installed the Function Compute deployment dependencies successfully, adding/auditing 50 packages with 0 vulnerabilities.
+- Post-install backend package status: `git status -sb -- server/aliyun-functions docs/HANDOFF_CONTEXT.md` shows new untracked `server/aliyun-functions/package-lock.json` plus handoff logging; `Get-ChildItem server/aliyun-functions` confirms `node_modules` and a 20209-byte `package-lock.json`; only the lockfile is relevant for Git/deployment reproducibility.
+- `npm.cmd run check` in `server/aliyun-functions` after dependency install: passed syntax checks for index, handler, Postgres adapter, and Alibaba SMS adapter.
+- `git add docs/HANDOFF_CONTEXT.md server/aliyun-functions/package-lock.json` and `git commit -m "Add Aliyun function dependency lockfile"`: committed deployment dependency lockfile as `36b1843`; commit includes `server/aliyun-functions/package-lock.json` plus handoff notes.
+- Final implementation status: `git status -sb` shows branch `codex/playback-modes` ahead 4 with only post-commit `docs/HANDOFF_CONTEXT.md` logging modified; `git log -5 --oneline` shows `36b1843`, `5e00217`, `226c175`, `c8388ba`, and `7440dee`; `android/`, `dist/`, and `server/aliyun-functions/node_modules/` are ignored build/dependency outputs; required Aliyun Function URL, smoke phone/code, DB, and SMS env vars are still missing, so real cloud deploy/smoke remains blocked on external Aliyun resources.
+- Backend service continuation: user asked to improve the backend service after APK/rain-track work; starting from current `codex/playback-modes` state.
+- `Get-Content docs/HANDOFF_CONTEXT.md -Tail 80`, `git status -sb`, `Get-ChildItem server/aliyun-functions`, and memory check for backend/handoff: branch is `codex/playback-modes` ahead 2 with a clean worktree before this handoff update; backend currently has Function Compute handler, Postgres/SMS adapters, deployment env/docs, and validation/smoke scaffolding; memory only reinforced handoff logging conventions.
+- Backend code inspection reads: `handler.js` has auth send/verify/session/logout/sync routes, in-memory adapter, opaque token hashing, and CORS; `postgres-adapter.js` implements the same storage contract; `smoke-aliyun-handler.js` covers the happy path; README documents production wiring. Initial hardening candidates are route-prefix tolerance and refresh-token support for deployed beta sessions.
+- Frontend/API contract reads: `src/shared/api/client.ts` stores both access and refresh tokens but `apiRequest` never uses the refresh token; `useAccountSync.ts` restores only `/auth/session`; `api-contract.md` mentions refresh staying server-side but defines no refresh route. Current backend improvement target is adding `/auth/refresh` plus one-shot frontend retry on expired access tokens.
+- `Get-Content server/aliyun-functions/rds-schema.sql`: confirmed `auth_sessions` already stores unique `refresh_token_hash`, so refresh support can be implemented without a new schema migration.
+- `apply_patch` on `server/aliyun-functions/handler.js`: added memory-adapter `findSessionByRefreshToken`, new `POST /auth/refresh` route, old-session revocation on refresh, and new opaque access/refresh token issuance.
+- `apply_patch` on `server/aliyun-functions/postgres-adapter.js`: added `findSessionByRefreshToken(refreshTokenHash)` so production RDS sessions can refresh tokens through the same handler adapter contract.
+- `apply_patch` on `src/shared/api/client.ts`: added refresh-token storage access and one-shot authenticated request retry via `POST /auth/refresh` when a request receives 401; failed refresh clears the local API session.
+- `apply_patch` on `scripts/smoke-aliyun-handler.js`: local handler smoke now verifies `/auth/refresh`, confirms old access token revocation, uses the refreshed access token for session/sync/logout, and reports auth/refresh/session/sync/logout success.
+- `apply_patch` on `server/aliyun-functions/api-contract.md`: documented `POST /auth/refresh`, request/response shape, and old-session revocation behavior for opaque refresh tokens.
+- `Get-Content scripts/smoke-aliyun-cloud.js`: reviewed cloud HTTP smoke before adding refresh coverage; it currently verifies/send/session/sync/logout with only the original access token.
+- `apply_patch` on `scripts/smoke-aliyun-cloud.js`: cloud HTTP smoke now requires refreshToken from verify-code, calls `/auth/refresh`, checks token rotation and old access-token 401, then uses the refreshed access token for sync/logout.
+- `Get-Content scripts/validate-aliyun-backend.js` and `apply_patch`: backend validator now requires `POST /auth/refresh` in the contract/handler, refresh lookup in handler/Postgres adapter, and refresh coverage in local/cloud smoke scripts.
+- `apply_patch` on `server/aliyun-functions/README.md` and `docs/CLOUD_BETA_RELEASE_CHECKLIST.md`: deployment docs now state that local/cloud smoke covers refresh-token rotation and old access-token rejection.
+- Refresh backend validation: `node --check` passed for handler, Postgres adapter, local handler smoke, and cloud smoke scripts; `npm.cmd run smoke:aliyun-handler` passed with auth/refresh/session/sync/logout; `npm.cmd run validate:aliyun` passed and now reports 7 tables and 6 routes.
+- `npm.cmd run check`: passed after backend refresh support; typecheck, audio/content validation, Aliyun backend validation, sync rules, mock/cloud syntax, Android beta validation, and handler smoke all succeeded.
+- Backend refresh final checks: `npm.cmd run check` in `server/aliyun-functions` passed syntax checks; `git diff --check` passed with only normal Windows LF-to-CRLF warnings; `git diff --stat` shows refresh support across 10 files; `git status -sb` shows branch ahead 2 with those files modified.
+- Targeted diff review for refresh support: reviewed handler/Postgres/frontend client diffs, local/cloud smoke diffs, validator updates, and docs; refresh route, token rotation, old access-token rejection, and frontend one-shot 401 retry are connected.
+- Final backend refresh status: `git status -sb` shows branch ahead 2 with 10 modified refresh-support files; `git diff --stat` shows 231 insertions and 26 deletions; `Get-ChildItem tmp-*` found no temporary files.
+- User phone test found `窗边细雨` plays with no sound, the progress bar does not move, and no error prompt appears; starting targeted playback/audio asset diagnosis.
+- `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md -Tail 50`: reread handoff before debugging the phone playback issue; current focus is diagnosing the silent `窗边细雨` track in the internal APK.
+- `rg` for `窗边细雨|rain-window` plus reads of `src/shared/content/audioCatalog.ts` and `src/features/player/useAudioPlayer.ts`: `窗边细雨` maps to track `noise-rain-window` and asset `assets/audio/noise/rain-pdsounds-ezwa.ogg`; player currently sets state to playing immediately after `player.play()` and ignores unloaded status updates, so a native decode/load stall can appear as no sound/progress without a visible prompt.
+- Audio asset inspection with `Get-Item`, `Get-Command ffprobe`, and Node file-header reads: `ffprobe` is not available; `rain-pdsounds-ezwa.ogg` is 585522 bytes and starts with Ogg `fishead`, while a known playable music OGG starts with `vorbis`, suggesting the rain asset may use an Ogg Skeleton/container layout that Android's playback path handles poorly.
+- Further audio tooling/asset check: `ffmpeg` is not available; Node buffer scan confirmed `rain-pdsounds-ezwa.ogg` contains both `vorbis` and `fishead`, while project-owned `rain-window.wav` is a plain WAV, so the beta-safe fix is to repoint `noise-rain-window` to the local WAV and validate against catalog-referenced Ogg Skeleton files.
+- `apply_patch` on `src/shared/content/audioCatalog.ts`: repointed `noise-rain-window` / `窗边细雨` from `assets/audio/noise/rain-pdsounds-ezwa.ogg` to the project-owned plain WAV `assets/audio/noise/rain-window.wav` for Android beta playback compatibility.
+- `apply_patch` on `scripts/validate-audio-catalog.js`: added a dependency-free check that rejects catalog-referenced `.ogg` files containing Ogg Skeleton `fishead` metadata, which can stall Android playback.
+- `npm.cmd run validate:audio`: passed after repointing `窗边细雨`; catalog still has 10 music, 8 story, and 12 noise items, and no referenced Ogg Skeleton asset is present.
+- `npm.cmd run check`: passed after the `窗边细雨` Android playback fix; typecheck, audio/content validation, Aliyun backend validation, sync merge rules, mock/cloud syntax, Android beta validation, and handler smoke all succeeded.
+- `android\gradlew.bat assembleRelease` with local JDK/Android SDK env: passed after the rain-track fix; Metro rebuilt the Android bundle, copied 29 asset files, and Gradle reported `BUILD SUCCESSFUL` with only non-fatal `NODE_ENV` and Gradle deprecation notices.
+- `Copy-Item app-release.apk dist\codex-sleep-internal-beta.apk` and `Get-Item` for both APKs: copied the fixed APK to `dist`; both APK copies are `67255787` bytes, modified `2026/6/3 18:54:01`.
+- Fixed APK static verification: `apksigner verify --print-certs` passed with the expected internal debug certificate; `aapt dump badging` reported package `com.codexsleep.app`, versionCode `1`, versionName `1.0.0`, min SDK `24`, target SDK `36`, and label `Codex Sleep`.
+- Final rain-track fix status: `git diff --check` passed with only normal Windows LF-to-CRLF warnings; `git status -sb` shows local branch ahead 1 with modified handoff, `scripts/validate-audio-catalog.js`, and `src/shared/content/audioCatalog.ts`; `adb devices -l` still shows no attached devices, so phone/MuMu install verification remains manual; `git diff --stat` shows the fix scope is 3 files.
+- Commit request status: `git status -sb` shows branch `codex/playback-modes` ahead 1 with modified `docs/HANDOFF_CONTEXT.md`, `scripts/validate-audio-catalog.js`, and `src/shared/content/audioCatalog.ts`; preparing to commit the `窗边细雨` Android playback fix.
+- Pre-commit validation for rain-track fix: `npm.cmd run validate:audio` passed with 10 music, 8 story, and 12 noise items; `git diff --check` passed with only normal Windows LF-to-CRLF warnings for touched files.
+- `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md -Tail 60`: started Android internal APK packaging implementation from the current handoff; latest committed cloud readiness is pushed, and current worktree contains Android beta readiness changes to validate, commit, and package.
+- `Select-String -Path C:\Users\Administrator\.codex\memories\MEMORY.md -Pattern 'codex-test|Codex Sleep|HANDOFF_CONTEXT|Android|APK|playback-modes' -Context 2,2`: memory check only reinforced reading/updating handoff command-by-command; no extra APK build decisions were found.
+- `npm.cmd run check`: passed before APK packaging; typecheck, audio/content validation, Aliyun backend validation, sync merge rules, mock/cloud smoke syntax, Android beta validation, and handler smoke all succeeded.
+- `npx.cmd expo install --check`: passed before APK packaging; Expo loaded local `.env` feature/API variables and reported dependencies are up to date.
+- `git diff --check`: passed before APK packaging with only normal Windows LF-to-CRLF working-copy warnings for touched files.
+- `git status -sb`: readiness commit scope confirmed as modified `app.json`, `docs/HANDOFF_CONTEXT.md`, `docs/INTERNAL_BETA_CHECKLIST.md`, `docs/PLAY_STORE_CHECKLIST.md`, `package.json`, plus new `scripts/validate-android-beta.js`.
+- `git add app.json docs/HANDOFF_CONTEXT.md docs/INTERNAL_BETA_CHECKLIST.md docs/PLAY_STORE_CHECKLIST.md package.json scripts/validate-android-beta.js`: staged Android beta readiness files for commit; Git reported only normal Windows LF-to-CRLF working-copy warnings.
+- `git add docs/HANDOFF_CONTEXT.md` and `git status -sb`: handoff was re-staged after logging, but status showed `MM docs/HANDOFF_CONTEXT.md` because this command-log update happened after the staged copy; re-staging handoff once more before commit.
+- `git add docs/HANDOFF_CONTEXT.md`, `git diff --cached --stat`, and `git commit -m "Add Android beta APK preflight"`: committed Android beta APK preflight changes as `c8388ba`; commit includes app metadata, beta/play-store docs, package script wiring, handoff notes, and new `scripts/validate-android-beta.js`.
+- Android build environment check with `JAVA_HOME=I:\AI_Workspace\.android-build-tools\jdk17\jdk-17.0.19+10`, `ANDROID_HOME=I:\AI_Workspace\.android-build-tools\android-sdk`, `java -version`, and `android\gradlew.bat --version`: passed; Gradle 9.3.1 is using Temurin JDK 17.0.19.
+- `android\gradlew.bat assembleRelease` with local JDK/Android SDK env: passed and produced the release APK; Gradle/Expo printed a non-fatal `NODE_ENV` not specified notice plus Java deprecation/unchecked warnings.
+- `Get-Item android\app\build\outputs\apk\release\app-release.apk`: verified the Gradle APK exists at `I:\AI_Workspace\codex-test\android\app\build\outputs\apk\release\app-release.apk`, size `67256043` bytes, modified `2026/6/3 18:40:09`.
+- `New-Item dist`, `Copy-Item app-release.apk dist\codex-sleep-internal-beta.apk`, and `Get-Item dist\codex-sleep-internal-beta.apk`: copied the internal beta APK to `I:\AI_Workspace\codex-test\dist\codex-sleep-internal-beta.apk`, size `67256043` bytes.
+- `adb.exe devices -l` using `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe`: no devices were attached, so MuMu/device APK smoke install was skipped; the APK is ready for manual phone testing.
+- Final status audit with `git status -sb`, `git log -1 --oneline`, `git status --short --ignored dist android/app/build/outputs/apk/release/app-release.apk`, and `Get-Item` for both APKs: branch is ahead 1 at `c8388ba Add Android beta APK preflight`; `dist/` and `android/` build outputs are ignored; both APK copies are `67256043` bytes, and only post-commit `docs/HANDOFF_CONTEXT.md` logging is modified.
+- `Get-ChildItem` for Android SDK build-tools found `apksigner.bat` and `aapt.exe` in build-tools `35.0.0` and `36.0.0`; using these for APK static verification.
+- APK static verification first pass: `aapt dump badging` passed and reported package `com.codexsleep.app`, versionCode `1`, versionName `1.0.0`, min SDK `24`, target SDK `36`, label `Codex Sleep`; `apksigner verify` failed only because `JAVA_HOME` was not set in that command environment, so rerunning with local JDK env.
+- `apksigner verify --print-certs` with local `JAVA_HOME`: passed for `dist\codex-sleep-internal-beta.apk`; signer is the expected internal debug certificate `CN=Android Debug` with SHA-256 digest `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md`: resumed Codex Sleep work on `codex/playback-modes`; handoff indicates beta UI/backend readiness and cloud smoke prep were previously committed and pushed, with current goal still internal beta usability.
+- `Select-String -Path docs/HANDOFF_CONTEXT.md -Pattern '2026-06-03 Command Log' -Context 0,5`: located the command-log section after an initial patch context mismatch while updating this handoff.
+- `Select-String -Path C:\Users\Administrator\.codex\memories\MEMORY.md -Pattern 'codex-test|Codex Sleep|HANDOFF_CONTEXT|playback-modes' -Context 2,2`: memory check only reinforced the project convention to read and update the handoff command-by-command; no additional product facts were used.
+- `git status -sb`: confirmed branch `codex/playback-modes` is aligned with origin and only `docs/HANDOFF_CONTEXT.md` is modified from this session's command-log updates.
+- `rg -n "TODO|FIXME|Known limitation|known limitation|Next Recommended|next recommended|内测|beta|crash|Android|smoke|limitation" docs src server scripts package.json`: scanned remaining beta-readiness markers; major open items are external cloud deployment/SMS smoke and fresh Android APK testing, while repo-side docs/scripts already cover cloud smoke preparation.
+- `Get-Content package.json`, `Get-Content app.json`, and `rg --files android docs scripts`: reviewed scripts, Expo app config, and available Android/docs/scripts; Android native project exists, but there is no dedicated APK preflight script yet, and PowerShell display showed mojibake in the app description that needs verification.
+- `node -e "const app=require('./app.json'); console.log(JSON.stringify(app.expo.description));"`: confirmed `app.json` is valid UTF-8; description still mentions removed sleep-record functionality, so app metadata should be updated for current beta scope.
+- `apply_patch` on `app.json`: updated the Expo app description to current beta scope: local-first sleep audio, AI sleep recommendations, subtitles, sleep timer, and optional account sync; removed stale sleep-record wording.
+- `Get-Content android/app/src/main/AndroidManifest.xml`, `Get-Content android/app/src/main/res/values/strings.xml`, and `Get-Content android/app/build.gradle`: reviewed Android package/name/permission/signing config; release currently uses debug keystore, which is acceptable only as an explicit internal-beta temporary signing state.
+- `apply_patch` add `scripts/validate-android-beta.js`: added a dependency-free Android beta preflight covering app metadata, package/version consistency, icon resources, portrait mode, WAKE_LOCK, native package config, and the explicit temporary debug-signing state for internal APK smoke.
+- `apply_patch` on `package.json`: added `validate:android-beta` and included it in root `npm run check` after mock/cloud smoke syntax validation and before handler smoke.
+- `Get-Content docs/INTERNAL_BETA_CHECKLIST.md` and `Get-Content docs/PLAY_STORE_CHECKLIST.md`: reviewed beta device checks and store-listing draft; beta checklist needs the new Android preflight, and Play Store copy/data-safety wording is stale for optional account sync.
+- `apply_patch` on `docs/INTERNAL_BETA_CHECKLIST.md`: added `npm.cmd run validate:android-beta` to device checks and documented that debug-keystore release signing is only acceptable for small internal APK testing.
+- `apply_patch` rewrite `docs/PLAY_STORE_CHECKLIST.md`: replaced mojibake store-listing copy with readable Chinese, updated optional account-sync wording, added Android beta preflight/signing guidance, and corrected Google Play data-safety notes for local-first plus optional cloud sync.
+- `npm.cmd run validate:android-beta`: passed; app metadata, package config, icon resources, and internal signing state are ready for APK smoke.
+- `npm.cmd run check`: passed after adding Android beta validation; typecheck, audio/content validation, Aliyun backend validation, sync merge rules, mock/cloud smoke syntax, Android preflight, and handler smoke all succeeded.
+- `git diff --check`, `git status -sb`, and `git diff --stat`: whitespace check passed with only normal Windows LF-to-CRLF warnings; changed tracked files are app metadata/docs/package plus handoff, and new `scripts/validate-android-beta.js` is untracked until staged.
+- `npx.cmd expo install --check`: passed; Expo reported dependencies are up to date after loading local `.env` feature/API variables.
+- Final status review: `git status -sb` shows modified `app.json`, handoff, internal beta checklist, Play Store checklist, and `package.json`, plus new untracked `scripts/validate-android-beta.js`; `git diff --stat` reviewed tracked scope, and `node --check scripts/validate-android-beta.js` passed.
+- `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md` from `I:\AI_Workspace`: failed because `docs/HANDOFF_CONTEXT.md` was not present at workspace root.
+- `rg --files -g HANDOFF_CONTEXT.md` from `I:\AI_Workspace`: found `codex-test\docs\HANDOFF_CONTEXT.md`; continuing work from `codex-test`.
+- `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md` from `I:\AI_Workspace\codex-test`: read current handoff; next focus remains internal beta readiness on `codex/playback-modes`.
+- `git status -sb`: confirmed active branch `codex/playback-modes`; only `docs/HANDOFF_CONTEXT.md` is modified so far from command-log updates.
+- `Get-Content -LiteralPath package.json`: reviewed scripts; current `check` runs typecheck, audio validation, and Aliyun validation, with no sync merge test yet.
+- `Get-Content -LiteralPath server/aliyun-functions/api-contract.md`: reviewed `/sync/merge` rules for favorites, history, sleep logs, and settings; will add a dependency-free validation script around these rules.
+- `Get-Content -LiteralPath src/features/account/syncService.ts`: reviewed local sync payload shape and deleted-entity tombstone fields used by the frontend.
+- `Get-Content -LiteralPath src/shared/types/sleep.ts`: confirmed `SleepLogEntry` client fields and `UserSettings`; merge tests should model server-side `updatedAt` metadata separately.
+- `rg --files scripts`: found existing validation scripts `validate-audio-catalog.js` and `validate-aliyun-backend.js`; will follow this lightweight script pattern.
+- `Get-Content -LiteralPath scripts/validate-aliyun-backend.js`: reviewed existing validation style; new sync merge validation will use CommonJS, no added dependencies, and explicit pass/fail output.
+
+## 2026-06-03 Development Updates
+
+- Added `scripts/validate-sync-merge-rules.js`, a dependency-free Node assertion script covering `/sync/merge` contract rules for favorites, history, sleep logs, and settings.
+- Updated `package.json` with `validate:sync` and included it in `npm run check`.
+- Updated `docs/INTERNAL_BETA_CHECKLIST.md` so beta testing covers Account & Sync behavior and describes the app as local-first with Aliyun sync available only when the API endpoint and handlers are configured.
+- Added `scripts/mock-aliyun-api.js`, a dependency-free local Mock API for phone OTP login, session recovery, logout, and sync merge testing.
+- Updated `package.json` with `mock:api` and updated `docs/INTERNAL_BETA_CHECKLIST.md` with Mock API setup, fixed OTP `123456`, and local-only limitations.
+- Expanded the local beta audio catalog from 13 to 30 items: 10 music, 8 story/guidance, and 12 white-noise/environment items.
+- Added project-owned original generated audio assets and original Mandarin TTS story/guidance assets under `assets/audio`.
+- Replaced `Internal beta placeholder` catalog sourcing with auditable licensed or project-owned original source records; current placeholder count is 0.
+- Updated AI Sleep recommendation queues so each sleep goal recommends 5 tracks from the expanded catalog.
+- Strengthened audio/content validation: minimum catalog counts are now 10/8/12, content audit requires at least 30 items, allows at most 2 placeholders, and enforces a 50MB local audio budget.
+- Updated audio source, internal beta, and Play Store checklist docs for the expanded authorization-first beta catalog.
+
+### 2026-06-03 Validation
+
+- `npm.cmd run validate:sync`: passed; favorites, history, sleep logs, and settings merge-rule assertions succeeded.
+- `npm.cmd run check`: passed; typecheck, audio catalog validation, Aliyun backend contract validation, and sync merge validation all succeeded.
+- `git diff --check`: passed; only normal Windows LF-to-CRLF working-copy warnings were reported for touched files.
+- `npx.cmd expo install --check`: first sandboxed run failed with `EPERM` writing `C:\Users\Administrator\.expo\native-modules-cache`; reran with approval and it passed with "Dependencies are up to date".
+- `git diff --stat`: tracked changes currently show `docs/HANDOFF_CONTEXT.md` and `package.json`; will check status for untracked new validation script.
+- `git status --short`: current changes are `docs/HANDOFF_CONTEXT.md`, `package.json`, and new `scripts/validate-sync-merge-rules.js`.
+- `git diff --check`: final whitespace check passed; only normal Windows LF-to-CRLF working-copy warnings were reported.
+- `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md`: read current handoff from `I:\AI_Workspace\codex-test`; continuing internal beta work on `codex/playback-modes`.
+- `Select-String -Path C:\Users\Administrator\.codex\memories\MEMORY.md -Pattern 'codex-test|Codex Sleep|HANDOFF_CONTEXT|playback' -Context 2,2`: confirmed prior memory reinforces reading and updating the handoff file command-by-command.
+- `git status -sb`: confirmed branch `codex/playback-modes`; working tree has modified `docs/HANDOFF_CONTEXT.md`, modified `package.json`, and untracked `scripts/validate-sync-merge-rules.js`.
+- `git diff -- package.json scripts/validate-sync-merge-rules.js`: reviewed tracked diff; `package.json` now adds `validate:sync` and includes it in `check`, while the untracked sync script needs separate inspection.
+- `Get-Content -LiteralPath scripts/validate-sync-merge-rules.js`: reviewed the new dependency-free sync merge validation script; it asserts favorites tombstones, history latest-first unique cap, sleep-log newest/tombstone behavior, and latest settings selection.
+- `npm.cmd run check`: passed; typecheck, audio catalog validation, Aliyun backend contract validation, and sync merge rule validation all succeeded.
+- `Get-Content -LiteralPath docs/INTERNAL_BETA_CHECKLIST.md`: reviewed beta checklist; noticed known limitations still describe the app as local-only even though Aliyun API sync scaffolding now exists.
+- `Get-Content -LiteralPath src/features/account/useAccountSync.ts`: reviewed account sync hook and found several user-facing Chinese error/status strings are mojibake.
+- `Select-String -Path src/application/SleepApp.tsx -Pattern 'account|sync|鐧诲綍|鍚屾|not configured|configured|feedback|Privacy|Audio Credits' -Context 2,3`: reviewed account, feedback, privacy, and settings UI references; main app copy is generally normal Chinese and describes Aliyun sync states.
+- `$i=1; Get-Content -LiteralPath src/features/account/useAccountSync.ts | ForEach-Object { '{0,4}: {1}' -f $i, $_; $i++ }`: located mojibake account-sync strings around lines 46, 98, 120, 147, and 149 for targeted cleanup.
+- `node -e "const fs=require('fs'); const lines=fs.readFileSync('src/features/account/useAccountSync.ts','utf8').split(/\r?\n/); [45,97,119,146,148].forEach(i=>console.log((i+1)+': '+JSON.stringify(lines[i])));"`: verified the source file actually contains correct UTF-8 Chinese strings; mojibake was PowerShell display output, so no code edit is needed there.
+- `npm.cmd run check`: passed again after updating the internal beta checklist; typecheck, audio validation, Aliyun validation, and sync merge validation all succeeded.
+- `git diff --check`: passed after checklist and handoff updates; only normal Windows LF-to-CRLF working-copy warnings were reported.
+- `git status -sb`: before implementing Mock API, branch is `codex/playback-modes`; existing changes include handoff/checklist/package updates and new `scripts/validate-sync-merge-rules.js`.
+- `Get-Content -LiteralPath docs/INTERNAL_BETA_CHECKLIST.md`, `server/aliyun-functions/api-contract.md`, and `package.json`: reviewed current beta account-sync notes, API contract routes, and scripts before adding the local Mock API.
+- `npm.cmd run mock:api`: started the new local Mock API on `http://localhost:8787`; fixed OTP is `123456` and data is in-memory only.
+- `Invoke-RestMethod POST http://localhost:8787/auth/send-code`: passed for `+8613800000000` and returned a `mock-sms-*` request ID.
+- `Invoke-RestMethod POST http://localhost:8787/auth/verify-code`: passed with fixed code `123456`; returned a mock user plus access/refresh tokens and `expiresAt`.
+- `Invoke-RestMethod GET http://localhost:8787/auth/session`: passed with Bearer access token and returned the current mock session for startup recovery.
+- `Invoke-RestMethod POST http://localhost:8787/sync/merge`: passed; returned merged favorites without tombstoned `ocean-waves`, unique capped-style history, one sleep log, settings `{ defaultSleepTimerMinutes: 45 }`, and `syncedAt`.
+- `Invoke-WebRequest POST http://localhost:8787/auth/logout` followed by `GET /auth/session`: logout returned `204`, and the old token then returned `401`.
+- Stopped the running `npm.cmd run mock:api` session with Ctrl+C and confirmed termination.
+- `npm.cmd run check`: passed after adding Mock API; typecheck, audio validation, Aliyun contract validation, and sync merge validation all succeeded.
+- `git diff --check`: passed after Mock API implementation; only normal Windows LF-to-CRLF working-copy warnings were reported.
+- `git status --short`: final changed files are `docs/HANDOFF_CONTEXT.md`, `docs/INTERNAL_BETA_CHECKLIST.md`, `package.json`, new `scripts/mock-aliyun-api.js`, and new `scripts/validate-sync-merge-rules.js`.
+- `git diff --stat`: tracked diff currently shows handoff, internal beta checklist, and `package.json`; new scripts remain untracked until added to Git, so they do not appear in this stat output yet.
+- `npm.cmd run mock:api`: restarted the local Mock API on `http://localhost:8787` for CORS preflight verification.
+- `Invoke-WebRequest OPTIONS http://localhost:8787/sync/merge`: passed with status `204`, `Access-Control-Allow-Methods: GET, POST, OPTIONS`, and expected auth/content headers.
+- Stopped the second `npm.cmd run mock:api` session with Ctrl+C and confirmed termination.
+- `git diff --check`: final whitespace check passed after CORS verification notes; only normal Windows LF-to-CRLF working-copy warnings were reported.
+- `git status -sb`: final branch remains `codex/playback-modes`; modified files are handoff, internal beta checklist, and `package.json`, with new scripts `mock-aliyun-api.js` and `validate-sync-merge-rules.js` untracked.
+- `git status -sb`: final status shows modified `docs/HANDOFF_CONTEXT.md`, `docs/INTERNAL_BETA_CHECKLIST.md`, `package.json`, plus untracked `scripts/validate-sync-merge-rules.js`.
+- `git diff --stat`: tracked diff summary shows handoff, internal beta checklist, and package script changes; untracked sync validation script is not included in the stat output until staged.
+- `git status -sb`: resumed work; branch remains `codex/playback-modes`, with modified handoff/checklist/package files plus untracked `scripts/validate-sync-merge-rules.js` and `scripts/mock-aliyun-api.js`.
+- `Get-Content -LiteralPath scripts/mock-aliyun-api.js`: reviewed untracked mock Aliyun API script; it provides in-memory OTP/session/logout/sync routes for local beta testing, but is not yet wired into package scripts and its merge behavior is simpler than the contract validation script.
+- `Get-Content -LiteralPath package.json`, `Get-Content -LiteralPath src/shared/api/client.ts`, and `Get-Content -LiteralPath src/features/account/syncService.ts`: confirmed `mock:api` is already present, frontend API calls use opaque bearer tokens, and `/sync/merge` expects `{ data: RemoteSyncData }`.
+- `Select-String -Path server/aliyun-functions/api-contract.md -Pattern '/sync/merge|favorites|history|sleep|settings|tombstone|updated' -Context 2,4`: rechecked merge contract; mock API should reflect favorites tombstones, latest-first capped history, sleep-log tombstones, and settings merge behavior as closely as the current frontend snapshot allows.
+- `apply_patch` on `scripts/mock-aliyun-api.js`: started aligning the mock API with merge metadata by changing per-user sync storage from plain snapshot data to a store containing `data`, sleep-log update metadata, and settings update metadata.
+- `apply_patch` on `scripts/mock-aliyun-api.js`: replaced the mock merge function with store-aware logic for favorite tombstones, latest-first capped history, sleep-log active/tombstone precedence, and settings newest-batch behavior while keeping the frontend response shape as `{ data }`.
+- `node --check scripts/mock-aliyun-api.js`: passed; mock Aliyun API script parses successfully after merge-store changes.
+- Mock API smoke test command using `Start-Process -Environment`: failed because this PowerShell version does not support the `-Environment` parameter; the mock server did not start and the HTTP request could not connect.
+- Mock API smoke test with temporary `$env:MOCK_API_PORT=8791`: passed; `/auth/send-code`, `/auth/verify-code`, and authenticated `/sync/merge` returned the expected JSON shape, with favorite tombstones applied and settings/history/sleep-log data returned under `{ data }`.
+- `rg -n "mock:api|mock Aliyun|MOCK_API_PORT|EXPO_PUBLIC_API_BASE_URL|localhost:8787|127.0.0.1:8787" docs server README.md package.json`: found `mock:api` already documented in `docs/INTERNAL_BETA_CHECKLIST.md` and earlier handoff logs; README and Aliyun docs mention only the real API base URL.
+- `Get-Content -LiteralPath docs/INTERNAL_BETA_CHECKLIST.md`: confirmed the checklist already documents local Mock API setup, fixed OTP `123456`, in-memory limitations, and guest-mode/account-sync tester tasks.
+- `apply_patch` on `package.json`: added `validate:mock-api` (`node --check scripts/mock-aliyun-api.js`) and included it in `npm run check` after the existing sync validation.
+- `npm.cmd run check`: passed with typecheck, audio catalog validation, Aliyun contract validation, sync merge validation, and the new mock API syntax validation.
+- `git diff --check`: passed after mock API and package updates; only normal Windows LF-to-CRLF working-copy warnings were reported.
+- `git status -sb`: final status shows modified `docs/HANDOFF_CONTEXT.md`, `docs/INTERNAL_BETA_CHECKLIST.md`, and `package.json`, plus untracked `scripts/mock-aliyun-api.js` and `scripts/validate-sync-merge-rules.js`.
+- `git diff --stat`: tracked diff summary shows handoff, internal beta checklist, and package script changes; untracked mock/sync validation scripts are not included until staged.
+- `git diff -- package.json scripts/mock-aliyun-api.js docs/INTERNAL_BETA_CHECKLIST.md | Select-Object -First 220`: reviewed key tracked diffs; package now exposes `mock:api`, `validate:sync`, and `validate:mock-api`, and the beta checklist documents the local Mock API flow and local-first limitation.
+- `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md`: read handoff before implementing the UI polish plan; first execution step is to validate and commit the already-completed Mock API, sync validation, and beta checklist updates.
+- `git status -sb`: confirmed pending first-commit scope on `codex/playback-modes`: modified handoff/checklist/package plus new mock API and sync validation scripts.
+- `npm.cmd run check`: passed before the first planned small commit; typecheck, audio validation, Aliyun contract validation, sync merge validation, and mock API syntax validation all succeeded.
+- `npx.cmd expo install --check`: passed before the first planned small commit; dependencies are up to date.
+- `git diff --check`: passed before the first planned small commit; only normal Windows LF-to-CRLF working-copy warnings were reported.
+- `git add docs/HANDOFF_CONTEXT.md docs/INTERNAL_BETA_CHECKLIST.md package.json scripts/mock-aliyun-api.js scripts/validate-sync-merge-rules.js`: staged the first planned small commit scope; Git reported normal Windows LF-to-CRLF working-copy warnings.
+- `git add docs/HANDOFF_CONTEXT.md`: restaged the handoff after recording the first staging command; Git reported the normal Windows LF-to-CRLF warning.
+- `git add docs/HANDOFF_CONTEXT.md; git commit -m "Add local sync mock API"`: created commit `0623504 Add local sync mock API` with the local Mock API, sync merge validation, beta checklist updates, package scripts, and handoff notes.
+- `git push origin codex/playback-modes`: pushed `0623504 Add local sync mock API` to the remote `codex/playback-modes` branch.
+- `Get-Content`/slice reads for `src/application/SleepApp.tsx`, `src/shared/ui/TrackRow.tsx`, `src/shared/ui/ModuleCard.tsx`, and `src/shared/ui/PillButton.tsx`: inspected UI layout hotspots; found fixed bottom spacing, non-wrapping control rows, and mojibake accessibility labels in `TrackRow`.
+- `Get-Content` slice for `src/application/SleepApp.tsx` bottom styles: inspected mini player and tab bar positioning; current layout uses fixed `scrollContent.paddingBottom`, `miniPlayer.bottom`, and tab bar bottom values.
+- `Get-Content` slice for `src/application/SleepApp.tsx` top constants and `node -e` UTF-8 line check: verified `formatMinutes` contains correct Chinese in source despite PowerShell mojibake display.
+- `node -e` UTF-8 check for `src/shared/ui/TrackRow.tsx`: verified `accessibilityLabel` strings are correct Chinese in source (`鎾斁`, `鍙栨秷鏀惰棌`, `鏀惰棌`); no TrackRow text edit is needed.
+- `apply_patch` on `src/application/SleepApp.tsx`: added bottom-spacing constants, mini-player-aware scroll padding, wrapping control rows, shrinkable buttons, full-width inputs, and flexible setting copy containers for small-screen layout stability.
+- `Get-Content` slice and `node -e` UTF-8 check for mini player accessibility labels: verified `SleepApp.tsx` accessibility labels are correct Chinese in source; PowerShell output mojibake is display-only.
+- `Select-String -Path src/application/SleepApp.tsx -Pattern 'numberOfLines|betaFeedbackEmail|playerQueueText|modeSummary|settingMeta|miniTitle|playerTitle|sectionTitle' -Context 1,2`: reviewed long-text hotspots; feedback email, account identifier, and source URLs need stronger small-screen constraints.
+- `apply_patch` on `src/application/SleepApp.tsx`: constrained feedback email, source URL, and account identifier text with `numberOfLines`, and added shrink behavior for section titles, setting titles, mode summaries, and queue text.
+- `npm.cmd run check`: passed after small-screen layout polish; typecheck, audio validation, Aliyun validation, sync validation, and mock API syntax validation all succeeded.
+- `npx.cmd expo install --check`: passed after small-screen layout polish; dependencies are up to date.
+- `git diff --check`: passed after small-screen layout polish; only normal Windows LF-to-CRLF working-copy warnings were reported.
+- `Get-Content -LiteralPath C:\Users\Administrator\.codex\plugins\cache\openai-bundled\browser\26.527.31326\skills\control-in-app-browser\SKILL.md`: read the Browser skill instructions before local UI verification.
+- `Start-Process npm.cmd run web -- --port 8081`: attempted to start Expo Web in the background with logs redirected to temp files, but the command returned no process details; checking process/log state next.
+- `Get-Process | Where-Object { $_.ProcessName -in @('node','npm','cmd') } ...`: found new Node/cmd processes started at the Expo Web launch time, indicating the local preview likely started despite missing printed process details.
+- `Get-Content` temp Expo Web logs: confirmed Expo Web is running and waiting on `http://localhost:8081`.
+- Browser opened `http://localhost:8081` in the in-app browser; page loaded with title `Codex Sleep`.
+- `Get-ChildItem -Path C:\Users\Administrator\.codex\plugins\cache\openai-bundled\browser\26.527.31326 -Recurse -Filter viewport.md`: found Browser viewport capability docs at `docs\capabilities\browser\viewport.md`.
+- `Get-Content -LiteralPath C:\Users\Administrator\.codex\plugins\cache\openai-bundled\browser\26.527.31326\docs\capabilities\browser\viewport.md`: read viewport capability docs; will use `set({ width, height })` for responsive testing and reset before finishing.
+- Browser viewport set to `360x740`, reloaded `http://localhost:8081`, and inspected home metrics: no horizontal overflow (`scrollWidth=360`, `innerWidth=360`); screenshot showed bottom tab and home content fitting at narrow width.
+- Browser attempted to click Settings via `getByRole('button', { name: '璁剧疆' })`; locator count was 0 due to React Native Web accessibility mapping, while home page still reported no horizontal overflow.
+- Browser clicked the Settings tab by coordinate at `360x740`; settings page reported no horizontal overflow and showed account, timer, content source, feedback, and compliance sections fitting narrow width.
+- Browser scrolled the Settings page to the bottom at `360x740`; feedback email and compliance buttons were reachable above the bottom tab bar, with no horizontal overflow.
+- Browser opened the Account & Sync page from Settings at `360x740`; guest-mode API-not-configured state was readable, had no horizontal overflow, and did not overlap the bottom tab bar.
+- `adb devices`: failed because `adb` is not available on the current PATH; checking common Android SDK and MuMu adb locations next.
+- Common adb candidate path check found no PATH/standard SDK match, but `Get-Process` showed MuMu processes and an adb process at `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe`; broad `C:\` adb search timed out after 30s.
+- `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe devices`: adb is usable via explicit path, but MuMu appeared as `127.0.0.1:49672 offline`.
+- `adb kill-server; adb start-server; adb connect 127.0.0.1:49672; adb connect 127.0.0.1:7555; adb connect 127.0.0.1:16384; adb devices` via explicit adb path: adb daemon restarted successfully, but the combined command returned no connection/device details beyond daemon startup.
+- `adb devices -l` via explicit adb path: MuMu is online as `emulator-5554`, `127.0.0.1:7555`, and `127.0.0.1:16384` (`model:DCO_AL00`); stale `127.0.0.1:49672` remains offline.
+- `adb -s emulator-5554 shell wm size`: MuMu reports physical size `900x1600`.
+- `adb -s emulator-5554 shell pm list packages | Select-String -Pattern 'expo|host.exp|codex|sleep'`: MuMu has `com.codexsleep.app` installed and no Expo Go package was found.
+- `adb -s emulator-5554 shell dumpsys package com.codexsleep.app | Select-String ...`: installed Codex Sleep package has launcher `com.codexsleep.app/.MainActivity`, `versionCode=1`, and `versionName=1.0.0`.
+- `adb -s emulator-5554 shell am start -n com.codexsleep.app/.MainActivity` plus focus check: Codex Sleep launched on MuMu, process id `3423`, and `com.codexsleep.app/.MainActivity` is the current focused app.
+- `adb -s emulator-5554 exec-out screencap -p > tmp-mumu-codex-sleep.png`: produced a 304,618-byte screenshot file, but `view_image` could not process it as PNG, likely due to PowerShell binary redirection corruption.
+- `adb -s emulator-5554 shell screencap -p /sdcard/codex-sleep-screen.png; adb pull ... tmp-mumu-codex-sleep-pull.png`: pulled a valid 159,992-byte MuMu screenshot.
+- `view_image` on `tmp-mumu-codex-sleep-pull.png`: confirmed the installed MuMu app launches, but it is an older light-themed APK, not the current dark UI code, so it does not validate the latest UI polish changes.
+- `Test-Path android` and `rg --files android`: confirmed the repo contains an Android native project with Gradle wrapper and app resources.
+- `rg --files -g 'app.json' -g 'app.config.*' -g 'eas.json' -g '*.apk' -g '*.aab'`: found `app.json` and `eas.json`; no APK/AAB artifacts are tracked in the repo.
+- `Get-Content -LiteralPath app.json`: reviewed Expo Android package config; package is `com.codexsleep.app`, matching the MuMu-installed app.
+- `npx.cmd expo run:android --device emulator-5554`: failed because Expo could not resolve the Android SDK at the default path and `adb` is not on PATH; will retry with `ANDROID_HOME=I:\AI_Workspace\.android-build-tools\android-sdk` and PATH including platform-tools.
+- `ANDROID_HOME=I:\AI_Workspace\.android-build-tools\android-sdk` plus `npx.cmd expo run:android --device emulator-5554`: SDK/PATH resolution succeeded, but Expo failed when probing emulator console port `127.0.0.1:5554`; MuMu rejected that connection, so retrying with TCP device id `127.0.0.1:7555`.
+- `ANDROID_HOME=I:\AI_Workspace\.android-build-tools\android-sdk` plus `npx.cmd expo run:android --device 127.0.0.1:7555`: failed for the same reason because Expo still enumerated `emulator-5554` and attempted the rejected emulator console probe; switching to Gradle install with `ANDROID_SERIAL=127.0.0.1:7555`.
+- `ANDROID_HOME=... ANDROID_SERIAL=127.0.0.1:7555 .\android\gradlew.bat -p android :app:installDebug`: failed immediately because `JAVA_HOME` is not set and no `java` command is on PATH.
+- JDK/runtime discovery: common PATH lookup `where java` found no Java, bundled workspace dependencies are not configured, but `I:\AI_Workspace\.android-build-tools\jdk17` exists and will be used as `JAVA_HOME`.
+- Gradle install with `JAVA_HOME=I:\AI_Workspace\.android-build-tools\jdk17`: failed because that path is not the actual JDK root; inspecting the JDK directory structure next.
+- `Get-ChildItem -Force -Path I:\AI_Workspace\.android-build-tools\jdk17`: actual JDK root is `I:\AI_Workspace\.android-build-tools\jdk17\jdk-17.0.19+10`.
+- Gradle install with `ANDROID_HOME=I:\AI_Workspace\.android-build-tools\android-sdk`, `JAVA_HOME=I:\AI_Workspace\.android-build-tools\jdk17\jdk-17.0.19+10`, and `ANDROID_SERIAL=127.0.0.1:7555`: `.\android\gradlew.bat -p android :app:installDebug` succeeded; Gradle printed a `NODE_ENV` warning and Java deprecation/unchecked notes, but exit code was 0.
+- `adb -s 127.0.0.1:7555 shell am start ...; screencap; pull; view_image`: newly installed debug app launched but showed React Native red screen `Unable to load script`, indicating Metro bundle was not reachable; next step is `adb reverse tcp:8081 tcp:8081`.
+- `adb -s 127.0.0.1:7555 reverse tcp:8081 tcp:8081; input keyevent 46 46; screencap/pull/view_image`: adb reverse was set and reload started Metro bundling; screenshot showed `Bundling 49%...`.
+- `Start-Sleep 12; adb screencap/pull/view_image`: MuMu was still on Metro bundling progress (`52%`), so checking Expo/Metro logs for errors next.
+- `Get-Content` temp Expo/Metro logs: no Android bundle error was shown, but Expo Web reported invalid nested buttons in `MiniPlayerBar` because the outer mini-player `Pressable` contains an inner playback `Pressable`; fixing this UI/accessibility issue next.
+- `apply_patch` on `src/application/SleepApp.tsx`: refactored `MiniPlayerBar` so the root is a `View`, the open-player area is one `Pressable`, and the playback button is a sibling `Pressable`, eliminating nested Web buttons.
+- `npm.cmd run check`: passed after the mini-player nested-button fix.
+- Browser reload/log/screenshot verification after mini-player fix: timed out during screenshot capture (`Page.captureScreenshot`), likely while the page or Metro refresh was busy; retrying with a lighter no-screenshot check.
+- Browser light verification retry: first attempt failed with Node session variable redeclaration (`Identifier 'logs' has already been declared`); rerunning with unique variable names.
+- Browser light verification after mini-player fix: page at `360x740` had no horizontal overflow, but dev logs still included earlier nested-button warnings from before the reload; checking current DOM directly for `button button` nesting.
+- Browser DOM check after mini-player fix: current DOM has `document.querySelectorAll('button button').length === 0`, confirming the nested Web button issue is fixed.
+- `Get-Content` temp Expo/Metro logs after waiting: Android bundle completed successfully in `140977ms` (`2572 modules`); Web bundle also refreshed after the mini-player change.
+- `adb screencap/pull/view_image` after Android bundle completion: red screen disappeared, but MuMu showed a blank dark screen instead of the app UI; checking logcat for runtime errors next.
+- `adb logcat -d -t 500 | Select-String ...`: no obvious JS fatal or AndroidRuntime crash for `com.codexsleep.app`; logs showed React context loading and unrelated MuMu/system messages, so checking Android UI hierarchy next.
+- `adb shell uiautomator dump /sdcard/codex-ui.xml; adb pull ...; Get-Content`: Android UI hierarchy contains only root `FrameLayout` nodes and no Codex Sleep text nodes, confirming the blank MuMu screen is an unrendered React surface rather than hidden text.
+- `adb shell am force-stop com.codexsleep.app; adb shell am start ...; screencap/pull/view_image`: after restart, MuMu still shows a blank dark screen with no app UI.
+- `adb -s 127.0.0.1:7555 reverse --list`: reverse mapping exists as `tcp:8081 tcp:8081`.
+- Focused logcat check after restart: React context loaded from Metro and `ReactNativeJS` logged `Running "main"`; no JS fatal was shown, only `SafeAreaView` deprecation warning, but MuMu still displays a blank dark screen.
+- `adb shell uiautomator dump /sdcard/codex-ui-after-js.xml; adb pull ...; screencap/pull/view_image`: after waiting longer, Android UI hierarchy contained Codex Sleep text nodes and the MuMu screenshot showed the current dark home UI rendering correctly; a debug warning toast overlays the bottom but is not app layout.
+- `adb input tap` to dismiss the debug warning and open Settings, followed by `screencap/pull/view_image`: MuMu Settings page rendered correctly with no obvious overlap; account card, timer pills, feedback email, compliance buttons, and bottom tab bar fit on the 900x1600 emulator screen.
+- `git status -sb`: current changes are `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`, plus untracked temporary MuMu screenshot/XML files generated during verification.
+- `Remove-Item` for local `tmp-mumu-*` files: cleaned up temporary MuMu screenshots and UI XML artifacts generated during Android verification.
+- `git status -sb`: after cleanup, only `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx` are modified.
+- `npm.cmd run check`: passed after small-screen layout, mini-player, Web, and MuMu verification work.
+- `npx.cmd expo install --check`: passed after small-screen layout, mini-player, Web, and MuMu verification work; dependencies are up to date.
+- `git diff --check`: passed after small-screen layout, mini-player, Web, and MuMu verification work; only normal Windows LF-to-CRLF warnings were reported.
+- `git add docs/HANDOFF_CONTEXT.md src/application/SleepApp.tsx`: staged the small-screen UI layout commit scope; Git reported normal Windows LF-to-CRLF working-copy warnings.
+- `git add docs/HANDOFF_CONTEXT.md; git commit -m "Polish small screen UI layout"`: created commit `87edc9f Polish small screen UI layout` with small-screen layout polish, mini-player nested-button fix, and verification notes.
+- `git push origin codex/playback-modes`: pushed `87edc9f Polish small screen UI layout` to the remote `codex/playback-modes` branch.
+- `rg -n "閸殀閻閹緗缁緗顔粅鈧瑋淇檤鍣獆鏋晐灏榺瀵皘妫寍绉穦灞磡鍕珅鎰瑋鎯鍙闂倈褰亅婀鈧讲|閵? app.json src docs server scripts`: searched for likely mojibake; matches were normal Chinese words/content, not corrupted source strings.
+- `rg -n "锟絴\uFFFD" app.json src docs server scripts`: found no Unicode replacement characters in app/source/docs/server/scripts.
+- `Select-String -Path src/application/SleepApp.tsx src/shared/ui/*.tsx -Pattern 'Pressable|accessibilityLabel|accessibilityRole' -Context 0,2`: failed due to incorrect PowerShell multi-path argument form; rerunning with a path array.
+- `Select-String -Path @('src/application/SleepApp.tsx','src/shared/ui/*.tsx') -Pattern 'Pressable|accessibilityLabel|accessibilityRole' -Context 0,2`: reviewed Pressable/accessibility usage; no remaining nested button pattern was found, and `TrackRow` has sibling play/favorite buttons with correct Chinese labels.
+- `apply_patch` on `src/application/SleepApp.tsx`: added explicit `accessibilityRole`/`accessibilityLabel` to the header home button and bottom tab buttons.
+- `npm.cmd run check`: passed after copy/accessibility polish.
+- `npx.cmd expo install --check`: passed after copy/accessibility polish; dependencies are up to date.
+- `git diff --check`: passed after copy/accessibility polish; only normal Windows LF-to-CRLF warnings were reported.
+- `git add docs/HANDOFF_CONTEXT.md src/application/SleepApp.tsx`: staged the copy/accessibility polish commit scope; Git reported normal Windows LF-to-CRLF warnings.
+- `git add docs/HANDOFF_CONTEXT.md; git commit -m "Improve navigation accessibility"`: created commit `20d6884 Improve navigation accessibility` with explicit navigation button accessibility labels and handoff notes.
+- `git push origin codex/playback-modes`: pushed `20d6884 Improve navigation accessibility` to the remote `codex/playback-modes` branch.
+- Browser viewport reset: cleared the temporary `360x740` viewport override after responsive verification.
+- `Get-NetTCPConnection -LocalPort 8081`: found the Expo/Metro preview listener/connection owned by process `28912`.
+- `Stop-Process -Id 28912 -Force; Start-Sleep 1; Get-NetTCPConnection -LocalPort 8081`: stopped the Expo/Metro preview process; follow-up port check returned no remaining listener/connection output.
+- `git status -sb`: after pushing UI commits and stopping preview, only `docs/HANDOFF_CONTEXT.md` remains modified with command-log updates.
+- `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md`, `git status -sb`, `Get-Content -LiteralPath docs/INTERNAL_BETA_CHECKLIST.md`, and `Get-Content -LiteralPath server/aliyun-functions/README.md`: read current handoff and content/backend docs before implementing the content and feedback plan; branch is clean on `codex/playback-modes`.
+- `Get-Content -LiteralPath src/shared/content/audioCatalog.ts`, `docs/AUDIO_ASSET_SOURCES.md`, `docs/PRIVACY_POLICY_DRAFT.md`, and `Select-String` for feedback/credits in `src/application/SleepApp.tsx`: reviewed current catalog, asset-source docs, privacy draft, and feedback entry points; content/feedback work should focus on auditability, feedback templates, and clearer beta asset grouping.
+- `Select-String -Path C:\Users\Administrator\.codex\memories\MEMORY.md -Pattern 'HANDOFF_CONTEXT|codex-test|commit|push|Codex Sleep' -Context 1,1`: confirmed prior memory only reinforces reading `docs/HANDOFF_CONTEXT.md` first and updating it after each command.
+- `Get-Content -LiteralPath scripts/validate-audio-catalog.js`, `package.json`, and `src/shared/types/audio.ts`: reviewed current audio validation, package scripts, and audio item shape; the new content audit should stay dependency-free and build on the existing text-based catalog checks.
+- `node -e "const fs=require('fs'); const lines=fs.readFileSync('src/shared/content/audioCatalog.ts','utf8').split(/\r?\n/); ..."`: sampled catalog strings through UTF-8 Node reading and confirmed Chinese source text is valid; PowerShell mojibake is display-only.
+- `apply_patch` added `scripts/validate-content-audit.js`: new dependency-free content audit checks valid UTF-8, source completeness, non-empty titles/descriptions/categories, caption/guidance cues, replacement-character artifacts, and licensed-vs-placeholder counts.
+- `apply_patch` updated `package.json`: added `validate:content` and inserted it into `npm run check` after `validate:audio`.
+- `npm.cmd run validate:content`: passed; content audit reported 13 items, 5 licensed candidates, 8 beta placeholders, and 3 attribution-required items.
+- `npm.cmd run check`: passed after adding content audit; typecheck, audio validation, content audit, Aliyun validation, sync validation, and mock API syntax validation all succeeded.
+- `npx.cmd expo install --check`: passed after adding content audit; dependencies are up to date.
+- `git diff --check`: passed after adding content audit; only normal Windows LF-to-CRLF working-copy warnings were reported for touched files.
+- `git add docs/HANDOFF_CONTEXT.md package.json scripts/validate-content-audit.js`: staged the content-audit commit scope; Git reported normal Windows LF-to-CRLF warnings.
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md`, `git status -sb`, and `git log --oneline -5 --decorate`: resumed implementation from `I:\AI_Workspace\codex-test`; branch `codex/playback-modes` is ahead of origin by one local commit `de57758 Add content audit validation`.
+- `git push origin codex/playback-modes`: pushed `de57758 Add content audit validation` to the remote branch before starting the AI sleep module/navigation changes.
+- `Get-Content` slices for `src/application/SleepApp.tsx` and `rg` for sleep-log/player/navigation references: inspected current screen union, sleep-log UI, tab bar, account/privacy copy, and docs that still mention sleep records; implementation will remove the visible sleep-log surface while keeping sync compatibility.
+- `Get-Content` slices for `src/application/SleepApp.tsx` lower components/styles and `docs/INTERNAL_BETA_CHECKLIST.md`: reviewed `AccountPanel`, `QuickSections`, `TabButton`, style names, and beta tasks before adding the local AI sleep recommendation screen and updating docs.
+- `node` catalog ID sampling plus reads of `docs/PRIVACY_POLICY_DRAFT.md` and `docs/PLAY_STORE_CHECKLIST.md`: confirmed AI recommendations can reuse existing audio IDs; privacy/store docs still mention sleep logs and need current-beta copy updates.
+- `rg -n "id: '|title: '|type: '" src/shared/content/audioCatalog.ts`: listed all 13 current audio IDs/titles/types for the AI sleep recommendation presets.
+- `apply_patch` attempted a broad `SleepApp.tsx` update for navigation, sleep-log removal, and AI sleep presets, but context verification failed on a changed privacy-copy line; switching to smaller targeted patches.
+- `apply_patch` on `src/application/SleepApp.tsx`: updated imports and screen union for the new `ai` screen, removed the visible sleep-log hook/type imports, and added the `Sparkles` icon for AI navigation.
+- `apply_patch` on `src/application/SleepApp.tsx`: added local AI sleep intent presets/duration options and removed sleep-log-only date/id/draft helper functions from the app shell.
+- `apply_patch` on `src/application/SleepApp.tsx`: replaced sleep-log UI state with selected AI intent/duration state, derived recommended tracks from the existing catalog, and kept sync payload compatibility by sending an empty `sleepLogs` array while no longer applying remote sleep logs to UI.
+- `apply_patch` on `src/application/SleepApp.tsx`: added `startAiSleep` to set the preset playback mode, play the recommended queue, set the selected timer, and enter the player; removed sleep-log edit/save/delete handlers from the visible app shell.
+- `apply_patch` on `src/application/SleepApp.tsx`: inserted the new `AiSleepPanel` screen branch between module lists and the player screen.
+- `apply_patch` on `src/application/SleepApp.tsx`: removed the visible sleep-record screen JSX, including the form, empty state, edit/delete controls, and average-sleep summary.
+- `apply_patch` on `src/application/SleepApp.tsx`: updated home hero, beta feedback, and in-app privacy copy so current-beta data scope no longer presents sleep records as a feature.
+- `apply_patch` on `src/application/SleepApp.tsx`: updated Account & Sync header copy to list only favorites, recent plays, and settings.
+- `apply_patch` on `src/application/SleepApp.tsx`: changed bottom navigation to four user-facing tabs: Home, AI Sleep, Favorites, and Settings; removed the player and sleep-record tabs while keeping mini-player access to the full player.
+- `apply_patch` on `src/application/SleepApp.tsx`: added `AiSleepPanel` with sleep-goal cards, duration pills, local recommendation preview, beta AI disclaimer, and a start button wired to the app shell.
+- `apply_patch` on `src/application/SleepApp.tsx`: added AI sleep page styles for the hero, selectable goal cards, recommendation panel, and compact recommended-track chips.
+- `rg` for sleep-log/AI references in `SleepApp.tsx`, `src`, and `docs`: confirmed the app shell only keeps `sleepLogs: []` for sync compatibility plus one unused note-input style, while docs still need current-beta sleep-record copy removal.
+- `apply_patch` on `src/application/SleepApp.tsx`: removed sleep-record-only styles (`logRow`, `logActions`, `formPanel`, `logBody`, `logTitle`, `logMeta`, and `noteInput`) from the current UI stylesheet.
+- `apply_patch` on `docs/INTERNAL_BETA_CHECKLIST.md`: replaced sleep-record tester tasks with AI Sleep goal/duration/start-flow checks, updated Mock API sync expectations, and added bottom-navigation/player-entry verification.
+- `apply_patch` on `docs/PRIVACY_POLICY_DRAFT.md`: removed manual sleep-log entries from current local/cloud data scope and changed the health disclaimer from sleep journaling to sleep guidance.
+- `apply_patch` attempted to update `docs/PLAY_STORE_CHECKLIST.md` listing copy, but context did not match because that file's existing Chinese text is stored/displayed differently; will inspect and replace a broader stable section.
+- `node` UTF-8 line inspection of `docs/PLAY_STORE_CHECKLIST.md`: confirmed the store listing text is valid UTF-8 and still names local sleep records; patching the listing and screenshot list next.
+- `apply_patch` on `docs/PLAY_STORE_CHECKLIST.md`: updated the store listing draft to mention local AI recommendations and removed the sleep-log screenshot/current-feature claims.
+- `rg` verification for sleep-log and AI references plus `git diff --stat`: confirmed the current app/docs no longer expose a sleep-record UI or store/privacy feature claim; the only remaining manual sleep-log wording is a beta feedback question asking whether anything feels missing after removal.
+- `npm.cmd run check`: passed after navigation simplification and AI Sleep implementation; typecheck, audio validation, content audit, Aliyun contract validation, sync merge validation, and mock API syntax validation all succeeded.
+- `npx.cmd expo install --check` and `git diff --check`: both passed after the AI Sleep/navigation changes; Expo dependencies are up to date and Git only reported normal Windows LF-to-CRLF warnings.
+- `tool_search` for in-app Browser/localhost verification: Browser control tools were not exposed in the current callable tool set, so Web verification will use available local commands unless the Browser tool becomes available again.
+- `Start-Process npm.cmd run web -- --port 8081`: attempted to start Expo Web in the background for local AI Sleep/navigation verification; the command returned no process details, so checking port/log state next.
+- `Get-NetTCPConnection` and Expo Web log reads: confirmed Expo Web is listening on `http://localhost:8081` with process `30468` and Metro waiting for requests; no stderr output was present.
+- `node_repl` import check for `playwright`: Playwright is not available in the current environment, so no new dependency was added; browser-style narrow-screen verification is limited by the unavailable Browser/Playwright tools.
+- `adb devices -l` plus SDK/JDK path checks: Android SDK and JDK paths still exist, but MuMu currently only appears as `127.0.0.1:49672 offline`; restarting adb and reconnecting common MuMu ports next.
+- `adb kill-server/start-server/connect 127.0.0.1:7555/connect 127.0.0.1:16384/devices`: adb daemon restarted successfully, but the combined command only printed daemon startup text; checking devices separately.
+- `adb devices -l`: MuMu is online as `127.0.0.1:7555`, `127.0.0.1:16384`, and `emulator-5554` (`model:DCO_AL00`); using `127.0.0.1:7555` for Android verification.
+- Gradle install with `ANDROID_HOME`, `JAVA_HOME`, and `ANDROID_SERIAL=127.0.0.1:7555`: `.\android\gradlew.bat -p android :app:installDebug` exited 0; Gradle printed only the known Expo `NODE_ENV` warning.
+- `adb reverse`, app restart, 12-second wait, UI dump, and XML pull from MuMu: current debug app rendered the home screen from Metro; bottom navigation shows Home, AI Sleep, Favorites, and Settings, with no Player or Record tab.
+- `adb screencap`/pull and `view_image` for MuMu home: confirmed the current dark home UI renders with the updated hero copy and no visible Player/Record navigation tab; a React Native debug warning bar overlays the bottom but is not part of the app layout.
+- `adb tap` near the AI Sleep tab followed by screenshot/XML pull: the tap was blocked by the React Native debug warning overlay, so the screen remained on Home; dismissing the overlay before retrying navigation.
+- After dismissing the React Native debug warning, `adb tap` on the AI Sleep tab plus screenshot/XML pull succeeded: MuMu shows the AI Sleep page with five sleep goals, 5/10/20/30 minute pills, recommendation preview, and four-tab navigation; visual screenshot looked readable with no obvious overlap.
+- `adb swipe` down the AI Sleep page and tap near the start area: XML showed the Start AI Sleep button visible at bounds `[62,1347][839,1413]`, but the tap landed above the button and the app remained on the AI Sleep page; retrying with a centered tap.
+- Centered `adb tap` on the Start AI Sleep button plus screenshot pull: MuMu entered the player, started `Soporific`, displayed sequential playback and the selected 20-minute timer, and showed no `NaN` or obvious control overlap.
+- Attempted MuMu `uiautomator dump` checks for Favorites, Settings, and Account while playback was active; all dumps failed with `ERROR: could not get idle state`, so switching to screenshot-based page checks instead of XML inspection.
+- MuMu current screenshot after navigation: Settings page rendered with Account & Sync, default timer, content source, feedback, and compliance sections; mini player and bottom navigation were visible without covering the main settings content.
+- MuMu account screenshot: Account & Sync page shows guest/API-not-configured state and the updated copy for favorites, recent plays, and settings; mini player/bottom navigation remain clear.
+- MuMu favorites screenshot: Favorites tab opens as a first-level tab, shows the empty state clearly, and keeps the mini player plus bottom navigation stable without covering content.
+- `Remove-Item` for local `tmp-codex-*` files: cleaned up temporary MuMu screenshots and XML artifacts generated during verification.
+- `Stop-Process -Id 30468` followed by `Get-NetTCPConnection -LocalPort 8081`: stopped the Expo Web/Metro process used for verification; no remaining listener output was returned.
+- Final `npm.cmd run check`, `npx.cmd expo install --check`, and `git diff --check`: all passed after AI Sleep/navigation implementation and MuMu verification; `git diff --check` reported only normal Windows LF-to-CRLF warnings.
+- `git status -sb`, `git diff --stat`, and `rg` for removed navigation/sleep-log terms: changed files are `SleepApp.tsx`, beta/privacy/store docs, and handoff; no visible sleep-record UI terms remain, aside from a deliberate beta feedback question about whether anything feels missing after removing the manual sleep log.
+- Final pre-commit `git diff --check`: passed with only normal Windows LF-to-CRLF warnings for touched files.
+- `git add docs/HANDOFF_CONTEXT.md docs/INTERNAL_BETA_CHECKLIST.md docs/PLAY_STORE_CHECKLIST.md docs/PRIVACY_POLICY_DRAFT.md src/application/SleepApp.tsx`: staged AI Sleep/navigation and docs changes; Git reported normal Windows LF-to-CRLF warnings.
+- `git add docs/HANDOFF_CONTEXT.md`: restaged the handoff after adding the staging log entry; Git reported the normal Windows LF-to-CRLF warning.
+- `git commit -m "Add local AI sleep module"`: created commit `a38b3cc` with the AI Sleep module, simplified navigation, sleep-record UI removal, MuMu verification notes, and current beta doc updates.
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md`: read current handoff before locally running the latest AI Sleep UI for the user.
+- `Get-NetTCPConnection` check plus `Start-Process npm.cmd run web -- --port 8081`: attempted to start or reuse the Expo Web preview for the user; the command returned no process details, so port/log state will be checked next.
+- `Get-NetTCPConnection` and Expo Web log reads: confirmed the local Expo Web preview is running at `http://localhost:8081` under process `20716`, with no stderr output.
+- `tool_search` for Browser/in-app browser navigation: no callable Browser navigation tool was exposed in this turn, so the user should open or refresh `http://localhost:8081/` manually in the in-app browser.
+- `Invoke-WebRequest http://localhost:8081/`: local Expo Web page responded `200 OK` with content length `1262`, confirming the preview is reachable.
+- `git diff --check`: passed after local preview handoff updates, with only the normal Windows LF-to-CRLF warning for `docs/HANDOFF_CONTEXT.md`.
+- `git add docs/HANDOFF_CONTEXT.md`: staged the local preview handoff update; Git reported the normal Windows LF-to-CRLF warning.
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md`, `git status -sb`, and `rg` for `ScrollView`/header/screen navigation references: resumed from a clean branch and identified `SleepApp.tsx` as the place to add scroll-to-top-on-player-entry, compact header styles, and Android back-stack behavior.
+- `Get-Content` slices for `src/application/SleepApp.tsx`: confirmed navigation currently uses direct `setScreen` calls, the main `ScrollView` has no ref, and the header uses a large 28px app title with 40px back button.
+- `apply_patch` on `src/application/SleepApp.tsx`: added `BackHandler`, `ToastAndroid`, a main `ScrollView` ref, screen history refs, `navigateTo`, `navigateBack`, scroll-to-top-on-screen-change, Android hardware-back handling, and wired track/AI player entry plus header home button through the new navigation helper.
+- `apply_patch` on `src/application/SleepApp.tsx`: replaced remaining module, favorites, settings subpage, mini-player, and bottom-tab `setScreen` calls with `navigateTo` so Android back can return to the previous app screen.
+- `apply_patch` on `src/application/SleepApp.tsx`: compacted the fixed header by reducing top/bottom padding, shrinking the environment eyebrow, reducing the app title from 28px to 22px, and reducing the header home button from 40px to 36px.
+- `rg` for `setScreen`/navigation/back/scroll references and `git diff` review: confirmed remaining `setScreen` calls are internal to the navigation helpers, and all user-facing navigation entries now go through `navigateTo`.
+- `apply_patch` on `src/application/SleepApp.tsx`: added an Android platform guard around the hardware back listener so Web/iOS do not register Android-only back behavior.
+- `npm.cmd run check` and `git diff --check`: passed after scroll-reset, compact header, and Android back-navigation changes; `git diff --check` reported only normal Windows LF-to-CRLF warnings.
+- `npx.cmd expo install --check`: passed after the navigation/header changes; Expo dependencies are up to date.
+- `Get-NetTCPConnection -LocalPort 8081` and `Invoke-WebRequest http://localhost:8081/`: existing Expo Web preview process `20716` is still serving the app and returns `200 OK`, so the in-app browser can be refreshed to view the compact header.
+- `adb devices -l` and `adb reverse --list`: MuMu is online as `127.0.0.1:7555`/`127.0.0.1:16384`/`emulator-5554`, and reverse mapping `tcp:8081 tcp:8081` is active for loading the current Metro bundle.
+- MuMu app restart/reload and home screenshot: compact header title is visibly smaller, but the reduced top padding placed the environment label too close to the Android status bar; increasing only the header top padding while keeping the smaller title/button.
+- `apply_patch` on `src/application/SleepApp.tsx`: restored header top padding to `spacing.md` while keeping the smaller 22px app title, 10px eyebrow, 36px header button, and compact bottom padding.
+- `npm.cmd run check` and `git diff --check`: passed after restoring header top padding; `git diff --check` reported only normal Windows LF-to-CRLF warnings.
+- MuMu hardware Back verification screenshots: from `鏀惰棌` first Back returned to `AI鍔╃湢`, second Back returned to `棣栭〉`; the corrected compact header no longer overlaps the Android status bar.
+- Attempted homepage double-Back verification with `C:\Users\Administrator\AppData\Local\Android\Sdk\platform-tools\adb.exe`, but that exact adb path was not present in this environment; locating the active adb binary before retrying.
+- `where.exe adb`: no adb binary is currently available on `PATH`, so the next step is searching common SDK/MuMu install locations for `adb.exe`.
+- Narrow common-directory search for `adb.exe` under LocalAppData/Program Files timed out after 30s, so switching to environment-variable and known emulator install path checks.
+- Checked `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and common MuMu/Android SDK adb paths; none currently exist, so adb verification is temporarily blocked until the active adb binary is located.
+- Read the Browser in-app-browser skill instructions to verify the local Web preview through the existing `http://localhost:8081/` tab while adb path discovery is blocked.
+- Browser in-app preview connected to `http://localhost:8081/` and reloaded successfully for Web-side header and player scroll-reset verification.
+- Browser screenshot of Web home: compact header displays smaller `Codex Sleep` title with stable bottom navigation and no visible overlap in the narrow preview.
+- Browser DOM snapshot on Web home: located `鎾斁 Soporific` in the recent-play list for player entry scroll-reset verification.
+- Browser player entry check: clicking `鎾斁 Soporific` opened the player at `window.scrollY = 0`, showing the top of the player instead of a previous scroll position.
+- Browser scroll-reset path: after scrolling the player, trying to click a strict `棣栭〉` role timed out because no matching button was exposed at the current DOM state; inspecting the visible player DOM before retrying navigation.
+- Browser scrolled-player screenshot/DOM: player remained scrollable and exposed the header `杩斿洖棣栭〉` button, so using that entry to continue the scroll-reset path.
+- Browser click on `杩斿洖棣栭〉`: returned from the scrolled player to the home screen with `window.scrollY = 0`, and the mini player remained visible for re-entry testing.
+- Browser DOM snapshot on home with mini player: located the mini-player entry `鎵撳紑鎾斁鍣細Soporific` for player re-entry scroll-reset verification.
+- Browser mini-player click retry note: strict role click on `鎵撳紑鎾斁鍣細Soporific` timed out inside the browser automation runtime, so retrying with visible coordinate interaction and a fresh state check.
+- Browser coordinate retry landed on the `AI鍔╃湢` bottom tab instead of the mini player; app stayed stable at `window.scrollY = 0`, and mini player remained visible for another re-entry attempt.
+- Browser mini-player coordinate re-entry succeeded: tapping the mini player opened the full player at `window.scrollY = 0`, confirming the player no longer reuses the previous scrolled position.
+- `Get-Process` for adb/MuMu processes located the active adb binary at `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe`, so Android homepage double-Back verification can resume.
+- MuMu homepage double-Back verification with the active adb binary: first Back kept focus on `com.codexsleep.app/.MainActivity`, second Back moved focus to `app.lawnchair/.LawnchairLauncher`, confirming "press twice to exit" behavior on Home.
+- Final `npm.cmd run check`: passed after header, player scroll-reset, and Android back-navigation changes; audio/content/Aliyun/sync/mock validations all passed.
+- Final `npx.cmd expo install --check`: passed; Expo dependencies are up to date.
+- Final `git diff --check`: passed with only normal Windows LF-to-CRLF warnings for `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`.
+- `Get-ChildItem -Filter tmp-codex-*`: found three temporary MuMu screenshots (`tmp-codex-back-home.png`, `tmp-codex-back-after-one.png`, `tmp-codex-back-after-two.png`) to remove before commit.
+- `Remove-Item` for the three `tmp-codex-*` MuMu screenshots: cleaned temporary verification artifacts before commit.
+- `git status -sb`, `git diff --stat`, and `git diff` review: only `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx` are modified; review found one refinement needed so Home always uses double-Back exit before consuming screen history.
+- `apply_patch` on `src/application/SleepApp.tsx`: reordered `navigateBack` so Home always handles the double-Back exit flow first, while non-Home screens still consume navigation history or fall back to Home.
+- Re-ran `npm.cmd run check` after the Home-first back handling refinement; typecheck and all validation scripts passed.
+- Re-ran `npx.cmd expo install --check` after the Home-first back handling refinement; Expo dependencies remain up to date.
+- Re-ran `git diff --check` after the Home-first back handling refinement; passed with only normal Windows LF-to-CRLF warnings.
+- Re-ran MuMu homepage double-Back verification after the Home-first back handling refinement: first Back kept focus on `com.codexsleep.app/.MainActivity`, second Back moved focus to `app.lawnchair/.LawnchairLauncher`.
+- Final pre-commit `git status -sb`, `git diff --stat`, and `Get-ChildItem -Filter tmp-codex-*`: only `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx` are modified, and no temporary `tmp-codex-*` files remain.
+- `git add src/application/SleepApp.tsx docs/HANDOFF_CONTEXT.md`: staged the header/player-scroll/back-navigation changes and handoff updates; Git reported normal Windows LF-to-CRLF warnings.
+- `git add docs/HANDOFF_CONTEXT.md`: restaged handoff after adding the staging log entry; Git reported the normal Windows LF-to-CRLF warning.
+- Attempted chained `git add docs/HANDOFF_CONTEXT.md && git commit ...`, but this PowerShell version rejected `&&`; splitting the staging and commit commands.
+- `git add docs/HANDOFF_CONTEXT.md`: restaged handoff after recording the PowerShell `&&` parser failure.
+- `git commit -m "Improve player and Android navigation polish"`: created commit `2d0b257` with player scroll reset, compact header, Android navigation/back handling, and verification notes.
+- `git add docs/HANDOFF_CONTEXT.md; git commit --amend --no-edit`: amended the commit to include the commit log entry; the amended commit hash at that moment was `22a6935`.
+- `git push origin codex/playback-modes`: pushed navigation polish commit `ebe351e` to the remote branch.
+- Audio expansion validation: `npm.cmd run check` passed, reporting 30 catalog items (10 music, 8 story, 12 noise), 30 licensed/original candidates, 0 beta placeholders, 3 attribution-required items, and about 45MB local audio.
+- `npx.cmd expo install --check` passed after using the approved Expo cache write path; dependencies are up to date.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Web narrow-screen smoke verification passed for the expanded catalog: music list shows 10 items and played `鎱㈠搷椋庨搩` with `0:52`; story list shows 8 items and played `韬綋鎱㈡參瀹夐潤` with `0:31`; noise list shows 12 items and played `妫曞櫔鐫＄湢搴昤 with `0:55`; AI Sleep displays 5 recommended tracks for the default goal.
+
+## 2026-06-03 Companion AI Sleep Polish
+
+- Simplified the home hero by removing the descriptive paragraph under `今晚慢一点入睡`.
+- Reworked the AI Sleep screen toward a companion-style flow: removed the old explanatory hero, added a compact companion status, quick request chips, and an input box that simulates "saying" changing sleep needs during internal beta.
+- Added local keyword routing for companion requests such as anxiety, waking at night, rain/noise, story/company, and fast sleep; changing the request immediately changes the recommended queue.
+- Real microphone listening is intentionally not implemented yet because it needs separate voice-recognition support, microphone permission UX, privacy copy, and supplier/cost decisions.
+
+Validation:
+
+- `npm.cmd run check` passed.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`; refresh the in-app browser to view the updated screen.
+
+## 2026-06-03 Core Module Discovery Polish
+
+- Removed the home hero/title card so the first screen now starts directly with the three core module entries: music, stories, and white noise.
+- Kept `浠婃櫄鎱竴鐐瑰叆鐫 only as a lightweight companion cue inside the AI Sleep panel.
+- Added local recommended sorting for module lists using existing `audioCatalog.category` and duration metadata.
+- Added module category filter chips, count display, and current filter state without changing the `AudioItem` type, catalog schema, playback hook, or sync protocol.
+- Confirmed `TrackRow` source text is UTF-8 correct in code; the visible mojibake during earlier terminal/automation output is from the inspection layer, not the source file.
+
+Validation:
+
+- `npm.cmd run check` passed, including the 30-item audio/content audit.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`.
+- MuMu visual smoke check passed: home opens directly to the three module entries, the music module shows filter chips/count/sort state, and AI Sleep shows the lightweight `浠婃櫄鎱竴鐐瑰叆鐫 companion cue.
+
+## 2026-06-03 Home Entry Simplification
+
+- Simplified the home screen to show only the three core module cards: music, stories, and white noise.
+- Removed the home `QuickSections` preview block, including the recent-play preview and favorite preview, so the home screen stays focused as a clean entry layer.
+- Kept the Favorites tab, account sync support for favorites/history, and mini player behavior unchanged.
+
+Validation:
+
+- `npm.cmd run check` passed.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`.
+
+## 2026-06-03 AI Sleep Collapsible Controls
+
+- Reworked the AI Sleep recommendation queue into a collapsed-by-default card: the closed state shows the lead track and total count, and tapping expands the remaining queue.
+- Reworked the sleep duration picker into the same collapsed control style: the closed state shows the selected duration, and expanding reveals the 5/10/20/30 minute choices.
+- Selecting a duration now closes the duration selector, and changing the companion intent collapses the queue again so the page stays calm by default.
+- No new dependencies, playback logic, catalog data, or sync contracts were changed.
+
+Validation:
+
+- `npm.cmd run check` passed.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`.
+
+## 2026-06-03 Player Immersion Polish
+
+- Reworked the player first screen into a calmer sleep-mode layout with a prominent countdown, sleep cue, track title, progress, captions, and large playback controls.
+- Collapsed timer, playback mode, and audio details into quiet foldable cards so the player no longer exposes every setting at once.
+- Moved custom timer controls into the audio-details foldout to reduce bedtime UI density.
+- Added real timer fade-out behavior in `useAudioPlayer`: when a sleep timer is active, the final 30 seconds gradually lower player volume before stop; canceling the timer or changing tracks restores normal volume.
+- MuMu visual smoke check confirmed the player opens cleanly on a narrow Android screen with no obvious overlap.
+
+Validation:
+
+- `npm.cmd run check` passed.
+- `npx.cmd expo install --check` passed.
+- `git diff --check` passed with only normal Windows LF-to-CRLF warnings.
+- Local preview at `http://localhost:8081/` returned `200 OK`.
+
+## 2026-06-03 Default Timer Settings Fix
+
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md` and `git status -sb`: resumed from handoff on branch `codex/playback-modes`; starting work from a clean tree to fix settings-page default sleep timer behavior. Note: `apply_patch` could not update this handoff because the existing file contains non-UTF-8 bytes, so command-log entries in this section are appended with PowerShell.
+- `apply_patch` on `src/application/SleepApp.tsx`: wired `settingsRef` so sync snapshots use freshly saved settings, initialized AI Sleep duration from `defaultSleepTimerMinutes`, and kept AI Sleep default duration in sync when settings load/save or remote data applies.
+- `apply_patch` on `src/application/SleepApp.tsx`: clarified default timer copy in Settings, AI Sleep duration copy, and player timer copy so Settings describes the next-play default while the player describes the current session timer.
+- `rg` and `git diff -- src/application/SleepApp.tsx`: reviewed the timer-setting change; no backend contract, hook API, or UserSettings type changes were introduced, and Git only reported normal Windows LF-to-CRLF working-copy warnings.
+- `npm.cmd run check`: passed after default timer fix; typecheck, audio/content audit, Aliyun backend validation, sync merge validation, and mock API syntax check all succeeded.
+- `npx.cmd expo install --check`: passed after default timer fix; Expo dependencies are up to date.
+- `git diff --check`: passed after default timer fix; only normal Windows LF-to-CRLF working-copy warnings were reported for handoff and `SleepApp.tsx`.
+- `git status -sb` and `git diff --stat`: final changed files are `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`; app logic diff is scoped to default timer settings, AI Sleep duration defaults, fresh settings sync snapshots, and timer copy.
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md`, `git status -sb`, and `rg`: resumed with existing default-timer fix changes still unstaged; user clarified default timer should be off so ordinary track entry does not unexpectedly start a countdown.
+- `Get-Content` and `rg` on `SleepApp.tsx`: located current timer constants and state wiring; AI Sleep duration list is `aiSleepDurations` and the previous fix was still tying AI duration to settings.
+- `apply_patch` on `src/application/SleepApp.tsx`: changed `defaultSleepTimerMinutes` default to `0` for off-by-default behavior, added `defaultAiSleepDuration` at 20 minutes, and stopped settings load/save/remote apply from overwriting the AI Sleep one-session duration.
+- `apply_patch` on `src/application/SleepApp.tsx`: Settings now shows off state as `新开播放不自动倒计时` and includes a `关闭` pill that saves `defaultSleepTimerMinutes: 0`.
+- `apply_patch` on `src/application/SleepApp.tsx`: changed AI Sleep duration copy to describe it as a one-session AI Sleep duration instead of following Settings.
+- `rg` and `git diff -- src/application/SleepApp.tsx`: confirmed default timer is now `0`, ordinary track opening still only auto-starts timers when the saved default is greater than zero, and AI Sleep keeps a separate 20-minute one-session default.
+- `npm.cmd run check`: passed after making default timer off by default; typecheck, audio/content audit, Aliyun validation, sync merge validation, and mock API syntax check all succeeded.
+- `npx.cmd expo install --check`: passed after off-by-default timer update; Expo dependencies are up to date.
+- `git diff --check`: passed after off-by-default timer update; only normal Windows LF-to-CRLF warnings were reported for handoff and `SleepApp.tsx`.
+- `git status -sb` and `git diff --stat`: final changed files remain `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`; off-by-default timer update is scoped to settings defaults, Settings UI, AI Sleep duration independence, and fresh sync snapshot handling.
+
+## 2026-06-03 Timer As Per-Playback Control
+
+- `Get-Content -Raw docs/HANDOFF_CONTEXT.md`, `git status -sb`, and `rg`: resumed with prior timer edits still unstaged; confirmed Settings still exposes default timer and ordinary track opening can still auto-apply a saved default greater than zero.
+- `Get-Content` slices on `src/application/SleepApp.tsx`: located the exact `openTrack` auto-timer block and the Settings default-timer row to remove while leaving account and content-source settings intact.
+- `apply_patch` on `src/application/SleepApp.tsx`: removed ordinary-track auto-start of the saved default timer and removed the Settings `默认定时关闭` row, making sleep timer a player-session control only.
+- `rg` and `git diff` review: confirmed no user-visible default timer remains, and found now-unused `settings` state plus save helpers left behind by removing the Settings timer row.
+- `apply_patch` on `src/application/SleepApp.tsx`: removed unused `settings` state and Settings save helpers; sync compatibility now keeps `defaultSleepTimerMinutes` only through `settingsRef` and persisted remote/local settings data.
+- `rg` and `Get-Content` slices: found old stored/remote settings could still populate `settingsRef` with a nonzero legacy timer even though the UI no longer exposes it; normalizing settings to the fixed off value will keep sync payloads consistent.
+- `apply_patch` on `src/application/SleepApp.tsx`: added `normalizeSettings` so legacy local/remote settings are normalized to `defaultSleepTimerMinutes: 0` while preserving the existing sync field shape.
+- `npm.cmd run check`: passed after moving timer shutdown fully to per-playback control; typecheck, audio/content audit, Aliyun validation, sync merge validation, and mock API syntax check all succeeded.
+- `npx.cmd expo install --check`: passed after per-playback timer update; Expo dependencies are up to date.
+- `git diff --check`: passed after per-playback timer update; only normal Windows LF-to-CRLF warnings were reported for handoff and `SleepApp.tsx`.
+- `git status -sb`, `git diff --stat`, and final `rg`: final changed files are `docs/HANDOFF_CONTEXT.md` and `src/application/SleepApp.tsx`; Settings no longer exposes default timer, ordinary playback no longer auto-starts a timer, AI Sleep still starts its selected one-session timer, and `defaultSleepTimerMinutes` remains only for sync/type compatibility normalized to zero.
+
+## 2026-06-03 Small-Screen UI Acceptance
+
+- `git status -sb`, `Get-Content -Tail docs/HANDOFF_CONTEXT.md`, `Get-NetTCPConnection -LocalPort 8081`, and `rg` for timer/default wording: resumed with timer-session-control changes pending; Expo Web preview is already listening on port 8081; found outdated beta checklist/privacy wording around default timer behavior.
+- `apply_patch` on `docs/INTERNAL_BETA_CHECKLIST.md` and `docs/PRIVACY_POLICY_DRAFT.md`: replaced outdated default-timer wording with per-playback/current-timer language while keeping the beta task coverage for manual timer controls.
+- `node` read of `src/application/SleepApp.tsx` privacy lines: confirmed the source contains valid UTF-8 Chinese and the outdated phrase is the in-app local-data sentence mentioning `默认定时器`.
+- `apply_patch` on `src/application/SleepApp.tsx`: updated the in-app privacy local-data copy from default timer storage to current playback timer state, matching the new per-session timer model.
+- Node REPL Playwright narrow-web smoke attempt: blocked because the REPL environment could not import `playwright` (module not found); looking for an alternate browser automation path before falling back to static/Web reachability checks.
+- `tool_search` for browser/playwright automation: no browser navigation/screenshot tool was exposed for this turn, so Web visual smoke needs a local CLI fallback or Android/MuMu screenshots.
+- `npx.cmd --yes playwright --version`: succeeded with Playwright 1.60.0 available through npx, so using transient Playwright CLI/package execution for Web narrow-screen smoke without adding a project dependency.
+- Transient Playwright Node smoke via `npx --package playwright node -e` failed because `require('playwright')` was not resolved from the temporary package context; retrying with `npm exec --package=playwright`.
+- `npm.cmd exec --package=playwright -- node -e` also failed to resolve `playwright` as a require-able module, so Web interaction automation is not available through transient Node package loading; using CLI screenshot only plus MuMu/adb for interactive small-screen checks.
+- `npx.cmd playwright screenshot` for a 390x740 Web home screenshot failed because the Playwright Chromium headless shell is not installed in the user cache; skipping browser download and using MuMu/adb for the interactive visual acceptance path.
+- `adb.exe devices -l` and `Invoke-WebRequest http://localhost:8081/`: active adb binary exists at `I:\AI_Workspace\.android-build-tools\android-sdk\platform-tools\adb.exe` with MuMu devices online, and Expo Web responds 200; proceeding with Android/MuMu screenshots for small-screen acceptance.
+- adb MuMu setup: reversed `tcp:8081`, force-stopped and started `com.codexsleep.app/.MainActivity`, waited 8 seconds, and captured `tmp-codex-home.png` for the home small-screen check.
+- `view_image tmp-codex-home.png` failed because the PowerShell `exec-out` redirection produced an unreadable PNG; switching to device-side `screencap -p` plus `adb pull` for valid screenshots.
+- adb device-side screenshot: captured and pulled a valid `tmp-codex-home.png` from MuMu for home-screen visual inspection.
+- `view_image tmp-codex-home.png`: home screen visual check passed for the three core module cards with no visible overlap; React Native debug warning overlay covered the bottom area and needs dismissing before tab/mini-player checks.
+- adb taps: dismissed the React Native debug warning overlay, opened the first music module card, and pulled `tmp-codex-module.png` for module-list small-screen inspection.
+- `view_image tmp-codex-module.png`: module page visual check passed for header, category chips, and track rows on MuMu; bottom navigation sits over the scrollable list as expected, with follow-up scroll/end-padding check still needed.
+- adb tap on first module track and screenshot pull: opened ordinary playback and captured `tmp-codex-player.png` to verify player small-screen layout and off-by-default timer state.
+- `view_image tmp-codex-player.png`: ordinary player small-screen check passed; default timer is off, no countdown starts unexpectedly, and primary controls/timer summary/fold headers are readable without overlap.
+- adb tap on the player timer foldout and screenshot pull: captured `tmp-codex-player-timer.png` to inspect timer preset pills and current-session timer layout on MuMu.
+- `view_image tmp-codex-player-timer.png`: expanded timer foldout passed on MuMu; 15/30/45/60/关闭 pills fit on one row, labels remain readable, and playback mode panel below is not overlapped.
+- adb navigation: tapped the header home button, then the AI Sleep bottom tab, and pulled `tmp-codex-ai.png` for AI Sleep first-screen small-screen inspection.
+- `view_image tmp-codex-ai.png`: AI Sleep small-screen check passed; companion input/chips, duration card, queue card, and Start button fit above the mini player and bottom tab bar without overlap.
+- adb tap on AI Sleep Start and screenshot pull: captured `tmp-codex-ai-player.png` to verify AI Sleep enters the player with its selected one-session timer.
+- `view_image tmp-codex-ai-player.png`: AI Sleep player check passed; selected 20-minute timer is clearly visible, current-session timer foldout remains readable, and controls do not overlap on MuMu.
+- adb navigation: tapped header home then Settings tab while playback/mini-player remained active, and pulled `tmp-codex-settings.png` for Settings small-screen inspection.
+- `view_image tmp-codex-settings.png`: Settings small-screen check passed; default timer row is gone, account/content/feedback/compliance cards wrap cleanly, and mini player plus tab bar do not cover the visible content.
+- adb tap on Settings privacy button and screenshot pull: captured `tmp-codex-privacy.png` for in-app privacy wording and wrapping inspection.
+- `view_image tmp-codex-privacy.png`: Privacy page small-screen check passed; updated current-playback timer wording wraps correctly and no default-timer copy remains in the visible privacy surface.
+- adb navigation/scroll: returned to Home, opened the music module with active mini player, swiped to the list bottom, and pulled `tmp-codex-module-bottom.png` for bottom-padding inspection.
+- `view_image tmp-codex-module-bottom.png`: first bottom-padding attempt did not reach the true list bottom; screenshot still showed upper/mid module rows with mini player overlay present, so retrying with longer repeated swipes.
+- adb repeated long swipes on the module list and screenshot pull: captured `tmp-codex-module-bottom-2.png` to verify the true list bottom with active mini player and tab bar.
+- `view_image tmp-codex-module-bottom-2.png`: module list bottom-padding check passed; the final visible track row sits above the mini player and tab bar, with no critical row content hidden by fixed bottom controls.
+- `rg` for default-timer wording plus `git diff --stat` and targeted `git diff`: reviewed final app/docs diff; user-facing Settings/checklist/privacy default-timer wording is cleaned, while backend/mock contract settings fields remain unchanged for compatibility as planned.
+- `Remove-Item` for `tmp-codex-*.png` screenshots: cleaned temporary MuMu/Web visual inspection artifacts before final validation.
+- `npm.cmd run check`: passed after small-screen UI acceptance and wording cleanup; typecheck, audio/content audit, Aliyun validation, sync merge validation, and mock API syntax check all succeeded.
+- `npx.cmd expo install --check`: passed after small-screen UI acceptance; Expo dependencies are up to date.
+- `git diff --check`: passed after small-screen UI acceptance; only normal Windows LF-to-CRLF working-copy warnings were reported for handoff, beta/privacy docs, and `SleepApp.tsx`.
+- `git status -sb`, `git diff --stat`, and `Get-ChildItem -Filter tmp-codex-*`: final changed files are `docs/HANDOFF_CONTEXT.md`, `docs/INTERNAL_BETA_CHECKLIST.md`, `docs/PRIVACY_POLICY_DRAFT.md`, and `src/application/SleepApp.tsx`; no temporary screenshot artifacts remain.
+
+## 2026-06-03 Theme Preference Settings
+
+- `git status -sb`, `Get-Content` for theme/types, and `rg` for theme/settings/style references: resumed with small-screen/timer changes pending; current theme uses a static `colors` object and `StyleSheet.create` in `SleepApp` plus shared UI components, so runtime theme switching needs explicit palette plumbing.
+- `apply_patch` on `src/shared/ui/theme.ts` and `src/shared/types/sleep.ts`: added dark/light palettes, theme preference types, kept `colors` as dark default for compatibility, and extended `UserSettings` with `themeMode`.
+- `Get-Content` for `ModuleCard`, `TrackRow`, and `PillButton`: inspected exact component source after the combined palette-prop patch failed to match `TrackRow` text context; splitting shared UI updates into smaller patches.
+- `apply_patch` on `src/shared/ui/ModuleCard.tsx`: added optional palette prop and moved surface/line/text colors to runtime values while keeping spacing/layout static.
+- `apply_patch` on `src/shared/ui/TrackRow.tsx`: added optional palette prop and moved row/text/favorite colors to runtime palette values so track rows can render correctly in light and dark themes.
+- `apply_patch` on `src/shared/ui/PillButton.tsx`: added optional palette prop and moved active/inactive button colors to runtime palette values for theme switching.
+- `apply_patch` on `src/application/SleepApp.tsx` imports/default settings: added `useColorScheme`, theme palettes/types, `themeMode` default, theme preference options, settings normalization, theme resolution, and a module-level active palette handle.
+- `apply_patch` on `SleepApp` root state: added settings state, resolved theme mode from user preference plus system color scheme, regenerated styles from the active palette, loaded normalized settings into state/ref, and added `saveSettingsAndSync` for theme changes.
+- `rg` for `ModuleCard`/`TrackRow`/`PillButton`/`StatusBar` calls in `SleepApp`: found the exact shared component invocations that need the active palette and the status bar style that must follow resolved theme.
+- `apply_patch` on `SleepApp` JSX: status bar now follows resolved theme, and ModuleCard/TrackRow/player timer PillButton calls receive the active palette.
+- `apply_patch` on Settings JSX: added an `外观主题` card with 跟随系统/深色/浅色 pill choices, immediate settings save, and signed-in sync trigger through the existing settings payload.
+- `apply_patch` on `src/application/SleepApp.tsx` styles: converted the static StyleSheet into `createStyles(colors)` and initialized module-level styles from the active palette so nested components use updated theme colors during render.
+- `Get-Content` slices for sync validation, mock API, Aliyun API contract, and RDS schema: located default settings examples/defaults that need `themeMode`/`theme_mode` updates while retaining the legacy timer field.
+- Patched settings sync/backend contract defaults for themeMode: mock API default settings now include themeMode=system, sync merge validation covers themeMode, Aliyun contract examples include themeMode, and RDS schema adds theme_mode with system/dark/light check.
+-
+pm.cmd run check: failed at typecheck because React Native ColorSchemeName can be 'unspecified', while resolveThemeMode accepted only dark/light/null.
+g confirmed themeMode/defaultSleepTimerMinutes references are now in SleepApp, shared UI, mock API, sync validation, Aliyun contract/schema, and historical handoff notes.
+- Get-Content/Select-String on SleepApp theme imports and resolveThemeMode: confirmed exact type signature still used ThemeMode|null|undefined, so next fix is to import React Native ColorSchemeName and accept the full useColorScheme return type.
+- pply_patch on SleepApp theme resolver: imported ColorSchemeName from React Native and widened resolveThemeMode to accept useColorScheme's full return type, still falling back to dark unless system reports light.
+-
+pm.cmd run check: passed after ColorSchemeName fix; typecheck plus audio/content/Aliyun/sync/mock API validation all succeeded with themeMode in settings.
+- `npx.cmd expo install --check`: passed; Expo dependencies are up to date. `git diff --check`: failed only on docs/HANDOFF_CONTEXT.md trailing whitespace/control-character log noise, so cleaning the handoff log before rerunning whitespace validation.
+- Cleaned docs/HANDOFF_CONTEXT.md trailing whitespace/control-character artifacts with PowerShell after git diff --check reported handoff-only whitespace noise.
+- `git diff --check`: passed after handoff whitespace cleanup; only normal Windows LF-to-CRLF working-copy warnings remain.
+- `git diff --stat`, targeted `git diff`, and `Select-String` review: theme labels are valid UTF-8, settings sync uses settingsRef, but some PillButton usages still rely on the dark default palette and need the active palette passed for light mode.
+- `Select-String` for PillButton usages: confirmed the AI Sleep duration buttons were the remaining active-palette omission; settings and player timer pills already pass colors.
+- `apply_patch` on SleepApp AI Sleep duration pills: passed the active palette into the remaining PillButton usage so light mode no longer falls back to dark button colors.
+- `npm.cmd run check`: passed after passing the active palette to AI Sleep duration pills; typecheck and all validation scripts succeeded. `git diff --check`: passed with only Windows LF-to-CRLF warnings. `Get-NetTCPConnection -LocalPort 8081`: preview server is listening on process 20716. `adb.exe devices -l`: MuMu/Android devices are online.
+- adb MuMu theme smoke setup: reversed port 8081, force-stopped and launched com.codexsleep.app, waited for reload, and captured tmp-codex-theme-home.png for the initial home/theme check.
+- `view_image tmp-codex-theme-home.png`: initial MuMu home visual check shows dark/system fallback renders correctly with readable module cards; React Native debug warning overlay is visible and will be dismissed before settings checks.
+- adb taps: dismissed the React Native warning overlay, tapped the Settings tab, and captured tmp-codex-theme-settings-dark.png for the dark-mode Settings/theme-card check.
+- `view_image tmp-codex-theme-settings-dark.png`: dark Settings visual check passed; the new appearance theme card sits between account sync and content source, and the three theme pills fit cleanly on the narrow MuMu viewport.
+- adb tap on Settings light theme pill and screenshot pull: selected the light appearance option and captured tmp-codex-theme-settings-light.png for light Settings contrast/layout validation.
+- `view_image tmp-codex-theme-settings-light.png`: light Settings visual check passed; text contrast, theme pills, account/content/feedback/compliance cards, status bar, and bottom tab bar are readable without overflow.
+- adb tap on Home tab and screenshot pull: captured tmp-codex-theme-home-light.png to verify the main module cards and bottom navigation in light mode.
+- `view_image tmp-codex-theme-home-light.png`: light home visual check passed; module cards, accent blocks, labels, and bottom navigation all follow the light palette and remain readable.
+- adb taps on first music module card and first track: opened ordinary playback in light mode and captured tmp-codex-theme-player-light.png for player/timer layout validation.
+- `view_image tmp-codex-theme-player-light.png`: screenshot showed the light module list rather than player; this still validates light module header, filter chips, track rows, and bottom navigation, then retrying the first track tap for player validation.
+- adb tap on the first track play area and screenshot pull: opened the ordinary player in light mode and recaptured tmp-codex-theme-player-light.png.
+- `view_image tmp-codex-theme-player-light.png`: light ordinary player visual check passed; player panels, controls, progress bar, fold headers, and current-session timer off state are readable and ordinary playback did not auto-start a countdown.
+- adb navigation to Home then AI Sleep tab in light mode: captured tmp-codex-theme-ai-light.png for AI Sleep target/duration/queue/start layout validation under the light palette.
+- `view_image tmp-codex-theme-ai-light.png`: found a light-mode readability bug in AI Sleep hero where the large `AI助眠` title remains white on a light card; fixing that title color to use the active palette.
+- `Select-String` for AI hero/title color: located `styles.heroTitle` using colors.white; changing only that title style to colors.ink so it remains readable on both dark and light cards.
+- `apply_patch` on SleepApp heroTitle style: changed AI Sleep hero title from colors.white to colors.ink for readable light-mode contrast while preserving dark-mode readability.
+- `npm.cmd run check`: passed after AI Sleep hero title contrast fix. `git diff --check`: passed with only Windows LF-to-CRLF warnings.
+- adb keyevent/menu toggle plus screenshot pull: captured tmp-codex-theme-ai-light-fixed.png after the heroTitle style change to confirm the AI Sleep light-mode readability fix.
+- `view_image tmp-codex-theme-ai-light-fixed.png`: React Native Dev Menu overlay appeared, but the background confirms the AI Sleep hero title is now dark/readable in light mode; the visual bug is fixed.
+- `Get-Content docs/INTERNAL_BETA_CHECKLIST.md`: reviewed tester-task structure and found the Settings task as the right place to add dark/light/system theme acceptance coverage.
+- `apply_patch` on docs/INTERNAL_BETA_CHECKLIST.md: added a tester task for switching appearance between system/dark/light and confirming key screens remain readable.
+- adb back key plus `Remove-Item tmp-codex-theme-*.png`: dismissed the React Native Dev Menu and removed temporary MuMu screenshot artifacts before final validation.
+- Final validation: `npm.cmd run check` passed, `npx.cmd expo install --check` passed with dependencies up to date, `git diff --check` passed with only Windows LF-to-CRLF warnings, and `Get-ChildItem tmp-codex-theme-*.png` confirmed no temporary theme screenshots remain.
+- Final status review: `git status -sb` shows expected modified files only; `git diff --stat` shows theme/UI/settings contract/docs changes plus handoff; targeted handoff search confirms the theme section and final validation notes are present.
+- `Get-Content docs/HANDOFF_CONTEXT.md -Tail 80` and `git status -sb`: resumed on codex/playback-modes with prior theme/timer/UI changes still pending; starting a home-module icon polish pass without reverting existing work.
+- `Get-Content` for audioCatalog and ModuleCard plus `rg` for ModuleDefinition/ModuleCard: home cards currently render only a colored square mark; implementing type-based icons inside ModuleCard avoids changing catalog data or sync contracts.
+- `Get-Content src/shared/types/audio.ts`: ModuleDefinition only has type/title/subtitle/description/accent, confirming icon rendering can be derived from AudioType without adding public fields.
+- `apply_patch` on src/shared/ui/ModuleCard.tsx: replaced the plain module color mark with type-based lucide icons (Music2, BookOpenText, Waves) inside a stable 54px accent badge for the three sleep modules.
+- `npm.cmd run check`: passed after adding home module icons; typecheck and audio/content/Aliyun/sync/mock API validations all succeeded.
+- adb MuMu icon visual setup: reversed port 8081, force-stopped/launched the app, waited for reload, and captured tmp-codex-home-icons.png for home-module icon inspection.
+- `view_image tmp-codex-home-icons.png`: light-mode home visual check passed for the new module icons; music/story/noise cards now show clear sleep-themed glyphs with stable spacing and no text overlap. React Native debugger warning overlay remains at the bottom but does not affect the module icon area.
+- `git diff -- src/shared/ui/ModuleCard.tsx`: reviewed the scoped icon diff; `git diff --check`: passed with only Windows LF-to-CRLF warnings; `Remove-Item tmp-codex-home-icons.png`: cleaned the temporary home icon screenshot.
+- Final home icon status review: `git status -sb` shows expected pending files with ModuleCard included; `Get-ChildItem tmp-codex-*.png` found no temporary screenshots; `git diff --stat` confirms the icon work is scoped to ModuleCard on top of existing pending theme/timer/docs changes.
+- Advisory checkpoint: reviewed latest handoff/status to answer next-priority question; current frontend has timer-session behavior, theme settings, small-screen visual checks, and home module icons validated, so recommendation is to create a frontend freeze point and shift focus to backend beta readiness.
+- Backend readiness start: `Get-Content docs/HANDOFF_CONTEXT.md -Tail 80`, `git status -sb`, and broad `rg` over src/server/scripts/docs found the real backend is currently contract/schema/mock/validation focused, with frontend syncService and account hook already wired to auth/session/sync endpoints.
+- Backend contract audit reads: `server/aliyun-functions/README.md` still lists real handler technology as pending, `api-contract.md` defines auth/session/logout/sync routes, `rds-schema.sql` has profiles/sms/session/settings/favorites/history/sleep_logs tables, and frontend `syncService.ts` posts local snapshot plus tombstones to `/sync/merge` and clears tombstones after success.
+- Backend audit reads for `useSleepLogs.ts`, storage keys, package.json, and ID searches: frontend sleep log IDs are client-generated and may fall back to non-UUID strings, while RDS currently declares sleep_logs.id as uuid; package.json has no backend runtime dependencies yet, so first backend pass should harden contracts/schema/docs before adding real handler dependencies.
+- Backend implementation prep reads: `server/aliyun-functions` currently has README/contract/schema only; sync validation covers merge behavior; beta checklist still treats real Function Compute handlers as a known limitation. Next edits will harden schema/contract and add a concrete implementation plan plus stronger backend validation.
+- `apply_patch` on `server/aliyun-functions/rds-schema.sql`: changed `sleep_logs.id` from uuid to text so real RDS can accept opaque client-generated sleep log IDs, including non-UUID fallback IDs.
+- `apply_patch` on `server/aliyun-functions/api-contract.md`: documented SMS beta limits, clarified sync IDs are opaque client strings, and added the JSON error shape consumed by the Expo client.
+- `apply_patch` add `server/aliyun-functions/IMPLEMENTATION_PLAN.md`: documented Node 20 Function Compute choices, env vars, route build order, merge storage mapping, first smoke test, and security notes for real backend implementation.
+- `apply_patch` on `server/aliyun-functions/README.md`: replaced pending technology choices with current implementation direction and pointed real handler work to IMPLEMENTATION_PLAN.md while keeping mock API as local account testing path.
+- `apply_patch` on `scripts/validate-aliyun-backend.js`: strengthened backend validation to require settings theme_mode, opaque text sleep log IDs, API error shape, opaque ID contract note, and the new implementation plan with core route/build-order phrases.
+- `npm.cmd run validate:aliyun`: passed with strengthened backend validation. `git diff -- server/aliyun-functions scripts/validate-aliyun-backend.js`: reviewed scoped backend-readiness diff covering schema, contract, README, validation, and new implementation plan.
+- `npm.cmd run check`: passed after backend readiness edits; typecheck plus audio/content/Aliyun/sync/mock API validation all succeeded.
+- Mock API HTTP smoke: started `npm.cmd run mock:api` on port 8791, POSTed `/auth/send-code`, `/auth/verify-code` with code 123456, and `/sync/merge` with settings themeMode=light; response returned favoriteIds=rain-window, themeMode=light, and syncedAt, then the mock process was stopped.
+- Final check pass partial: `npx.cmd expo install --check` passed, `git diff --check` passed with only Windows LF-to-CRLF warnings, and `git diff --stat` reviewed total pending scope. `Get-NetTCPConnection -LocalPort 8791` found a leftover mock API child process listening as PID 37092, so cleaning it up before final status.
+- Mock cleanup attempt: `Get-Process -Id 37092` no longer found the process and `Stop-Process -Id 37092 -Force` returned with no remaining process to stop; rechecking port 8791.
+- Final backend status review: `Get-NetTCPConnection -LocalPort 8791` returned no listener, `git status -sb` shows expected pending frontend/theme docs plus backend-readiness files with new IMPLEMENTATION_PLAN.md, and `Get-ChildItem server/aliyun-functions` confirms README, api-contract, rds-schema, and implementation plan are present.
+- Real handler implementation start: reread handoff/status/backend directory/package; server/aliyun-functions still has no handler file and root package has no backend runtime deps, so implementing a CommonJS Function Compute handler with injectable storage/SMS adapters and an in-memory default for local smoke before adding pg/SDK bindings.
+- `apply_patch` add `server/aliyun-functions/handler.js`: implemented a CommonJS Function Compute-compatible handler with auth/send-code, verify-code, session, logout, sync/merge routes; included opaque token hashing, SMS cooldown/hour limits, settings normalization, sync merge logic, injectable adapters, and an in-memory default adapter for local smoke tests.
+- `apply_patch` on handler send-code: added non-production `LOCAL_SMS_FIXED_CODE` support so local smoke tests can verify auth without scraping random SMS log output; production still generates random 6-digit codes.
+- `apply_patch` add `scripts/smoke-aliyun-handler.js`: added direct handler smoke coverage for send-code, verify-code, session lookup, sync/merge with opaque sleep log ID and themeMode, logout, and post-logout 401.
+- `apply_patch` on package.json: added `smoke:aliyun-handler` and included it in `npm.cmd run check` after existing mock API syntax validation.
+- `apply_patch` on `scripts/validate-aliyun-backend.js`: validation now requires `server/aliyun-functions/handler.js`, exported handler/createMemoryAdapter route coverage, and `scripts/smoke-aliyun-handler.js`.
+- `apply_patch` on backend README and IMPLEMENTATION_PLAN: documented the new adapter-based `handler.js`, exports, local `npm.cmd run smoke:aliyun-handler`, and clarified remaining production work is PostgreSQL plus Alibaba SMS adapters.
+- Handler validation: `npm.cmd run smoke:aliyun-handler` passed auth/session/sync/logout direct invocation, `npm.cmd run validate:aliyun` passed strengthened checks, and `node --check` passed for both handler and smoke script.
+- `apply_patch` on handler and smoke script: widened route path parsing to support `event.requestContext.http.path` and added smoke coverage for HTTP v2-style requestContext invocation.
+- `apply_patch` add `server/aliyun-functions/postgres-adapter.js`: added a production-oriented PostgreSQL adapter scaffold for SMS code storage, user/session persistence, logout revocation, and transactional `/sync/merge` mapping for favorites/history/sleep logs/settings; it requires `pg` only when instantiated for deployment.
+- `apply_patch` on backend validation and README: validation now requires `postgres-adapter.js` and key table mappings; README documents the PostgreSQL adapter and notes `pg` is loaded only when instantiated.
+- `apply_patch` add `server/aliyun-functions/aliyun-sms-adapter.js`: added an Alibaba Cloud SMS adapter scaffold that lazily requires official SDK packages, validates SMS env vars, sends verification codes, and returns requestId for the existing handler SMS interface.
+- `apply_patch` on backend validation, README, and implementation plan: validation now requires the Alibaba SMS adapter scaffold; docs show production wiring with createApp + createPostgresAdapter + createAliyunSmsAdapter and note deployment bundle dependencies.
+- Backend adapter checks: `node --check` passed for handler, postgres adapter, and aliyun SMS adapter; `npm.cmd run smoke:aliyun-handler` passed; `npm.cmd run validate:aliyun` passed with strengthened backend validation.
+- `npm.cmd run check`: passed after adding the real handler, smoke script, PostgreSQL adapter scaffold, and Alibaba SMS adapter scaffold; check now includes `smoke:aliyun-handler`.
+- Backend diff review: targeted backend diff, `rg` for handler/adapter/export names, and `git diff --stat` showed backend code/docs are wired, but revealed a schema hardening need: sleep log IDs should be user-scoped opaque IDs using a `(user_id, id)` key rather than a global `id` primary key.
+- `apply_patch` on RDS schema and postgres adapter: changed sleep_logs to `primary key (user_id, id)` with `id text not null`, updated upsert conflict to `(user_id, id)`, and removed an unused crypto import from the adapter.
+- `apply_patch` on backend validation and IMPLEMENTATION_PLAN: validation now requires `id text not null` plus `primary key (user_id, id)`, and plan documents sleep log upsert by user-scoped opaque client ID.
+- `apply_patch` add production backend deployment files: `server/aliyun-functions/index.js` wires createApp with PostgreSQL and Alibaba SMS adapters, and `server/aliyun-functions/package.json` declares Function Compute entrypoint plus deployment dependencies (`pg`, official Alibaba SMS/OpenAPI SDKs).
+- `apply_patch` on backend validation and README: validation now requires `index.js` production wiring and backend package dependencies; README deployment checklist now says to install dependencies in server/aliyun-functions and deploy `index.handler`.
+- Backend deployment checks: `npm.cmd run check` inside `server/aliyun-functions` passed syntax checks for index/handler/postgres/SMS adapters; root `npm.cmd run validate:aliyun` passed; root `npm.cmd run smoke:aliyun-handler` passed.
+- Final validation pass: root `npm.cmd run check` passed with handler smoke included, `git diff --check` passed with only Windows LF-to-CRLF warnings, and `npx.cmd expo install --check` passed with dependencies up to date.
+- Final status audit commands: `git status -sb`, `Get-ChildItem server/aliyun-functions`, `Get-ChildItem tmp-codex-*.png`, `Get-NetTCPConnection -LocalPort 8791`, and `git diff --stat` showed expected new backend files, no temp screenshots, no mock port listener, and pending changes only; audit found one remaining merge hardening issue in postgres favorite upsert timestamp handling.
+- `apply_patch` on `postgres-adapter.js`: added `where user_favorites.updated_at <= excluded.updated_at` to active favorite upserts so old local snapshots cannot resurrect newer cloud tombstones.
+- Post-merge-hardening checks: backend package `npm.cmd run check` passed, root `npm.cmd run smoke:aliyun-handler` passed, and root `npm.cmd run validate:aliyun` passed after favorite timestamp guard fix.
+- Final validation after favorite merge hardening: root `npm.cmd run check` passed, `npx.cmd expo install --check` passed, and `git diff --check` passed with only Windows LF-to-CRLF warnings.
+- Completion audit: `git status -sb` shows expected modified and new backend files; `rg` confirmed five handler routes, production index wiring, Postgres/SMS adapters, user-scoped sleep log key, and smoke script references; `Get-ChildItem tmp-codex-*.png` found no temp screenshots; `Get-NetTCPConnection -LocalPort 8791` found no listener; `git diff --stat` reviewed pending scope, with untracked backend files listed in status.
+- Checkpoint pre-commit review: `Get-Content docs/HANDOFF_CONTEXT.md -Tail 50`, `git status -sb`, and `git diff --stat` confirm the pending checkpoint combines frontend timer/theme/icon polish, backend Function Compute handler/adapters/schema/docs, validation script updates, and handoff logs; no commit/stage was performed.
+- Checkpoint commit command: preparing to stage all current beta UI/backend readiness changes and commit with message `Prepare Codex Sleep beta UI and Aliyun sync backend`.
+- Checkpoint commit request audit: `git status -sb` showed a clean worktree and branch ahead 1; `git diff --check` passed with no output; `git diff --stat` had no output, suggesting the checkpoint was already committed before this request.
+- Checkpoint commit continuation: confirmed existing checkpoint commit `6274dc7 Prepare Codex Sleep beta UI and Aliyun sync backend`; amending the post-commit handoff audit note into the same checkpoint so the worktree returns clean.
+- Push continuation: `git status -sb` showed codex/playback-modes ahead 1 and `git remote -v` confirmed origin as https://github.com/2587122824/codex-test.git; preparing to push checkpoint commit.
+- `git push origin codex/playback-modes`: pushed checkpoint commit 922ceb9 to origin/codex/playback-modes successfully.
+- Next-stage implementation start: inspected handoff tail, git status, server/aliyun-functions files, and backend package manifest; worktree is clean on codex/playback-modes at pushed checkpoint, backend skeleton exists, and next repo-side work is deployment/env/smoke readiness because real Aliyun resource creation requires external credentials.
+- Cloud release implementation inspection: read app env config, local `.env`, backend README, and API contract; found deploy docs exist but repo lacks a real cloud HTTP smoke script and environment template for Function Compute deployment.
+- `apply_patch` add `scripts/smoke-aliyun-cloud.js`: added real cloud HTTP smoke for send-code, optional verify/session/sync/logout when ALIYUN_SMOKE_CODE is provided, using ALIYUN_FUNCTION_BASE_URL or EXPO_PUBLIC_API_BASE_URL plus ALIYUN_SMOKE_PHONE.
+- `apply_patch` add `server/aliyun-functions/.env.example`: added placeholder Function Compute/RDS/SMS/session env template with required and optional beta limit variables, no real secrets.
+- `apply_patch` add `docs/CLOUD_BETA_RELEASE_CHECKLIST.md`: added cloud resource, deployment package, real SMS cloud smoke, app E2E, and final local gate checklist for beta release.
+- `apply_patch` on root package.json: added `smoke:aliyun-cloud` script for real Function Compute HTTP smoke; it is intentionally not included in default check because it needs cloud URL, phone, and SMS code.
+- `apply_patch` on backend README: referenced `.env.example`, warned not to commit secrets, and added two-step `smoke:aliyun-cloud` commands for send-code and full verify/session/sync/logout cloud smoke.
+- `apply_patch` on `docs/INTERNAL_BETA_CHECKLIST.md`: added deployed Aliyun API tester task, new Cloud Account API section pointing to CLOUD_BETA_RELEASE_CHECKLIST, and updated known limitation wording to require configured endpoint plus passing cloud smoke.
+- `Get-Content scripts/validate-aliyun-backend.js`: inspected current backend validator before adding cloud smoke/env/checklist requirements; it currently validates handler smoke but not real cloud smoke readiness artifacts.
+- `apply_patch` on `scripts/validate-aliyun-backend.js`: validator now requires real cloud smoke script, Function Compute env example, and cloud beta release checklist with key cloud E2E phrases.
+- `apply_patch` on package.json: extended `validate:mock-api` to also run `node --check scripts/smoke-aliyun-cloud.js`, so root check validates cloud smoke syntax without calling real cloud endpoints.
+- Validation after cloud readiness artifacts: `npm.cmd run validate:aliyun` passed, `node --check scripts/smoke-aliyun-cloud.js` passed, and root `npm.cmd run check` passed with cloud smoke syntax validation included. Real cloud deploy/smoke still requires external Aliyun credentials, function domain, and phone SMS code.
+- `Select-String` over SleepApp privacy copy and privacy draft: in-app privacy cloud copy correctly syncs phone/favorites/history/settings only, but docs/PRIVACY_POLICY_DRAFT.md still says current playback timer uploads; updating the draft to match actual sync payload.
+- `apply_patch` on docs/PRIVACY_POLICY_DRAFT.md: clarified local storage as current playback timer state plus settings, and cloud upload as app settings such as appearance theme preference, matching actual sync payload.
+- Final local gates for cloud readiness: root `npm.cmd run check` passed, `npx.cmd expo install --check` passed, `git diff --check` passed with only Windows LF-to-CRLF warnings, and backend package `npm.cmd run check` passed. Real `smoke:aliyun-cloud` not run because it requires deployed Function URL, phone, and SMS code.
+- Cloud readiness pre-commit review: `git status -sb` shows modified handoff/checklists/privacy/package/backend validation/README plus new cloud checklist, cloud smoke script, and env example; `git diff --stat` reviewed tracked diff; no tmp screenshots and no port 8791 listener.
+- `git commit -m "Prepare cloud beta release smoke checks"`: created commit 2c76f01 with cloud beta release checklist, cloud smoke script, Function Compute env template, validation updates, privacy/checklist wording, and handoff notes. `git push origin codex/playback-modes`: pushed 2c76f01 to origin successfully.
+- Push request continuation: `git status -sb` showed `codex/playback-modes` ahead 9 before push; latest queued commits included Android rain playback fix, Aliyun refresh support, Function dependency lockfile, deployment package verification handoffs, and cloud deployment blocker notes.
+- `git push origin codex/playback-modes`: pushed `7440dee..0829a25` to `origin/codex/playback-modes` successfully.
+- Post-push confirmation: `git status -sb` shows local `codex/playback-modes` aligned with `origin/codex/playback-modes`; `git rev-parse --short HEAD` returned `0829a25`, and `git log -1 --oneline` returned `0829a25 Record cloud deployment blocker`.
+- `rg -n "Command Log|2026-06-03|push|cloud deployment" docs/HANDOFF_CONTEXT.md` and `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md -Tail 80`: located the handoff sections and confirmed this push completion note should be appended after the prior cloud readiness entries.
+- Handoff push-log pre-commit check: `git diff --check` passed with only the expected Windows LF-to-CRLF warning, `git status -sb` showed only `docs/HANDOFF_CONTEXT.md` modified, and `git diff --stat` showed a scoped handoff-only update.
+- Brand rename start: `Get-Content -LiteralPath docs/HANDOFF_CONTEXT.md -Tail 80`, `git status -sb`, and broad `rg` for Codex Sleep/codex-sleep/codexsleep/gudemian references showed a clean branch and identified app display names, Expo slug/scheme, Android package/native namespace, storage/token keys, docs, validators, and backend package/documentation references to migrate toward the new 古德眠 brand while preserving external RDS database naming unless explicitly changed.
+- Brand config inspection: read `app.json`, `package.json`, `scripts/validate-android-beta.js`, `android/app/build.gradle`, `android/app/src/main/AndroidManifest.xml`, and the native Java/Kotlin path list; confirmed the rename must update Expo name/slug/scheme, Android namespace/applicationId, launcher label, validator expectations, and native Kotlin package directories. Also noted the current `app.json` description is mojibake and should be repaired as part of the brand update.
+- RDS setup continuation: user provided the PostgreSQL RDS host and `codex_sleep` database credentials for setup. `Test-NetConnection -ComputerName pgm-bp14t8v56nh5120t6o.rwlb.rds.aliyuncs.com -Port 5432` returned `TcpTestSucceeded=True`, confirming this workstation can reach the RDS endpoint on port 5432. The database password was intentionally not recorded in handoff.
+- RDS schema execution first pass: connected to `codex_sleep` via the provided RDS endpoint and executed `server/aliyun-functions/rds-schema.sql` with Node `pg`. Verification using an older expected-table list found `play_history`, `sleep_logs`, `user_favorites`, and `user_settings`, but reported `user_profiles`, `sms_codes`, and `user_sessions` missing; next step is to inspect the current schema for the authoritative table names before deciding whether there is a real gap.
+- RDS schema inspection: `rg -n "CREATE TABLE|..." server/aliyun-functions/rds-schema.sql server/aliyun-functions/postgres-adapter.js` and `Get-Content server/aliyun-functions/rds-schema.sql` confirmed the authoritative current table names are `profiles`, `auth_sms_codes`, `auth_sessions`, `user_settings`, `user_favorites`, `play_history`, and `sleep_logs`; the first-pass missing names were stale validator assumptions, not necessarily failed table creation.
+- RDS schema verification: reconnected to `codex_sleep` with Node `pg` and queried `pg_tables` plus `pg_extension`; verified all required tables exist (`profiles`, `auth_sms_codes`, `auth_sessions`, `user_settings`, `user_favorites`, `play_history`, `sleep_logs`) and `pgcryptoInstalled=true`, with no missing tables. The RDS database is ready for Function Compute environment wiring.
+- Local SMS provider implementation: read `server/aliyun-functions/index.js`, `handler.js`, `.env.example`, README, and `scripts/validate-aliyun-backend.js`; patched the Function Compute entry to select `SMS_PROVIDER=local` with `LOCAL_SMS_FIXED_CODE`, allowed fixed-code verification in handler when the local provider is selected, documented the env vars, and updated backend validation to require the local-SMS switch.
+- Local SMS provider validation: `npm.cmd run check` in `server/aliyun-functions` passed syntax checks, root `npm.cmd run validate:aliyun` passed, and root `npm.cmd run smoke:aliyun-handler` passed with fixed code `123456`, covering auth, refresh, session, sync, and logout.
+- RDS-backed local provider smoke first attempt: invoked the production `index.handler` locally with the real RDS endpoint, `SMS_PROVIDER=local`, and fixed code `123456`; `/auth/send-code` succeeded with a `local-sms-*` request ID, but the inline smoke asserted the verify token fields at the wrong response path, so the next step is to inspect the actual `/auth/verify-code` payload shape and rerun the smoke with correct assertions.
+- RDS-backed smoke correction: inspected `scripts/smoke-aliyun-handler.js` and handler response sites, confirming `/auth/verify-code` returns `{ session }` and `/sync/merge` returns `{ data }`; the corrected rerun immediately hit expected `SMS_COOLDOWN` for the reused test phone, so the next smoke should use a fresh test phone or wait for the cooldown.
+- RDS-backed local provider smoke success: reran production `index.handler` locally against real RDS with `SMS_PROVIDER=local`, `LOCAL_SMS_FIXED_CODE=123456`, and fresh test phone `+8613900000604`; send-code, verify-code, session, refresh-token rotation, old access-token 401, sync merge, logout, and post-logout 401 all passed. Output included a `pg` deprecation warning about concurrent `client.query()` calls on the same transaction client, so the Postgres adapter should be adjusted to run transaction queries sequentially before packaging.
+- Postgres adapter warning fix: inspected `postgres-adapter.js` and changed `readSyncSnapshot` from `Promise.all` concurrent queries to sequential `await client.query(...)` calls so transaction snapshots do not trigger pg's deprecation warning for concurrent queries on a single client.
+- RDS-backed local provider smoke after warning fix: reran production `index.handler` locally against real RDS with `SMS_PROVIDER=local`, fixed code `123456`, and fresh test phone `+8613900000605`; send-code, verify-code, refresh, sync merge, logout, and post-logout 401 all passed without the previous pg deprecation warning.
+- Local SMS provider final gates: root `npm.cmd run check` passed, `npx.cmd expo install --check` passed with dependencies up to date, `git diff --check` passed with only Windows LF-to-CRLF warnings, and `server/aliyun-functions` `npm.cmd run check` passed. The updated Function Compute code is ready to repackage.
+- Function deploy package regenerated: removed the previous ignored `dist/aliyun-functions-deploy.zip` and rebuilt it from `server/aliyun-functions` with `index.js`, `handler.js`, adapters, package files, `rds-schema.sql`, and `node_modules`; new zip size is `4722182` bytes at `I:\AI_Workspace\codex-test\dist\aliyun-functions-deploy.zip`.
+- Deploy package verification: .NET ZipFile checks confirmed `index.js`, `handler.js`, `postgres-adapter.js`, `aliyun-sms-adapter.js`, `package-lock.json`, `node_modules\pg\package.json`, and `node_modules\@alicloud\dysmsapi20170525\package.json` are present; no `.env` file is included. `git status --short --ignored dist server/aliyun-functions/node_modules` shows both as ignored-only local artifacts.
+- Local SMS provider pre-commit review: `git diff --check` passed with only Windows LF-to-CRLF warnings, `git diff --stat` showed seven modified files, `git status -sb` showed only the intended backend/docs/validator changes, and targeted backend diff review confirmed the SMS provider switch plus sequential Postgres snapshot queries.
+- `git commit -m "Add local SMS cloud smoke mode"` created commit `b634e1c` with the local SMS cloud smoke switch, RDS-backed smoke documentation, validator/env updates, and Postgres sequential snapshot query fix. Post-commit checks showed branch `codex/playback-modes` ahead 1, latest commit `b634e1c Add local SMS cloud smoke mode`, and ignored deploy zip `dist\aliyun-functions-deploy.zip` still present at `4722182` bytes.
+- Cloud Function URL received: user provided Function Compute public URL `https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run`; next step is to run `npm.cmd run smoke:aliyun-cloud` with `ALIYUN_FUNCTION_BASE_URL` set to this URL, `ALIYUN_SMOKE_PHONE` set to a test phone, and `ALIYUN_SMOKE_CODE=123456` because the function is configured for local fixed-code SMS mode.
+- Cloud smoke first attempt: read `scripts/smoke-aliyun-cloud.js` and confirmed it can run the full cloud flow with `ALIYUN_SMOKE_CODE=123456`; `npm.cmd run smoke:aliyun-cloud` against `https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run` with test phone `+8613900000606` failed because the function returned plain text `Internal Server Error` instead of JSON, so the next step is to capture the raw `/auth/send-code` response and inspect Function Compute logs/config.
+- Cloud 502 code inspection: read `server/aliyun-functions/handler.js`, `index.js`, backend `package.json`, and current `git status`; found the production entry constructs the app at module load and does not catch route/adapter exceptions, so missing env vars, DB connection failures, or missing deployment dependencies can surface as opaque Function Compute 502 responses instead of JSON diagnostics.
+- Cloud 502 live repro: after the user enabled Function Compute logs, sent `POST /auth/send-code` to `https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run` with test phone `+8613900000607`; the live function still returned `502 Bad Gateway`, so the user should be able to inspect the 22:47 Beijing-time failure log. In parallel, local code now has a diagnostic entry wrapper pending validation so future uploads return JSON `FUNCTION_HANDLER_ERROR` details instead of opaque 502 when runtime errors are catchable.
+- Diagnostic wrapper validation: `npm.cmd run check` inside `server/aliyun-functions`, root `npm.cmd run validate:aliyun`, and root `npm.cmd run smoke:aliyun-handler` all passed after adding lazy app initialization and JSON `FUNCTION_HANDLER_ERROR` handling to `server/aliyun-functions/index.js`.
+- Diagnostic wrapper RDS smoke: ran production `index.handler` locally against real RDS with `SMS_PROVIDER=local`, fixed code `123456`, and fresh test phone `+8613900000608`; send-code, verify-code, refresh, sync merge, and logout all passed, confirming the diagnostic wrapper does not break the normal RDS-backed flow.
+- Diagnostic deploy package regenerated: rebuilt ignored `dist/aliyun-functions-deploy.zip` from `server/aliyun-functions`; new zip size is `4722511` bytes, includes `index.js`, `handler.js`, Postgres/SMS adapters, package lock, `node_modules\pg\package.json`, and `node_modules\@alicloud\dysmsapi20170525\package.json`, and does not include a `.env` file.
+- Diagnostic wrapper final gates: root `npm.cmd run check` passed, `git diff --check` passed with only Windows LF-to-CRLF warnings, and ignored-artifact status still shows only `dist/` plus `server/aliyun-functions/node_modules/`; the user needs to upload the regenerated `dist\aliyun-functions-deploy.zip` to Function Compute before cloud smoke can reflect the diagnostic entry wrapper.
+- Cloud smoke diagnostics continuation: `git status -sb` showed the branch ahead 2 with a clean worktree, `Get-Content scripts/smoke-aliyun-cloud.js` showed the current cloud smoke parses every response body as JSON, and `git log -3 --oneline` confirmed the latest local commits are `b970208 Add function diagnostics for cloud smoke` and `de05b77 Add local SMS cloud smoke mode`; next edit will make cloud smoke report raw non-JSON responses instead of failing with a JSON parse error.
+- Cloud smoke script diagnostics edit: patched `scripts/smoke-aliyun-cloud.js` so response bodies are parsed as JSON only when possible and assertion failures include status, JSON data, and up to 500 characters of raw text.
+- Cloud smoke after script diagnostics: reran `npm.cmd run smoke:aliyun-cloud` against `https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run` with test phone `+8613900000609` and fixed code `123456`; it now failed cleanly with `send-code failed: {"status":404,"data":{"message":"No route for GET /.","code":"NOT_FOUND"}}`. This proves the live function is returning JSON but the handler is seeing the incoming FC HTTP event as default `GET /`, likely because the Aliyun event-function HTTP trigger passes a string/Buffer payload that the current handler does not normalize before route extraction.
+- FC event normalization patch: added `normalizeEvent` support in `server/aliyun-functions/handler.js` for Buffer and string events, and updated backend validation to require `normalizeEvent` plus `Buffer.isBuffer(event)`. This patch is local and still needs validation/repackaging before upload.
+- Cloud smoke after user redeploy: with the deployed diagnostic package and environment variables shown by the user, `npm.cmd run smoke:aliyun-cloud` against `https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run` with test phone `+8613900000610` failed with JSON `FUNCTION_HANDLER_ERROR` detail `PostgreSQL adapter requires the pg package in the Function Compute deployment bundle.` This proves the function code is now running, but the uploaded deployment bundle is missing `node_modules/pg`; the next upload must use the generated `dist\aliyun-functions-deploy.zip` that includes `node_modules`.
+- FC event normalization validation: `npm.cmd run check` in `server/aliyun-functions`, root `npm.cmd run validate:aliyun`, and root `npm.cmd run smoke:aliyun-handler` passed. A targeted inline Node smoke passed a Buffer-wrapped string event containing `requestContext.http.method=POST`, `path=/auth/send-code`, and JSON body, proving `normalizeEvent` routes FC-style string/Buffer events correctly instead of defaulting to `GET /`.
+- Event normalization deploy package regenerated: rebuilt ignored `dist/aliyun-functions-deploy.zip` from `server/aliyun-functions`; new zip size is `4722591` bytes. Zip verification confirmed `index.js`, `handler.js`, `node_modules\pg\package.json`, and `node_modules\@alicloud\dysmsapi20170525\package.json` are present and no `.env` file is included.
+- Event normalization final gates: root `npm.cmd run check` passed, `git diff --check` passed with only Windows LF-to-CRLF warnings, and `git status -sb` shows modified handoff, cloud smoke script, Aliyun validator, and handler only. The latest zip is ready for a second Function Compute upload that includes `node_modules/pg`.
+- Deployment zip path-separator investigation: inspected the current ignored `dist\aliyun-functions-deploy.zip` with .NET ZipFile and found entries such as `node_modules\@alicloud\...` and `node_modules\pg\package.json` use Windows backslashes. Because Function Compute runs on Linux, this likely explains why the uploaded bundle still reports `Cannot find module 'pg'` even though local zip inspection found a `pg` entry; next step is to regenerate the zip with forward-slash entry names.
+- Forward-slash package script start: added `scripts/package-aliyun-functions.ps1`, root `package:aliyun-functions` script, and backend README instructions so deployment zips are generated with forward-slash archive entries such as `node_modules/pg/package.json`; this should avoid Linux Function Compute extracting Windows-backslash paths that Node cannot resolve.
+- Forward-slash package script fix: the first script run failed because this PowerShell/.NET runtime lacks `System.IO.Path.GetRelativePath`, so the script was updated to compute relative paths by substring from the resolved source root. Separate `node --check` commands passed for cloud smoke and Aliyun backend validator.
+- Forward-slash deploy package verification: `npm.cmd run package:aliyun-functions` rebuilt `dist\aliyun-functions-deploy.zip` at `4720953` bytes. Zip inspection confirmed `node_modules/pg/package.json` and `node_modules/@alicloud/dysmsapi20170525/package.json` exist with forward slashes, `node_modules\pg\package.json` is absent, and no `.env` file is included. Root `npm.cmd run check` passed and `git diff --check` passed with only Windows LF-to-CRLF warnings.
+- Forward-slash zip runtime smoke: expanded `dist\aliyun-functions-deploy.zip` into a temporary directory and ran `node -e "require('pg'); require('./index'); ..."` from the extracted root; Node successfully resolved `pg` and loaded `index.js`, proving the upload bundle can resolve dependencies after extraction.
+- Cloud smoke success after forward-slash package upload: after the user redeployed the regenerated zip, `npm.cmd run smoke:aliyun-cloud` against `https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run` with test phone `+8613900000613` and fixed code `123456` passed send-code, verify-code, session, refresh-token rotation, sync merge, logout, and post-logout 401. Cloud account API is now functional in local-SMS test mode.
+- APK cloud wiring start: read `.env`, `src/shared/config/env.ts`, and searched `EXPO_PUBLIC_API_BASE_URL` usage; confirmed the APK build gets the account API base URL from `.env` via `appConfig.apiBaseUrl`, and the current `.env` still has `EXPO_PUBLIC_API_BASE_URL=` empty plus `EXPO_PUBLIC_APP_NAME=Codex Sleep`. Next step is to set local build env to the working Function Compute URL before rebuilding the APK.
+- APK cloud wiring env update: updated untracked local `.env` for this build to `EXPO_PUBLIC_APP_NAME=古德眠` and `EXPO_PUBLIC_API_BASE_URL=https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run`; root `npm.cmd run check` passed, `npx.cmd expo install --check` passed with dependencies up to date, and `git ls-files .env` confirmed `.env` is not tracked, so this remains local build configuration.
+- Cloud APK build first pass: ran Gradle `assembleRelease` with local JDK/Android SDK env; build exited 0 after Expo's `NODE_ENV` warning. Verified `android\app\build\outputs\apk\release\app-release.apk` exists at `67257871` bytes and copied it to `dist\gudemian-cloud-internal-beta.apk` plus `dist\codex-sleep-internal-beta.apk`.
+- Cloud APK static verification first pass: `aapt dump badging` reported package `com.codexsleep.app`, versionCode `1`, versionName `1.0.0`, min SDK `24`, target SDK `36`, and launcher label `Codex Sleep`; `apksigner verify --print-certs` passed with the debug certificate. This APK is not the final renamed build because the Android launcher label still says `Codex Sleep`. A bundle string search command used a stale generated bundle path and failed because that path did not exist.
+- Brand rename APK correction scan: `rg -n "Codex Sleep|codex-sleep|codexsleep|com\.codexsleep|CodexSleep" ...` plus reads of Android strings, Kotlin package files, and `app.json` confirmed the launcher label, Expo metadata, Android namespace/applicationId, Kotlin package, validator expectations, storage/token keys, and several user-facing docs/app strings still use the old Codex Sleep brand. Next edits will migrate the app-facing brand to `古德眠`, `gudemian`, and `com.gudemian.app` before rebuilding the cloud APK.
+- Brand rename implementation: replaced app-facing metadata and identifiers with `古德眠`, `gudemian`, and `com.gudemian.app` across `app.json`, package manifests/locks, app config, storage/API keys, feedback/toast strings, Android local native config, validator expectations, backend package names, audio attribution metadata, and beta/privacy/store/checklist docs. Moved the local Android Kotlin package from `com/codexsleep/app` to `com/gudemian/app`; `git ls-files android/...` returned no tracked native Android files, confirming the native directory remains an ignored local build artifact even though it is needed for Gradle APK output. A follow-up `rg` found old Codex Sleep references only in historical handoff entries.
+- Brand rename validation: root `npm.cmd run check` passed under package name `gudemian`, `npx.cmd expo install --check` passed with dependencies up to date, `git diff --check` passed with only Windows LF-to-CRLF warnings, and `server/aliyun-functions` `npm.cmd run check` passed under package name `gudemian-aliyun-functions`.
+- Renamed APK build first attempt: `.\gradlew.bat clean assembleRelease` with local JDK/Android SDK env failed during `:app:externalNativeBuildCleanDebug` because CMake tried to clean stale React Native generated codegen paths for `@react-native-async-storage/async-storage` that no longer existed. This was a native clean/codegen intermediate-state failure before release assembly, so the next build should use the previously successful `assembleRelease` path and let Gradle regenerate needed outputs.
+- Renamed APK build success: reran `.\gradlew.bat assembleRelease` without `clean` using local JDK/Android SDK env. The build completed successfully in about 3m21s after regenerating Metro bundle and native codegen outputs; output included expected third-party deprecation/lint warnings plus Expo's `NODE_ENV` warning, but `:app:assembleRelease` completed.
+- Renamed cloud APK static verification: copied `android\app\build\outputs\apk\release\app-release.apk` to `dist\gudemian-cloud-internal-beta.apk`; both are `67257635` bytes. `aapt dump badging` reported package `com.gudemian.app`, versionCode `1`, versionName `1.0.0`, min SDK `24`, target SDK `36`, and launcher label `古德眠`; `apksigner verify --print-certs` passed with the expected debug certificate. The generated release bundle at `android\app\build\generated\assets\react\release\index.android.bundle` contains the cloud API host `gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run`, and searches for `Codex Sleep`, `com.codexsleep`, and `codex-sleep` returned no current bundle matches.
+- MuMu smoke availability check: `adb devices` returned no attached devices and `adb -s emulator-5554 get-state` failed with `device 'emulator-5554' not found`, so emulator install/smoke could not run in this pass. Phone testing should use `dist\gudemian-cloud-internal-beta.apk`.
+- Brand rename commit: `git commit -m "Rename app brand to Gudemian"` created commit `e2fd1c6` with the tracked app/docs/package/backend naming updates. Post-commit checks showed branch `codex/playback-modes` ahead 6, latest commit `e2fd1c6 Rename app brand to Gudemian`, and local ignored APK `dist\gudemian-cloud-internal-beta.apk` present at `67257635` bytes.
+- MuMu install smoke start: connected MuMu via adb ports `127.0.0.1:7555`, `127.0.0.1:16384`, and `127.0.0.1:5555`; installed `dist\gudemian-cloud-internal-beta.apk` to `127.0.0.1:7555` successfully, launched `com.gudemian.app/.MainActivity`, and confirmed the app was the focused foreground activity.
+- MuMu visual smoke: captured `tmp-gudemian-home.png` showing the renamed app title `古德眠`, dark home UI, and stable bottom navigation; captured `tmp-gudemian-settings.png` showing the settings/account section with enabled login/sync copy; an attempted login tap returned to the light home screen and showed a mini-player for `窗边细雨`, so the next step is to navigate back to Settings and retry the account login flow.
+- MuMu account UI smoke: returned to Settings in the installed `com.gudemian.app` APK, confirmed light theme settings page shows `账号与同步` with `登录 / 注册`, and opened the phone-code login screen. Sending code initially failed because the field placeholder was not an actual value, and subsequent adb text input attempts mangled the leading `+` or appended stale digits, producing the expected service-side phone validation error. This appears to be an adb input limitation rather than a cloud/API failure.
+- Final cloud account verification for phone testing: inspected `normalizePhone` and confirmed the backend accepts `+` followed by 8-15 digits after removing spaces/hyphens; reran `npm.cmd run smoke:aliyun-cloud` against `https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run` with `+8613900000615` and fixed code `123456`, passing send-code, verify-code, session, refresh, sync, logout, and post-logout 401. The APK is ready for manual phone testing with code `123456`.
+- Login module optimization request: user reported China beta login should not require manual country code input and current login flow did not seem to complete; continuing with account UI/API inspection and fixes.
+- Login inspection command: searched frontend/backend for phone, OTP, login, country-code, and +86 references to locate account UI and API validation paths.
+- Account UI read: inspected SleepApp account section around phone-code login; found it still asks for international country code, uses +86 placeholder, and submits raw trimmed phone for send/verify.
+- Account hook read: inspected signInWithPhone and verifyPhoneOtp; both trust the UI-provided phone string and surface backend errors without local China-number normalization.
+- Backend phone validation read: inspected normalizePhone in Aliyun handler; it currently accepts only plus-prefixed E.164-style numbers after removing spaces and hyphens.
+- Account style lookup: searched SleepApp styles for text input and button containers before adding a default +86 phone row without layout regressions.
+- Account style read: inspected existing error, primary button, setting row, inline content, and textInput styles for the phone-prefix UI patch.
+- Account UI patch attempt: first apply_patch failed because the existing SleepApp Chinese text is mojibake and did not match the displayed patch context; switching to narrower ASCII code anchors.
+- Account UI anchor lookup: located ASCII anchors for AccountPanel, sendOtp, verifyOtp, placeholders, and account phone API calls before retrying the patch.
+- Account UI patch: added normalizeChinaPhoneInput helper in SleepApp to convert 11-digit China mainland phone numbers, pasted 86-prefixed numbers, or plus-prefixed values into backend-ready E.164 strings.
+- Account UI patch: sendOtp and verifyOtp now validate local China phone input, auto-submit +86-normalized numbers, and validate that OTP input is numeric before calling the account API.
+- Account UI patch: replaced the single +86 placeholder input with a fixed +86 prefix box plus local 11-digit phone field; phone edits reset OTP-sent state and OTP input now caps at 8 digits.
+- Account style patch context: inspected textInput style location after the first style patch context did not match exactly.
+- Account UI patch: added responsive phone input row, fixed +86 prefix box, and flexible phone field styles for small Android screens.
+- Backend phone patch: Aliyun handler normalizePhone now accepts local China mainland 11-digit numbers and 86-prefixed numbers, normalizing them to +86 E.164 format before storage, SMS, and verification.
+- Backend smoke patch: local Aliyun handler smoke now sends 13800000000 and asserts the stored/session phone is normalized to +8613800000000.
+- API contract read: inspected auth send-code and verify-code phone examples before documenting China-local phone input acceptance.
+- API contract patch: documented that China beta auth accepts 11-digit mainland numbers or 86-prefixed pasted numbers and normalizes them to +86 before storage/SMS/session responses.
+- Login optimization diff check: reviewed diff stat after phone input/backend normalization changes before running validation.
+- Login optimization validation: ran npm.cmd run check after China-default phone UI and backend normalization changes.
+- Login optimization validation: npx.cmd expo install --check passed after account UI changes, with Expo dependencies still aligned.
+- Login optimization validation: server/aliyun-functions npm.cmd run check passed after backend phone normalization changes.
+- Login optimization validation: git diff --check passed with only normal Windows CRLF warnings after phone login changes.
+- Login optimization packaging: rebuilt dist\\aliyun-functions-deploy.zip after backend China phone normalization changes.
+- Login optimization package audit: verified deploy zip includes index.js, handler.js, pg and Alibaba SMS SDK package files with forward-slash paths, excludes .env, and has no backslash pg package entry.
+- APK rebuild env check: read local ignored .env before rebuilding APK to confirm the internal beta bundle still points at the working Function Compute URL.
+- APK rebuild env fix: rewrote ignored local .env with clean EXPO_PUBLIC_APP_NAME=古德眠, EXPO_PUBLIC_APP_ENV=development, and the working Function Compute API URL before rebuilding.
+- APK rebuild env verification: reread .env after cleanup to confirm app name, app env, feature flags, and API base URL are on separate clean lines.
+- APK rebuild env verification: used Node UTF-8 parsing to inspect .env line boundaries after PowerShell rendered Chinese as mojibake.
+- Login optimization APK build: ran android Gradle assembleRelease after China-default phone login UI, backend normalization, and clean local .env changes.
+- APK build environment lookup: searched common Windows JDK and Android SDK locations after Gradle reported JAVA_HOME was not set.
+- APK build environment lookup: checked android/local.properties and PATH java lookup after common JDK location scan did not find a configured Java runtime.
+- APK build environment lookup: Codex workspace dependency runtime lookup returned no configured bundled Java/Android runtime paths.
+- APK build environment lookup: checked Android Studio, JetBrains, Gradle, and user JDK cache paths for a usable Java runtime.
+- APK build environment lookup: performed a bounded recursive java.exe search under Program Files, Administrator profile, C:/Android, D:/, and I:/ after JAVA_HOME was unavailable.
+- APK build environment lookup: checked local .android-build-tools and default Android SDK locations after finding the JDK under I:/Ai_WorkSpace/.android-build-tools.
+- Login optimization APK build: Gradle assembleRelease rerun with JAVA_HOME pointing to local jdk17 and ANDROID_HOME pointing to local .android-build-tools Android SDK.
+- Login optimization APK artifact: copied rebuilt release APK to dist\\gudemian-cloud-internal-beta.apk for internal beta testing.
+- APK verification tool lookup: located aapt and apksigner under the local Android SDK build-tools for static APK verification.
+- Login optimization APK static verification: aapt/apksigner checked rebuilt internal beta APK package metadata, launcher label, SDK levels, and signing certificate.
+- Login optimization bundle verification: searched release JS bundle for Function Compute host, default-China phone copy, 11-digit placeholder, and +86 prefix references.
+- Login optimization bundle verification: Node UTF-8 check confirmed whether release bundle contains the cloud API host and updated China-default login UI strings.
+- MuMu login smoke check: queried adb devices before installing the rebuilt APK with China-default phone login UI.
+- MuMu login smoke setup: installed rebuilt APK on 127.0.0.1:7555, launched com.gudemian.app/.MainActivity, and checked focused app state.
+- MuMu login smoke screenshot: captured tmp-gudemian-login-start.png after launching the rebuilt APK.
+- MuMu login smoke screenshot fix: recaptured screenshot on device and pulled it locally to avoid PowerShell binary redirection corruption.
+- MuMu login UI smoke: tapped Settings then account login area on 127.0.0.1:7555 and captured tmp-gudemian-login-panel.png for the rebuilt APK.
+- MuMu login UI smoke: tapped the 登录 / 注册 button precisely and recaptured the account login panel screenshot.
+- MuMu login flow smoke: entered local phone 13900000616 without country code, tapped send code in rebuilt APK, waited for cloud response, and captured the OTP-stage screenshot.
+- MuMu login flow wait: waited an additional 8 seconds after send-code from rebuilt APK and captured the account screen again to inspect whether OTP state completed.
+- MuMu login flow smoke: entered fixed local-SMS code 123456 for phone 13900000616, tapped 登录并同步, waited for completion, and captured the account result screen.
+- SecureStore login failure investigation: inspected storage key constants and API session storage code after MuMu verify-code reached SecureStore invalid-key error.
+- SecureStore login fix: changed mobile API token keys from colon-separated gudemian:aliyun-* to SecureStore-compatible gudemian.aliyun-* names after MuMu login failed at session save.
+- SecureStore login fix validation: ran npm.cmd run check after changing API token SecureStore keys to dot-separated names.
+- SecureStore login fix APK build: rebuilt release APK after dot-separated token key fix so mobile login can save the verified session.
+- SecureStore login fix APK artifact: copied rebuilt release APK with dot-separated token keys to dist\\gudemian-cloud-internal-beta.apk.
+- SecureStore login fix MuMu setup: reinstalled rebuilt APK, cleared com.gudemian.app data for a clean login smoke, and relaunched the app on 127.0.0.1:7555.
+- SecureStore login fix MuMu smoke: completed clean login attempt with local phone 13900000617 and fixed code 123456 after reinstalling the rebuilt APK; captured tmp-gudemian-login-fixed-complete.png.
+- SecureStore login fix APK static verification: rechecked final rebuilt dist APK with aapt and apksigner after successful MuMu login smoke.
+- Login optimization final status check: git diff --check passed with normal Windows CRLF warnings and git status was inspected before final handoff.
+- Login optimization cleanup: removed temporary MuMu screenshot PNG files from the workspace after using them to verify the login UI and full login flow.
+- Login optimization final workspace state: inspected git status and diff stat after screenshot cleanup; remaining changes are tracked source/docs updates only.
+- Login fix pre-commit review: inspected frontend/API and backend/smoke/API-contract diffs; scope is limited to China-default phone login normalization, SecureStore-compatible token keys, docs, and handoff logging.
+- Login fix commit: committed China-default phone login and SecureStore token-key fix as c3d0a64 (Fix China phone login flow).
+- Post-login continuation: read INTERNAL_BETA_CHECKLIST.md, PLAY_STORE_CHECKLIST.md, and git status after committing c3d0a64; found remaining handoff-only diff plus mojibake in beta/store checklist docs that should be cleaned before broader internal testing.
+- Mojibake scan: searched docs/src/config/scripts for common garbled Chinese markers before choosing the next internal-beta documentation cleanup scope.
+- Mojibake scan result: current rg scan showed app/config/scripts and key docs contain normal 古德眠 Chinese text; the earlier checklist mojibake appears to be terminal rendering, so the next useful beta step is cloud/API and sync verification rather than broad doc rewriting.
+- Cloud smoke rerun after login fix: ran npm.cmd run smoke:aliyun-cloud against https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run using +8613900000618 and fixed code 123456 to confirm live auth/session/refresh/sync/logout still works.
+- Deploy package freshness check: compared dist\\aliyun-functions-deploy.zip handler.js with current server handler; checked zip size and local-China-phone normalization presence.
+- Aliyun deploy capability check: checked for aliyun/fc CLIs and Alibaba Cloud credential/function env vars before deciding whether Codex can upload the refreshed Function Compute zip itself.
+- MuMu playback smoke start: checked adb devices, tapped Home then music module in the installed APK on 127.0.0.1:7555, and captured tmp-gudemian-music-list.png.
+- MuMu playback smoke: tapped the first music track play button, waited 4 seconds, and captured tmp-gudemian-music-playing.png to verify playback UI state.
+- MuMu favorite smoke: tapped the player favorite button while Sopofiric was playing and captured tmp-gudemian-favorite-tapped.png before app restart.
+- MuMu favorite smoke retry: tapped the player heart button again at its center and captured tmp-gudemian-favorite-confirm.png to confirm visual state.
+- Player/favorite inspection: source read confirmed player favorite button should fill Heart when isFavorite=true, but PlayerPanel contains real mojibake strings in labels/copy; this should be cleaned as a UI polish item before broader beta.
+- PlayerPanel mojibake inspection: printed SleepApp PlayerPanel source lines 1221-1456 via Node UTF-8 JSON output to capture exact corrupted strings before patching.
+- MuMu favorite accessibility check: dumped Android UI hierarchy and searched for 收藏/已收藏/Soporific/停止 labels to verify player favorite button state more reliably than screenshot color.
+- MuMu favorite accessibility retry: paused playback and retried compressed uiautomator dump to inspect player favorite accessibility labels.
+- MuMu favorite exact-bounds retry: tapped the favorite button center from UI hierarchy bounds and re-dumped accessibility labels to check 收藏 versus 已收藏 state.
+- MuMu list favorite smoke: returned home, reopened music list, tapped the first row favorite button, and dumped UI labels to see whether list-level favorite toggling works.
+- TrackRow mojibake inspection: printed TrackRow source via Node UTF-8 JSON and confirmed accessibility labels/separator strings are actually garbled in source.
+- Sync race inspection: printed SleepApp account/sync helper area and identified syncIfSignedIn runs immediately after player state mutations, likely before updated favorite/history state is available to getSnapshot.
+- Sync race patch context: printed SleepApp state initialization lines after first sync-request patch context did not match exactly.
+- Sync race patch: added syncRequestId state and replaced immediate syncIfSignedIn with requestSyncIfSignedIn plus effect-based post-render sync for settings, favorites, and openTrack.
+- Sync race remaining reference: located a leftover syncIfSignedIn call after rg found one remaining reference.
+- Sync race patch completion: replaced the remaining AI Sleep syncIfSignedIn call with requestSyncIfSignedIn and verified no old helper references remain.
+- Sync race fix validation: ran npm.cmd run check after moving signed-in sync to a post-render syncRequestId effect.
+- Sync race fix APK build: rebuilt release APK after post-render signed-in sync fix for favorites/history/settings mutations.
+- Sync race fix APK artifact: copied rebuilt APK to dist\\gudemian-cloud-internal-beta.apk for MuMu favorite/sync retest.
+- Sync race fix MuMu setup: reinstalled rebuilt APK, cleared app data, and relaunched com.gudemian.app for a clean signed-in favorite retest.
+- Sync race fix MuMu retest: logged in with local phone 13900000619 and fixed code 123456, opened music list, tapped Soporific favorite, then dumped UI labels to check favorite state after signed-in sync.
+- MuMu favorite persistence smoke: force-stopped and relaunched the rebuilt APK, opened Favorites, and dumped UI labels to verify Soporific persisted after restart.
+- Sync race fix validation: npx.cmd expo install --check passed after rebuilding and MuMu-testing the favorite persistence fix.
+- Sync race fix validation: git diff --check passed with only normal Windows CRLF warnings before cleanup/commit.
+- Sync race fix cleanup: removed temporary MuMu playback/favorite screenshot and UI hierarchy files after verification.
+- Sync race fix pre-commit status: inspected git status and diff stat after cleanup; remaining diff is SleepApp sync scheduling plus handoff log.
+- Sync race fix diff review: inspected SleepApp diff before committing the post-render signed-in sync scheduling fix.
+- Sync race fix commit: committed post-render signed-in sync timing fix as a6bfd8f (Fix signed-in library sync timing); MuMu verified favorite toggles to 取消收藏 and persists in Favorites after restart.
+- Post-sync-commit status: inspected git status and latest commits after a6bfd8f; only handoff logging remains modified.
+- Handoff cleanup commit: committed handoff-only log as abbc3c9 (Record beta login sync handoff); final status/log inspection followed.
+- Remote push: pushed codex/playback-modes to origin after commits c3d0a64, a6bfd8f, and abbc3c9; local handoff now has this post-push log entry.
+- Post-push handoff cleanup: committed and pushed the previous post-push handoff log as 1b0afea (Record login sync push); continuing local internal-beta checks next.
+- AI Sleep smoke start: launched the installed APK on MuMu 127.0.0.1:7555, tapped the AI助眠 tab, and captured tmp-gudemian-ai-screen.png for visual inspection.
+- AI Sleep smoke playback: tapped 按这个陪我睡, waited 5 seconds, and captured tmp-gudemian-ai-player.png to verify player, queue, and timer state.
+- Theme smoke start: navigated to Settings in MuMu, captured dark settings screenshot, tapped light theme, and captured light settings screenshot for readability inspection.
+- Theme smoke correction: previous screenshots were still on the player because bottom nav is absent in full player; tapped top Home then Settings and captured tmp-gudemian-settings-current.png.
+- Theme smoke light mode: tapped 浅色 in Settings, captured tmp-gudemian-settings-light2.png, then opened AI助眠 and captured tmp-gudemian-ai-light.png for readability.
+- Theme smoke hierarchy: returned to Settings and dumped UI hierarchy to locate exact 跟随系统/深色/浅色 button bounds after the first light-mode tap did not switch themes.
+- Theme smoke pause/locate: paused the mini player, tapped Settings, and captured tmp-gudemian-settings-theme-locate.png to visually locate theme buttons.
+- Theme smoke light retry: tapped the visually confirmed 浅色 button center and captured tmp-gudemian-settings-light3.png after waiting for theme update.
+- Theme sync investigation reads: inspected useAccountSync, storage keys, and UserSettings type; current settings snapshot lacks a client-side updatedAt, so signed-in theme changes can be overwritten by remote settings during sync races.
+- Theme sync patch context: printed normalizeSettings, state refs, applyRemoteData, and saveSettingsAndSync regions after first pending-settings patch context did not match.
+- Theme sync patch: added settingsEqual and pendingLocalSettingsSyncRef so concurrent remote sync responses cannot overwrite a just-changed local theme until remote settings match the local settings.
+- Theme sync patch validation: ran npm.cmd run check after adding local pending-settings sync protection.
+- Theme sync patch APK build: rebuilt release APK after pending-settings protection so MuMu can retest signed-in theme changes.
+- Theme sync patch APK artifact: copied rebuilt APK with pending-settings protection to dist\\gudemian-cloud-internal-beta.apk.
+- Theme sync patch MuMu setup: reinstalled rebuilt APK, cleared com.gudemian.app data, and relaunched for clean signed-in theme switching smoke.
+- Theme sync patch MuMu smoke: logged in with 13900000620/123456, returned to Settings, tapped 浅色, waited, and captured tmp-gudemian-theme-light-fixed.png.
+- Theme sync patch MuMu smoke: tapped 深色 after successful light mode, opened AI助眠, and captured tmp-gudemian-theme-dark-ai-fixed.png to confirm dark-mode readability still works.
+- Theme sync patch MuMu smoke: returned to Settings, tapped 跟随系统, and captured tmp-gudemian-theme-system-fixed.png to verify the system theme option remains selectable after the fix.
+- Theme sync patch final gates: npx.cmd expo install --check passed, git diff --check passed with normal Windows CRLF warnings, and aapt confirmed final APK package com.gudemian.app / label 古德眠 / minSdk 24 / targetSdk 36.
+- Theme sync patch cleanup: removed temporary MuMu AI/theme smoke screenshots and stale UI hierarchy files after verification.
+- Theme sync patch pre-commit review: inspected git status, diff stat, and SleepApp diff; source change is limited to pending local settings protection while handoff contains verification notes.
+- Theme sync patch commit/push: committed and pushed 0879dfb (Preserve local settings during sync); MuMu verified signed-in theme switching to 浅色, 深色, and 跟随系统, plus AI Sleep playback/timer smoke.
+- Final status after theme sync push: inspected git status and latest commits; only this post-push handoff log remains modified locally.
+- Theme handoff cleanup: committed and pushed the previous post-push log as 8b0f8b3 (Record theme sync push); continuing Settings legal/feedback smoke next.
+- Settings legal smoke start: checked adb devices, launched current APK on MuMu 127.0.0.1:7555, opened Settings, and captured tmp-gudemian-settings-legal-start.png.
+- Settings legal smoke: tapped 音频版权 and captured tmp-gudemian-audio-credits.png to verify the credits page opens and renders.
+- Settings legal inspection: opened audio credits page in MuMu and inspected SleepApp legal section; page works, but credits intro still says 当前 MVP 使用项目本地生成样例音频 and should be updated for the current internal beta catalog.
+- Credits copy patch: updated the audio credits intro from MVP sample wording to current internal-beta catalog wording covering licensed and project-owned audio.
+- Settings legal smoke: returned to Settings, tapped 隐私说明, and captured tmp-gudemian-privacy.png to verify the privacy page opens and renders.
+- Settings feedback smoke: returned to Settings, tapped 发送反馈, waited, captured tmp-gudemian-feedback-aftertap.png, and inspected focused window after the mailto action.
+- Feedback handler inspection: printed openFeedback implementation after MuMu mailto tap stayed in app without visible feedback on missing mail clients.
+- Feedback handler patch: openFeedback now checks Linking.canOpenURL, opens mailto when available, and otherwise shows an Alert with gudemian-feedback@example.com so beta testers are not left without visible feedback.
+- Legal/feedback patch validation: ran npm.cmd run check after credits copy and mailto fallback changes.
+- Legal/feedback patch APK build: rebuilt release APK after credits copy and feedback mailto fallback changes.
+- Legal/feedback patch APK artifact: copied rebuilt APK with credits copy and feedback fallback to dist\\gudemian-cloud-internal-beta.apk.
+- Legal/feedback patch MuMu smoke: reinstalled rebuilt APK, opened Settings, tapped 发送反馈, waited, and captured tmp-gudemian-feedback-fallback.png to verify visible fallback behavior.
+
+- 2026-06-04 00:56 CST: Verified feedback fallback screenshot tmp-gudemian-feedback-fallback.png: Settings shows visible Alert '无法打开邮件应用' with beta feedback email when no mail app is available.
+
+- 2026-06-04 00:57 CST: Removed temporary Settings/legal/feedback smoke screenshots after verifying fallback behavior.
+
+- 2026-06-04 00:58 CST: Final gates: npm run check passed; npx expo install --check passed; first apksigner verify failed because JAVA_HOME was not set in that shell, so rerunning with bundled JDK env.
+
+- 2026-06-04 00:59 CST: APK static verification passed with JAVA_HOME set: apksigner verified dist/gudemian-cloud-internal-beta.apk; aapt badging shows com.gudemian.app, label 古德眠, minSdk 24, targetSdk 36.
+
+- 2026-06-04 01:00 CST: Pre-commit review for legal/feedback patch: git status shows only docs/HANDOFF_CONTEXT.md and src/application/SleepApp.tsx modified; git diff --check has no whitespace errors beyond expected CRLF warnings.
+
+- 2026-06-04 01:01 CST: Committed legal/feedback patch as 1d2dbcb (Improve beta legal feedback flow).
+
+- 2026-06-04 01:02 CST: Pushed 1d2dbcb to origin/codex/playback-modes after legal/feedback fallback verification.
+
+- 2026-06-04 01:03 CST: Final status after legal/feedback push: origin/codex/playback-modes is at 1d2dbcb; only this post-push handoff log remains modified locally.
+
+- 2026-06-04 01:04 CST: Continuation start: read handoff tail, git status, and recent commits; current branch is codex/playback-modes at origin 1d2dbcb with only post-push handoff log modified.
+
+- 2026-06-04 01:05 CST: Committed post-push handoff log as ae436a2 (Record legal feedback push).
+
+- 2026-06-04 01:06 CST: Pushed ae436a2 to origin/codex/playback-modes; continuing beta readiness scan for remaining local app issues.
+
+- 2026-06-04 01:07 CST: Beta readiness scan found user-visible placeholder feedback email gudemian-feedback@example.com in SleepApp and privacy draft; next patch will replace it with non-example beta contact config.
+
+- 2026-06-04 01:08 CST: Inspected env config and feedback email usage; EXPO_PUBLIC_BETA_FEEDBACK_EMAIL does not exist yet, so next patch will make beta feedback contact configurable instead of hardcoding an example.com address.
+
+- 2026-06-04 01:09 CST: Inspected validate-android-beta.js, .env.example, and privacy draft before feedback contact patch; beta validation can enforce a non-example configured feedback email.
+
+- 2026-06-04 01:10 CST: Inspected ignored local .env before patch; found EXPO_PUBLIC_APP_NAME and EXPO_PUBLIC_APP_ENV are accidentally joined on one line, and no beta feedback email config exists.
+
+- 2026-06-04 01:11 CST: First combined feedback-email patch failed because the ignored .env corrupted line did not match the visible UTF-8 text; no tracked changes were applied, retrying tracked files separately.
+
+- 2026-06-04 01:12 CST: Patched tracked feedback contact flow: appConfig now reads EXPO_PUBLIC_BETA_FEEDBACK_EMAIL, Settings feedback hides example.com, privacy draft documents configured contact channel, and android-beta validation rejects @example.com feedback copy.
+
+- 2026-06-04 01:13 CST: Attempted Format-Hex -Count for .env inspection, but this PowerShell version lacks -Count; retrying with available byte-read approach.
+
+- 2026-06-04 01:14 CST: Byte inspection showed ignored .env already has separate APP_NAME and APP_ENV lines; only beta feedback email config needs to be added locally.
+
+- 2026-06-04 01:15 CST: Added ignored local EXPO_PUBLIC_BETA_FEEDBACK_EMAIL= slot to .env for future beta APK builds without committing a guessed contact address.
+
+- 2026-06-04 01:16 CST: Feedback contact config validation passed: npm run check passed; rg found old example.com feedback email only in historical handoff notes, with app/privacy now using EXPO_PUBLIC_BETA_FEEDBACK_EMAIL or no-email fallback.
+
+- 2026-06-04 01:17 CST: Rebuild gates passed after feedback contact config patch: npx expo install --check passed and Gradle :app:assembleRelease succeeded with EXPO_PUBLIC_BETA_FEEDBACK_EMAIL included in Expo env export.
+
+- 2026-06-04 01:18 CST: APK artifact copy attempt failed because Copy-Item ran in parallel with apksigner/aapt reading the same dist APK, causing a user-mapped section lock; static checks in that batch read the previous dist APK, so copying/verification will be rerun sequentially.
+
+- 2026-06-04 01:19 CST: Copied rebuilt APK sequentially to dist\\gudemian-cloud-internal-beta.apk; new artifact size is 67,260,299 bytes and timestamp is 2026-06-04 01:03:15.
+
+- 2026-06-04 01:20 CST: Sequential APK static verification passed: apksigner verified rebuilt dist APK and aapt shows com.gudemian.app / 古德眠 / minSdk 24 / targetSdk 36; direct rg over release bundle did not find feedback strings, so Node bundle inspection follows.
+
+- 2026-06-04 01:21 CST: Node inspection of release JS bundle confirmed no gudemian-feedback@example.com, feedback@example.com, or raw EXPO_PUBLIC_BETA_FEEDBACK_EMAIL key remains in the built bundle; bundle size is 3,302,592 bytes.
+
+- 2026-06-04 01:22 CST: MuMu smoke prep: adb devices shows 127.0.0.1:7555/16384/5555 online; git status shows expected feedback config patch files only.
+
+- 2026-06-04 01:23 CST: Installed rebuilt feedback-contact APK on MuMu 127.0.0.1:7555 successfully.
+
+- 2026-06-04 01:24 CST: Launched rebuilt APK on MuMu, tapped Settings tab, and captured tmp-gudemian-feedback-config-settings.png for feedback-contact UI inspection.
+
+- 2026-06-04 01:25 CST: Local view_image could not decode tmp-gudemian-feedback-config-settings.png after exec-out redirection, likely due PNG byte corruption; recapturing via device-side screencap and adb pull.
+
+- 2026-06-04 01:26 CST: Recaptured Settings screenshot through device-side screencap/pull; tmp-gudemian-feedback-config-settings.png is 130,460 bytes.
+
+- 2026-06-04 01:27 CST: Settings screenshot verified feedback section now shows no example.com address; it displays the no-email fallback text '未配置反馈邮箱，请联系内测负责人'.
+
+- 2026-06-04 01:28 CST: Tapped Settings feedback button with empty EXPO_PUBLIC_BETA_FEEDBACK_EMAIL and captured tmp-gudemian-feedback-config-alert.png for no-email Alert verification.
+
+- 2026-06-04 01:29 CST: MuMu no-email feedback Alert verified: tapping 发送反馈 shows '反馈邮箱未配置' and tells tester to contact the internal beta owner, with no example.com address visible.
+
+- 2026-06-04 01:30 CST: Removed temporary feedback-contact Settings/Alert smoke screenshots after verification.
+
+- 2026-06-04 01:31 CST: Pre-commit review for feedback contact config patch: git status/diff show only .env.example, privacy draft, android beta validator, SleepApp, env config, and handoff; git diff --check has no whitespace errors beyond normal CRLF warnings.
+
+- 2026-06-04 01:32 CST: Committed feedback contact config patch as b1ec9b9 (Make beta feedback contact configurable).
+
+- 2026-06-04 01:33 CST: Pushed b1ec9b9 to origin/codex/playback-modes after rebuilding and MuMu-verifying configurable beta feedback contact behavior.
+
+- 2026-06-04 01:34 CST: Final status after feedback contact config push: origin/codex/playback-modes is at b1ec9b9; only this post-push handoff log remains modified locally, and .env is confirmed ignored by .gitignore.
+
+- 2026-06-04 01:35 CST: Continuation after user confirmation: read handoff/status/.env; user provided beta feedback email 2587122824@qq.com and confirmed Function Compute zip was deployed. Current repo only has post-push handoff modified; .env needs the confirmed email before rebuilding APK.
+
+- 2026-06-04 01:36 CST: Updated ignored local .env with confirmed EXPO_PUBLIC_BETA_FEEDBACK_EMAIL=2587122824@qq.com for the next internal-beta APK build.
+
+- 2026-06-04 01:37 CST: Real cloud smoke after user deployment passed send-code against https://gudemian-api-xvhirqttln.cn-hangzhou.fcapp.run for local phone 13900000621; response requestId=local-sms-1780528067855, indicating deployed backend is active in local SMS mode.
+
+- 2026-06-04 01:38 CST: Full cloud smoke retry with 13900000621 and ALIYUN_SMOKE_CODE=123456 was blocked at send-code by expected SMS_COOLDOWN 429; switching to a fresh smoke phone for full auth/session/sync/logout validation.
+
+- 2026-06-04 01:39 CST: Full cloud smoke with fresh phone 13900000622 reached verify/session but failed because scripts/smoke-aliyun-cloud.js still expected returned phone to equal local 11-digit input; deployed backend correctly returned normalized +8613900000622. Need patch smoke script for China phone normalization.
+
+- 2026-06-04 01:40 CST: Inspected scripts/smoke-aliyun-cloud.js and handler normalizePhone; cloud smoke must compare returned user.phone with normalized expected phone rather than raw ALIYUN_SMOKE_PHONE.
+
+- 2026-06-04 01:41 CST: Patched scripts/smoke-aliyun-cloud.js with normalizeExpectedPhone so cloud smoke accepts backend-normalized +86 phone values for local China 11-digit inputs.
+
+- 2026-06-04 01:42 CST: Full real cloud smoke passed after script fix using local China phone 13900000623 and fixed code 123456: send-code, verify, session, refresh, sync, logout, and post-logout 401 all succeeded against deployed Function Compute.
+
+- 2026-06-04 01:43 CST: Local validation after cloud-smoke script fix and feedback email env passed: npm run check passed, and npx expo install --check passed with EXPO_PUBLIC_BETA_FEEDBACK_EMAIL exported from .env.
+
+- 2026-06-04 01:44 CST: Gradle :app:assembleRelease completed successfully for the APK build that includes EXPO_PUBLIC_BETA_FEEDBACK_EMAIL=2587122824@qq.com; only Expo NODE_ENV informational warning was printed.
+
+- 2026-06-04 01:45 CST: Copied rebuilt email-configured APK to dist\\gudemian-cloud-internal-beta.apk; artifact size is 67,260,335 bytes, timestamp 2026-06-04 07:13:39.
+
+- 2026-06-04 01:46 CST: Static verification of email-configured APK passed: apksigner verified, aapt shows com.gudemian.app/古德眠/minSdk24/targetSdk36, and release bundle contains 2587122824@qq.com while excluding gudemian-feedback@example.com.
+
+- 2026-06-04 01:47 CST: Installed email-configured rebuilt APK on MuMu 127.0.0.1:7555 successfully.
+
+- 2026-06-04 01:48 CST: Launched email-configured APK on MuMu, opened Settings, and captured tmp-gudemian-feedback-email-settings.png for feedback email UI verification.
+
+- 2026-06-04 01:49 CST: MuMu Settings screenshot verified email-configured APK displays beta feedback email 2587122824@qq.com in the feedback section.
+
+- 2026-06-04 01:50 CST: Cleared com.gudemian.app data on MuMu, relaunched email-configured APK, navigated to Settings account entry, and captured tmp-gudemian-login-email-build-start.png for fresh login smoke.
+
+- 2026-06-04 01:51 CST: MuMu fresh login smoke: entered local China phone 13900000624 into fixed +86 login UI, tapped 发送验证码, waited, and captured tmp-gudemian-login-email-build-code.png.
+
+- 2026-06-04 01:52 CST: MuMu fresh login smoke: entered fixed local SMS code 123456 for 13900000624, tapped 登录并同步, waited, and captured tmp-gudemian-login-email-build-success.png.
+
+- 2026-06-04 01:53 CST: MuMu fresh login smoke succeeded on email-configured APK and deployed cloud backend: Account screen shows logged-in +8613900000624 with last sync time after entering local 11-digit phone and fixed code 123456.
+
+- 2026-06-04 01:54 CST: Removed temporary feedback email and fresh login smoke screenshots after MuMu verification.
+
+- 2026-06-04 01:55 CST: Pre-commit review after deployed-cloud/email APK validation: git status/diff show only docs/HANDOFF_CONTEXT.md and scripts/smoke-aliyun-cloud.js modified; git diff --check has no whitespace errors beyond normal CRLF warnings.
+
+- 2026-06-04 01:56 CST: Committed cloud smoke normalization and deployed-cloud verification log as 305271b (Accept normalized phone in cloud smoke).
+
+- 2026-06-04 01:57 CST: Pushed 305271b to origin/codex/playback-modes after confirming deployed Function Compute and rebuilding email-configured APK.
+
+- 2026-06-04 01:58 CST: Final status after deployed-cloud/email APK push: origin/codex/playback-modes is at 305271b; only this post-push handoff log remains modified locally; .env is ignored; dist\\gudemian-cloud-internal-beta.apk is the email-configured cloud APK, 67,260,335 bytes, timestamp 2026-06-04 07:13:39.
+
+- 2026-06-04 01:59 CST: Continuation start: read handoff, git status, INTERNAL_BETA_CHECKLIST, and CLOUD_BETA_RELEASE_CHECKLIST; next local no-confirmation target is cloud app end-to-end restore smoke after the deployed backend passed cloud HTTP smoke.
+
+- 2026-06-04 02:00 CST: Committed previous post-push deployed-cloud APK handoff log as 8bb76c7 (Record deployed cloud APK validation).
+
+- 2026-06-04 02:01 CST: Pushed handoff commit 8bb76c7 to origin/codex/playback-modes; starting cloud app end-to-end restore smoke on MuMu next.
+
+- 2026-06-04 02:02 CST: Cloud restore smoke prep: uiautomator dump shows current MuMu state is Account screen logged in as +8613900000624, and dist APK remains the email-configured 67,260,335-byte build.
+
+- 2026-06-04 02:03 CST: Cloud restore smoke data setup: navigated from Account screen to Home on MuMu and captured tmp-gudemian-restore-home.png to locate module controls.
+
+- 2026-06-04 02:04 CST: Opened Music module and dumped UI hierarchy; first two tracks are visible as Soporific and 暖色低鸣, with Soporific favorite button bounds around [794,477][848,531].
+
+- 2026-06-04 02:05 CST: Cloud restore smoke data setup: tapped Soporific favorite, played Soporific, returned from player, played 暖色低鸣, returned, and captured tmp-gudemian-restore-seeded-music.png.
+
+- 2026-06-04 02:06 CST: Cloud restore smoke correction: previous second-track tap landed back on Home, so reopened Music module and tapped 暖色低鸣 explicitly, then captured tmp-gudemian-restore-second-track.png.
+
+- 2026-06-04 02:07 CST: Cloud restore smoke data setup: from player returned Home, opened Settings, tapped 浅色 theme, waited, and captured tmp-gudemian-restore-light-theme.png.
+
+- 2026-06-04 02:08 CST: Cloud restore smoke seed sync: opened Account from Settings, tapped 立即同步 after seeding favorite/history/theme, waited, and captured tmp-gudemian-restore-seed-synced.png.
+
+- 2026-06-04 02:09 CST: Waited 6 seconds after manual sync and captured tmp-gudemian-restore-seed-synced-final.png to verify seed data sync completion before clearing local storage.
+
+- 2026-06-04 02:10 CST: Waited another 15 seconds for seed manual sync completion; uiautomator dump failed with 'could not get idle state' while media was playing, so sync completion evidence is still inconclusive and needs screenshot/source investigation.
+
+- 2026-06-04 02:11 CST: Paused mini player to reduce UI activity, waited, and captured tmp-gudemian-restore-sync-status.png to inspect whether Account sync status leaves '正在同步本机数据'.
+
+- 2026-06-04 02:12 CST: Source inspection found likely sync-state loop: SleepApp post-render sync effect depends on account.syncNow, whose identity changes across renders; once syncRequestId > 0, sync completion re-renders can retrigger sync repeatedly and keep Account UI at '正在同步本机数据'.
+
+- 2026-06-04 02:13 CST: Read SleepApp sync-request block before patch; effect currently calls account.syncNow via a dependency that can change every render, so patch will store syncNow in a ref and trigger only on user/syncRequestId changes.
+
+- 2026-06-04 02:14 CST: Patched SleepApp post-render sync scheduling: account.syncNow is now stored in a ref, and the sync effect depends only on account.user and syncRequestId so renders from sync completion do not retrigger the same request forever.
+
+- 2026-06-04 02:15 CST: Validation after sync-loop patch passed: npm run check and npx expo install --check both succeeded with the email-configured .env loaded.
+
+- 2026-06-04 02:16 CST: Gradle :app:assembleRelease succeeded after sync-loop patch; build used email/cloud .env and printed only normal Expo NODE_ENV/Gradle deprecation warnings.
+
+- 2026-06-04 02:17 CST: Copied rebuilt sync-loop-fix APK to dist (67,260,451 bytes, timestamp 2026-06-04 07:28:45); parallel apksigner hit a file lock while Copy-Item/aapt were reading/writing the APK, so signature verification will be rerun sequentially. aapt already showed com.gudemian.app / 古德眠 / minSdk24 / targetSdk36.
+
+- 2026-06-04 02:18 CST: Sequential apksigner verification passed for the rebuilt sync-loop-fix dist APK.
+
+- 2026-06-04 02:19 CST: Installed rebuilt sync-loop-fix APK on MuMu 127.0.0.1:7555 successfully; next step is clearing local app data and re-signing into +8613900000624 to verify cloud restore.
+
+- 2026-06-04 02:20 CST: Cloud restore smoke after sync-loop fix: cleared local app data, relaunched rebuilt APK, opened Account login screen, and captured tmp-gudemian-restore-login-start.png.
+
+- 2026-06-04 02:21 CST: Cloud restore smoke after sync-loop fix: entered local phone 13900000624, tapped 发送验证码, waited, and captured tmp-gudemian-restore-login-code.png.
+
+- 2026-06-04 02:22 CST: Cloud restore smoke after sync-loop fix: entered fixed code 123456 for 13900000624, tapped 登录并同步, waited 5 seconds, and captured tmp-gudemian-restore-login-success.png.
+
+- 2026-06-04 02:23 CST: Sync-loop fix smoke succeeded for login state: after clearing local data and re-login as 13900000624, Account returned to last-synced text within 5 seconds instead of staying at '正在同步本机数据'. Restore content evidence is inconclusive because the seed data was created under the old looping build and theme restored as dark, so a fresh seed/restore will be rerun with the fixed APK and a new phone.
+
+- 2026-06-04 02:24 CST: Fresh restore test setup with fixed APK: cleared local data, signed in as new phone 13900000625 using fixed local SMS code 123456, waited 5 seconds, and captured tmp-gudemian-fresh-seed-login.png.
+
+- 2026-06-04 02:25 CST: Fresh restore test seed with fixed APK: favorited Soporific, played Soporific and 暖色低鸣, switched Settings to 浅色, opened Account, tapped 立即同步, waited 6 seconds, and captured tmp-gudemian-fresh-seed-synced.png.
+
+- 2026-06-04 02:26 CST: Fresh cloud restore test: cleared local data after seed sync, re-signed into the same phone 13900000625 with fixed code 123456, waited 6 seconds, and captured tmp-gudemian-fresh-restore-login.png.
+
+- 2026-06-04 02:27 CST: Fresh restore test exposed a second sync bug: after seeding light theme for 13900000625 and clearing local data, re-login restored account state but UI stayed dark. Likely cause is first post-login sync sending default local settings with a fresh clientSyncedAt, overwriting remote settings instead of restoring them.
+
+- 2026-06-04 02:28 CST: Inspected storage keys; settings updatedAt can live in existing syncMeta rather than adding a new key. Client sync should use syncMeta.settingsUpdatedAt when present and epoch when a fresh device has only default settings.
+
+- 2026-06-04 02:29 CST: Patched settings sync timestamps: syncService now stores syncMeta.settingsUpdatedAt, sends epoch for fresh devices with only default settings, and SleepApp marks settings updated before requesting sync so cloud settings can restore after local data is cleared.
+
+- 2026-06-04 02:30 CST: Validation after settingsUpdatedAt restore patch passed: npm run check and npx expo install --check both succeeded.
+
+- 2026-06-04 02:31 CST: Gradle :app:assembleRelease succeeded after settingsUpdatedAt restore patch; build used email/cloud .env and printed only normal Expo NODE_ENV/Gradle deprecation warnings.
+
+- 2026-06-04 02:32 CST: Copied settingsUpdatedAt-restore APK to dist\\gudemian-cloud-internal-beta.apk; artifact size is 67,261,591 bytes, timestamp 2026-06-04 07:38:43.
+
+- 2026-06-04 02:33 CST: Static verification passed for settingsUpdatedAt-restore APK: apksigner verified and aapt shows com.gudemian.app / 古德眠 / minSdk24 / targetSdk36.
+
+- 2026-06-04 02:34 CST: Installed settingsUpdatedAt-restore APK on MuMu 127.0.0.1:7555 successfully; final clean cloud restore smoke will use new phone 13900000626 to avoid old polluted remote data.
+
+- 2026-06-04 02:35 CST: Final clean restore seed: with settingsUpdatedAt APK, signed in as 13900000626, favorited Soporific, played Soporific and 暖色低鸣, switched theme to 浅色, tapped 立即同步, waited 6 seconds, and captured tmp-gudemian-final-seed-synced.png.
+
+- 2026-06-04 02:36 CST: Final clean restore: cleared local data after seed sync, re-signed into 13900000626 using fixed code 123456, waited 6 seconds, and captured tmp-gudemian-final-restore-account.png.
+
+- 2026-06-04 02:37 CST: Final clean restore verified favorites: after re-login, Favorites screen shows Soporific and uiautomator reports its favorite button as 取消收藏.
+
+- 2026-06-04 02:38 CST: Attempted to inspect restored AsyncStorage via adb run-as for historyIds, but release package is not debuggable, so direct local storage read is unavailable; history restore will be verified through cloud merge/API evidence instead while UI verifies theme/favorites.
+
+- 2026-06-04 02:39 CST: Added a visible 最近播放 section to the Favorites screen, using player.historyIds to show up to six recent tracks so internal testers can verify restored playback history directly in the UI.
+
+- 2026-06-04 02:40 CST: Validation after adding visible 最近播放 section passed: npm run check and npx expo install --check both succeeded.
+
+- 2026-06-04 02:41 CST: Gradle :app:assembleRelease succeeded after adding visible 最近播放 UI; build used email/cloud .env and printed only normal Expo NODE_ENV/Gradle deprecation warnings.
+
+- 2026-06-04 02:42 CST: Final APK with visible 最近播放 copied to dist, apksigner verified, aapt confirmed com.gudemian.app / 古德眠 / minSdk24 / targetSdk36, and artifact size is 67,262,371 bytes with timestamp 2026-06-04 07:47:04.
+
+- 2026-06-04 02:43 CST: Installed final APK with visible 最近播放 UI on MuMu 127.0.0.1:7555; install -r preserved the restored local session for UI verification.
+
+- 2026-06-04 02:44 CST: Final UI verification passed on MuMu after installing final APK: Favorites screen shows Soporific restored in 我的收藏, and new 最近播放 section shows 暖色低鸣 then Soporific from restored historyIds.
+
+- 2026-06-04 02:45 CST: Removed temporary cloud restore smoke screenshots and UI hierarchy files after final verification.
+
+- 2026-06-04 02:46 CST: Pre-commit review for cloud restore fixes: git status/diff show only docs/HANDOFF_CONTEXT.md, SleepApp, and syncService modified; git diff --check has no whitespace errors beyond normal CRLF warnings.
+
+- 2026-06-04 02:47 CST: Committed cloud restore fixes as 2886e1f (Fix cloud restore sync state).
+
+- 2026-06-04 02:48 CST: Pushed 2886e1f to origin/codex/playback-modes after cloud restore sync-state, settings restore, and visible recent-playback verification.
+
+- 2026-06-04 02:49 CST: Final status after cloud restore push: origin/codex/playback-modes is at 2886e1f; only this post-push handoff log remains modified locally; dist\\gudemian-cloud-internal-beta.apk is the latest cloud/feedback/recent-playback APK, 67,262,371 bytes, timestamp 2026-06-04 07:47:04.
+- 2026-06-04 02:50 CST: Continuation start after cloud restore push: read handoff tail, git status, internal beta checklist, and recent commits; current repo only has post-push handoff modified, latest remote commit is 2886e1f, and checklist still has device/audio/sign-out/signing items to continue.
+- 2026-06-04 02:52 CST: User clarified not to run device debugging after every small change; continue feature/code work first, then batch device validation after enough functionality accumulates.
+- 2026-06-04 02:53 CST: Non-device continuation scan: git status shows only handoff modified; rg found current beta checklist gaps around playback modes, recent plays, feedback/privacy links, account sync, and audio QA; src file inventory is small enough for targeted code review before next batch validation.
+- 2026-06-04 02:54 CST: Read useAudioPlayer, useAccountSync, package scripts, and sync merge validator; next non-device patch will extract playback-mode index decisions into pure helpers and add a Node validation script for repeat-one, sequential, repeat-all, shuffle, and history caps.
+- 2026-06-04 02:55 CST: Read tsconfig, SleepApp account/login UI, and audio types; login already shows a +86 prefix and normalizes local 11-digit phones, but the phone normalizer is embedded in SleepApp, so next patch will extract it and validate China-default login inputs without device testing.
+- 2026-06-04 02:56 CST: Added pure helper modules for China-default phone normalization and playback/history rules, plus a Node validation script that compiles those TS modules and tests local 11-digit login inputs, +86 inputs, playback-mode transitions, shuffle, and history cap behavior.
+- 2026-06-04 02:57 CST: Wired pure login/playback helpers into SleepApp and useAudioPlayer; package check now runs validate:playback-login between sync validation and mock/cloud syntax validation.
+- 2026-06-04 02:58 CST: First validate:playback-login failed because TypeScript 6 requires --ignoreConfig when compiling explicit files while tsconfig.json exists; npm run typecheck passed. Next patch will add --ignoreConfig to the validation compiler call.
+- 2026-06-04 02:59 CST: Patched validate-playback-login compiler invocation with --ignoreConfig so explicit TS helper compilation works under TypeScript 6.
+- 2026-06-04 03:00 CST: validate:playback-login and full npm run check both failed at the new script because --moduleResolution node maps to deprecated node10 under TypeScript 6; earlier check steps through validate:sync passed. Next patch will remove the unnecessary moduleResolution argument.
+- 2026-06-04 03:01 CST: Removed unnecessary --moduleResolution node from validate-playback-login so TypeScript helper compilation avoids the node10 deprecation failure.
+- 2026-06-04 03:02 CST: validate:playback-login passed, and full npm run check passed with typecheck, audio/content/Aliyun/sync/playback-login/mock/android-beta, and handler smoke all green; no device debugging was run per user preference.
+- 2026-06-04 03:03 CST: Diff/status review found expected tracked and new helper/script files, no validation temp files listed, and revealed a manual-next nuance: repeat-one should repeat on natural finish but manual next should still advance, so playback helper needs a small context flag before commit.
+- 2026-06-04 03:04 CST: Patched playback rules so repeat-one returns current on natural finish by default but manual next passes repeatOneReturnsCurrent=false and advances; validation script now covers that distinction.
+- 2026-06-04 03:05 CST: Re-ran validate:playback-login, full npm run check, and git diff --check after repeat-one manual-next fix; all passed, with only normal CRLF warnings from git diff --check.
+- 2026-06-04 03:06 CST: Read internal beta and cloud release checklists plus git status; docs still describe cloud smoke as pending even though deployed endpoint smoke and restore validation have passed, so checklist status will be updated without marking remaining device/audio tasks complete.
+- 2026-06-04 03:07 CST: Updated internal beta and cloud release checklists to record the deployed Aliyun endpoint cloud-smoke checkpoint and APK restore evidence, while keeping re-smoke requirements for future endpoint/backend changes.
+- 2026-06-04 03:08 CST: Pre-commit checks for non-device patch: git status shows expected docs/package/SleepApp/useAudioPlayer modifications plus new phone/playbackRules validation files; git diff --check passed with normal CRLF warnings; validate:playback-login passed.
+- 2026-06-04 03:09 CST: Committed non-device login/playback validation patch as fc338a2 (Validate login and playback rules).
+- 2026-06-04 03:10 CST: Pushed fc338a2 to origin/codex/playback-modes; no device validation or APK rebuild was run for this small non-device batch per user preference.
+- 2026-06-04 03:11 CST: Patched China-default login input UX: account phone field now formats pasted +86/86/local inputs down to local 11 digits, keeps the visible +86 prefix as the only country-code indicator, and validation covers the formatter.
+- 2026-06-04 03:12 CST: Validation after local-phone input formatter passed: validate:playback-login, full npm run check, and git diff --check all passed; no device validation was run.
+- 2026-06-04 03:13 CST: Pre-commit status for China phone input UX patch shows only handoff, validation script, SleepApp, and phone helper modified; diff is limited to formatter import/use, maxLength 11, and formatter test cases.
+- 2026-06-04 03:14 CST: Committed and pushed China phone login input cleanup as a87c038 (Clean up China phone login input); phone field now keeps only local 11 digits while normalize still sends +86 to the API.
+- 2026-06-04 03:15 CST: Final status after a87c038 push: branch codex/playback-modes matches origin, with only this post-push handoff log modified locally.

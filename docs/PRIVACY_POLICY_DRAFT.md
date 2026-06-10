@@ -1,8 +1,8 @@
-# Codex Sleep Privacy Policy Draft
+# 古德眠 Privacy Policy Draft
 
 Last updated: 2026-06-01
 
-Codex Sleep is a local-first sleep companion app. The current version does not require login, does not upload personal data, and does not include advertising, analytics, or tracking SDKs.
+古德眠 is a local-first sleep companion app. Guest mode does not require login and keeps user data on the device. If the user signs in, selected app data is synchronized through the Alibaba Cloud backend for backup and multi-device recovery. The app does not include advertising, analytics, or tracking SDKs.
 
 ## Data Stored On Device
 
@@ -10,19 +10,28 @@ The app stores the following data locally on the user's device:
 
 - Favorites
 - Recently played audio
-- Sleep timer and app settings
-- Sleep log entries, including sleep time, wake time, rating, and optional notes
+- Current playback timer state and app settings
+- AI Sleep choices such as selected goal and timer are used only during the current app session
 
-This data is used only to provide app functionality and remains on the user's device.
+This data is used only to provide app functionality. In guest mode it remains on the user's device.
 
 ## Data Collection
 
-The current version does not collect or transmit personal data to a server.
+When account sync is enabled and the user signs in, the app may upload the following data to Alibaba Cloud Function Compute and RDS PostgreSQL:
+
+- Account identifiers such as phone number or social login user ID
+- Favorites
+- Recently played audio IDs
+- App settings such as appearance theme preference
+
+Audio files are not uploaded by account sync. Users should be offered account deletion and cloud data deletion controls before public launch.
 
 ## Health Disclaimer
 
-Codex Sleep provides relaxation audio and sleep journaling. It is not a medical device and does not diagnose, treat, cure, or prevent any condition. Users should consult a qualified professional for medical concerns.
+古德眠 provides relaxation audio and sleep guidance. It is not a medical device and does not diagnose, treat, cure, or prevent any condition. Users should consult a qualified professional for medical concerns.
 
 ## Contact
 
-Replace this section with the developer support email before publishing.
+For internal beta feedback, use the configured contact channel in the app.
+
+Set `EXPO_PUBLIC_BETA_FEEDBACK_EMAIL` before distributing an internal beta APK, then replace it with the final developer support email before public launch.

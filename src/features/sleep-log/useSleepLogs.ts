@@ -3,13 +3,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { storageKeys } from '../../shared/storage/keys';
 import { storage } from '../../shared/storage/storage';
 import type { SleepLogEntry } from '../../shared/types/sleep';
+import { markSleepLogDeleted } from '../account/syncService';
+
+const createEntityId = () => {
+  const randomUUID = globalThis.crypto?.randomUUID;
+  return randomUUID ? randomUUID.call(globalThis.crypto) : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
 
 const createDefaultLog = (): SleepLogEntry => {
   const wakeAt = new Date();
   const sleepAt = new Date(wakeAt.getTime() - 7.5 * 60 * 60 * 1000);
 
   return {
-    id: `${Date.now()}`,
+    id: createEntityId(),
     sleepAt: sleepAt.toISOString(),
     wakeAt: wakeAt.toISOString(),
     durationMinutes: 450,
@@ -50,9 +56,17 @@ export const useSleepLogs = () => {
 
   const removeLog = useCallback(
     (id: string) => {
+      void markSleepLogDeleted(id);
       persist(logs.filter((log) => log.id !== id));
     },
     [logs, persist],
+  );
+
+  const replaceLogs = useCallback(
+    (next: SleepLogEntry[]) => {
+      persist(next);
+    },
+    [persist],
   );
 
   const averageMinutes = useMemo(() => {
@@ -72,5 +86,6 @@ export const useSleepLogs = () => {
     addLog,
     updateLog,
     removeLog,
+    replaceLogs,
   };
 };

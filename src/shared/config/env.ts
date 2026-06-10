@@ -7,11 +7,12 @@ const truthy = (value: string | undefined, fallback = true) => {
 };
 
 export const appConfig = {
-  appName: process.env.EXPO_PUBLIC_APP_NAME || 'Codex Sleep',
+  appName: process.env.EXPO_PUBLIC_APP_NAME || '古德眠',
   appEnv: process.env.EXPO_PUBLIC_APP_ENV || 'development',
   audioSource: process.env.EXPO_PUBLIC_AUDIO_SOURCE || 'local',
   audioCdnBaseUrl: process.env.EXPO_PUBLIC_AUDIO_CDN_BASE_URL || '',
   apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || '',
+  betaFeedbackEmail: process.env.EXPO_PUBLIC_BETA_FEEDBACK_EMAIL || '',
   flags: {
     musicSleep: truthy(process.env.EXPO_PUBLIC_ENABLE_MUSIC_SLEEP),
     storySleep: truthy(process.env.EXPO_PUBLIC_ENABLE_STORY_SLEEP),

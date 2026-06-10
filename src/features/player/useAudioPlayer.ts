@@ -1,18 +1,46 @@
-import { Audio } from 'expo-av';
+import {
+  createAudioPlayer,
+  setAudioModeAsync,
+  type AudioPlayer,
+  type AudioSource,
+  type AudioStatus,
+} from 'expo-audio';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { storageKeys } from '../../shared/storage/keys';
 import { storage } from '../../shared/storage/storage';
-import type { AudioItem } from '../../shared/types/audio';
+import type { AudioItem, PlaybackMode } from '../../shared/types/audio';
+import { clearFavoriteDeleted, markFavoriteDeleted } from '../account/syncService';
+import {
+  addTrackToHistory,
+  defaultPlaybackMode,
+  getNextPlaybackIndex,
+  getPreviousPlaybackIndex,
+} from './playbackRules';
 
 type PlaybackState = 'idle' | 'loading' | 'playing' | 'paused';
 
 const timerOptions = [15, 30, 45, 60];
+const defaultPlayerVolume = 0.85;
+const fadeOutWindowSeconds = 30;
+const minimumFadeVolume = 0.08;
+
+const toAudioSource = (asset: AudioItem['asset']): AudioSource =>
+  typeof asset === 'string' ? { uri: asset } : asset;
 
 export const useAudioPlayer = () => {
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const playerRef = useRef<AudioPlayer | null>(null);
+  const statusSubscriptionRef = useRef<{ remove: () => void } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queueRef = useRef<AudioItem[]>([]);
+  const currentIndexRef = useRef(0);
+  const playbackModeRef = useRef<PlaybackMode>(defaultPlaybackMode);
+  const finishTransitionRef = useRef(false);
+  const handleTrackFinishedRef = useRef<(() => Promise<void>) | null>(null);
   const [currentTrack, setCurrentTrack] = useState<AudioItem | null>(null);
+  const [queue, setQueue] = useState<AudioItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [playbackMode, setPlaybackModeState] = useState<PlaybackMode>(defaultPlaybackMode);
   const [playbackState, setPlaybackState] = useState<PlaybackState>('idle');
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [historyIds, setHistoryIds] = useState<string[]>([]);
@@ -22,11 +50,21 @@ export const useAudioPlayer = () => {
   const [durationMillis, setDurationMillis] = useState(0);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
 
-  const unloadCurrentSound = useCallback(async () => {
-    if (soundRef.current) {
-      soundRef.current.setOnPlaybackStatusUpdate(null);
-      await soundRef.current.unloadAsync();
-      soundRef.current = null;
+  const syncQueueState = useCallback((nextQueue: AudioItem[], nextIndex: number) => {
+    queueRef.current = nextQueue;
+    currentIndexRef.current = nextIndex;
+    setQueue(nextQueue);
+    setCurrentIndex(nextIndex);
+  }, []);
+
+  const removeCurrentPlayer = useCallback(() => {
+    statusSubscriptionRef.current?.remove();
+    statusSubscriptionRef.current = null;
+
+    if (playerRef.current) {
+      playerRef.current.pause();
+      playerRef.current.remove();
+      playerRef.current = null;
     }
   }, []);
 
@@ -39,98 +77,225 @@ export const useAudioPlayer = () => {
     setRemainingSeconds(0);
     setPositionMillis(0);
     setPlaybackError(null);
-    await unloadCurrentSound();
+    removeCurrentPlayer();
     setPlaybackState('idle');
-  }, [unloadCurrentSound]);
+  }, [removeCurrentPlayer]);
 
   const addToHistory = useCallback(async (trackId: string) => {
     setHistoryIds((current) => {
-      const next = [trackId, ...current.filter((id) => id !== trackId)].slice(0, 12);
+      const next = addTrackToHistory(current, trackId);
       storage.setJson(storageKeys.history, next);
       return next;
     });
   }, []);
 
-  const playTrack = useCallback(
-    async (track: AudioItem) => {
+  const playTrackAtIndex = useCallback(
+    async (nextQueue: AudioItem[], nextIndex: number, addHistory = true) => {
+      const safeQueue = nextQueue.length > 0 ? nextQueue : queueRef.current;
+      const track = safeQueue[nextIndex];
+
+      if (!track) {
+        setPlaybackState('paused');
+        return;
+      }
+
       setPlaybackState('loading');
       setCurrentTrack(track);
+      syncQueueState(safeQueue, nextIndex);
       setPositionMillis(0);
       setDurationMillis(track.duration * 1000);
       setPlaybackError(null);
-      await addToHistory(track.id);
-      await unloadCurrentSound();
+
+      if (addHistory) {
+        await addToHistory(track.id);
+      }
+
+      removeCurrentPlayer();
 
       try {
-        const { sound } = await Audio.Sound.createAsync(
-          typeof track.asset === 'string' ? { uri: track.asset } : track.asset,
-          {
-            isLooping: track.type === 'noise',
-            shouldPlay: false,
-            volume: 0.85,
+        const player = createAudioPlayer(toAudioSource(track.asset), {
+          updateInterval: 500,
+          keepAudioSessionActive: true,
+        });
+
+        player.loop = false;
+        player.volume = defaultPlayerVolume;
+        playerRef.current = player;
+        statusSubscriptionRef.current = player.addListener(
+          'playbackStatusUpdate',
+          (status: AudioStatus) => {
+            if (!status.isLoaded) {
+              return;
+            }
+
+            setPositionMillis(Math.max(0, status.currentTime * 1000));
+            setDurationMillis(status.duration > 0 ? status.duration * 1000 : track.duration * 1000);
+
+            if (status.didJustFinish && !finishTransitionRef.current) {
+              finishTransitionRef.current = true;
+              void (handleTrackFinishedRef.current?.() ?? Promise.resolve()).finally(() => {
+                finishTransitionRef.current = false;
+              });
+            }
           },
         );
-
-        soundRef.current = sound;
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (!status.isLoaded) {
-            return;
-          }
-
-          setPositionMillis(status.positionMillis);
-          setDurationMillis(status.durationMillis ?? track.duration * 1000);
-
-          if (status.didJustFinish && !status.isLooping) {
-            setPlaybackState('paused');
-          }
-        });
-        await sound.playAsync();
+        player.play();
         setPlaybackState('playing');
       } catch {
-        setPlaybackError('音频暂时无法播放，请稍后重试或切换其他内容。');
+        setPlaybackError('这段音频暂时没加载成功，可以换一首继续。');
         setPlaybackState('paused');
       }
     },
-    [addToHistory, unloadCurrentSound],
+    [addToHistory, removeCurrentPlayer, syncQueueState],
   );
+
+  const playTrack = useCallback(
+    async (track: AudioItem, sourceQueue?: AudioItem[]) => {
+      const nextQueue = sourceQueue && sourceQueue.length > 0 ? sourceQueue : [track];
+      const nextIndex = Math.max(
+        0,
+        nextQueue.findIndex((item) => item.id === track.id),
+      );
+
+      await playTrackAtIndex(nextQueue, nextIndex);
+    },
+    [playTrackAtIndex],
+  );
+
+  const handleTrackFinished = useCallback(async () => {
+    const activeQueue = queueRef.current;
+    const activeIndex = currentIndexRef.current;
+    const mode = playbackModeRef.current;
+
+    if (activeQueue.length === 0) {
+      setPlaybackState('paused');
+      return;
+    }
+
+    const nextIndex = getNextPlaybackIndex({
+      queueLength: activeQueue.length,
+      currentIndex: activeIndex,
+      mode,
+    });
+
+    if (nextIndex === activeIndex && mode === 'repeat-one') {
+      setPositionMillis(0);
+      await playerRef.current?.seekTo(0);
+      playerRef.current?.play();
+      setPlaybackState('playing');
+      return;
+    }
+
+    if (nextIndex === null) {
+      setPlaybackState('paused');
+      return;
+    }
+
+    await playTrackAtIndex(activeQueue, nextIndex);
+  }, [playTrackAtIndex]);
+
+  useEffect(() => {
+    handleTrackFinishedRef.current = handleTrackFinished;
+  }, [handleTrackFinished]);
+
+  const playNext = useCallback(async () => {
+    const activeQueue = queueRef.current;
+    const activeIndex = currentIndexRef.current;
+
+    if (activeQueue.length === 0) {
+      return;
+    }
+
+    const nextIndex = getNextPlaybackIndex({
+      queueLength: activeQueue.length,
+      currentIndex: activeIndex,
+      mode: playbackModeRef.current,
+      repeatOneReturnsCurrent: false,
+    });
+
+    if (nextIndex === null) {
+      return;
+    }
+
+    await playTrackAtIndex(activeQueue, nextIndex);
+  }, [playTrackAtIndex]);
+
+  const playPrevious = useCallback(async () => {
+    const activeQueue = queueRef.current;
+    const activeIndex = currentIndexRef.current;
+
+    if (activeQueue.length === 0) {
+      return;
+    }
+
+    const previousIndex = getPreviousPlaybackIndex({
+      queueLength: activeQueue.length,
+      currentIndex: activeIndex,
+      mode: playbackModeRef.current,
+    });
+
+    if (previousIndex === null) {
+      await seekToStart();
+      return;
+    }
+
+    await playTrackAtIndex(activeQueue, previousIndex);
+  }, [playTrackAtIndex]);
 
   const seekToMillis = useCallback(
     async (millis: number) => {
       const clampedMillis = Math.max(0, Math.min(millis, durationMillis || millis));
       setPositionMillis(clampedMillis);
 
-      if (!soundRef.current) {
+      if (!playerRef.current) {
         return;
       }
 
-      await soundRef.current.setPositionAsync(clampedMillis);
+      await playerRef.current.seekTo(clampedMillis / 1000);
     },
     [durationMillis],
   );
 
+  async function seekToStart() {
+    setPositionMillis(0);
+    await playerRef.current?.seekTo(0);
+  }
+
   const togglePlayback = useCallback(async () => {
-    if (!soundRef.current) {
+    if (!playerRef.current) {
       setPlaybackError('还没有可控制的音频，请先从列表选择内容。');
       return;
     }
 
     if (playbackState === 'playing') {
-      await soundRef.current.pauseAsync();
+      playerRef.current.pause();
       setPlaybackState('paused');
     } else {
-      await soundRef.current.playAsync();
+      playerRef.current.play();
       setPlaybackState('playing');
     }
   }, [playbackState]);
 
   const toggleFavorite = useCallback((trackId: string) => {
     setFavoriteIds((current) => {
-      const next = current.includes(trackId)
-        ? current.filter((id) => id !== trackId)
-        : [trackId, ...current];
+      const isRemoving = current.includes(trackId);
+      const next = isRemoving ? current.filter((id) => id !== trackId) : [trackId, ...current];
+      void (isRemoving ? markFavoriteDeleted(trackId) : clearFavoriteDeleted(trackId));
       storage.setJson(storageKeys.favorites, next);
       return next;
     });
+  }, []);
+
+  const replaceLibraryData = useCallback((nextFavorites: string[], nextHistory: string[]) => {
+    setFavoriteIds(nextFavorites);
+    setHistoryIds(nextHistory);
+    storage.setJson(storageKeys.favorites, nextFavorites);
+    storage.setJson(storageKeys.history, nextHistory);
+  }, []);
+
+  const setPlaybackMode = useCallback((mode: PlaybackMode) => {
+    playbackModeRef.current = mode;
+    setPlaybackModeState(mode);
   }, []);
 
   const setSleepTimer = useCallback(
@@ -143,11 +308,18 @@ export const useAudioPlayer = () => {
       if (!minutes) {
         setTimerEndsAt(null);
         setRemainingSeconds(0);
+        if (playerRef.current) {
+          playerRef.current.volume = defaultPlayerVolume;
+        }
         return;
       }
 
       const endsAt = Date.now() + minutes * 60 * 1000;
       setTimerEndsAt(endsAt);
+      setRemainingSeconds(minutes * 60);
+      if (playerRef.current) {
+        playerRef.current.volume = defaultPlayerVolume;
+      }
       timerRef.current = setTimeout(() => {
         stop();
       }, minutes * 60 * 1000);
@@ -156,11 +328,11 @@ export const useAudioPlayer = () => {
   );
 
   useEffect(() => {
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      staysActiveInBackground: true,
+    setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: 'duckOthers',
     });
 
     storage.getJson(storageKeys.favorites, [] as string[]).then(setFavoriteIds);
@@ -170,12 +342,15 @@ export const useAudioPlayer = () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
-      soundRef.current?.unloadAsync();
+      removeCurrentPlayer();
     };
-  }, []);
+  }, [removeCurrentPlayer]);
 
   useEffect(() => {
     if (!timerEndsAt) {
+      if (playerRef.current) {
+        playerRef.current.volume = defaultPlayerVolume;
+      }
       return undefined;
     }
 
@@ -185,6 +360,27 @@ export const useAudioPlayer = () => {
 
     return () => clearInterval(interval);
   }, [timerEndsAt]);
+
+  useEffect(() => {
+    const player = playerRef.current;
+
+    if (!player || !timerEndsAt) {
+      return;
+    }
+
+    if (remainingSeconds <= 0) {
+      player.volume = minimumFadeVolume;
+      return;
+    }
+
+    if (remainingSeconds > fadeOutWindowSeconds) {
+      player.volume = defaultPlayerVolume;
+      return;
+    }
+
+    const fadeRatio = remainingSeconds / fadeOutWindowSeconds;
+    player.volume = Math.max(minimumFadeVolume, defaultPlayerVolume * fadeRatio);
+  }, [remainingSeconds, timerEndsAt]);
 
   const activeTimerMinutes = useMemo(() => {
     if (!timerEndsAt) {
@@ -198,6 +394,9 @@ export const useAudioPlayer = () => {
 
   return {
     currentTrack,
+    queue,
+    currentIndex,
+    playbackMode,
     playbackState,
     playbackError,
     positionMillis,
@@ -211,9 +410,13 @@ export const useAudioPlayer = () => {
     remainingSeconds,
     isFavorite: (trackId: string) => favoriteIds.includes(trackId),
     playTrack,
+    playNext,
+    playPrevious,
     togglePlayback,
     seekToMillis,
     toggleFavorite,
+    replaceLibraryData,
+    setPlaybackMode,
     setSleepTimer,
     stop,
   };
